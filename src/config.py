@@ -11,6 +11,10 @@ class DataBaseConfig(BaseConfig):
     host: SecretStr
     password: SecretStr
 
+    model_config = SettingsConfigDict(
+        env_prefix='DB_'
+    )
+
 
 class Config(BaseSettings):
     db: DataBaseConfig = Field(default_factory=DataBaseConfig)
