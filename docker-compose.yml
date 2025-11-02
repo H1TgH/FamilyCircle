@@ -11,9 +11,9 @@ services:
   postgres:
     image: postgres:latest
     volumes:
-      - postgres_data:/var/lib/postgresql/data
+      - postgres_data:/var/lib/postgresql
     env_file:
-      - "postgres.env"
+      - ".env"
 
 volumes:
   postgres_data:

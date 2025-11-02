@@ -4,15 +4,16 @@ from pydantic import Field
 
 
 class BaseConfig(BaseSettings):
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')
 
 
 class DataBaseConfig(BaseConfig):
-    host: SecretStr
+    db: SecretStr
+    user: SecretStr
     password: SecretStr
 
     model_config = SettingsConfigDict(
-        env_prefix='DB_'
+        env_prefix='POSTGRES_'
     )
 
 
