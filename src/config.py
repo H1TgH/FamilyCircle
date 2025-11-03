@@ -8,9 +8,11 @@ class BaseConfig(BaseSettings):
 
 
 class DataBaseConfig(BaseConfig):
-    db: SecretStr
-    user: SecretStr
+    host: str
+    user: str
     password: SecretStr
+    port: int
+    dbname: str
 
     model_config = SettingsConfigDict(
         env_prefix='POSTGRES_'
@@ -23,3 +25,6 @@ class Config(BaseSettings):
     @classmethod
     def load(cls):
         return cls()
+
+
+config = Config().load()
