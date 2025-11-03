@@ -1,6 +1,6 @@
+from pydantic import Field
 from pydantic.types import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from pydantic import Field
 
 
 class BaseConfig(BaseSettings):

@@ -13,3 +13,56 @@ dependencies = [
     "sqlalchemy>=2.0.44",
     "uvicorn>=0.38.0",
 ]
+
+[tool.ruff]
+line-length = 120
+indent-width = 4
+target-version = "py313"
+src = ["src"]
+
+[tool.ruff.lint]
+preview = true
+select = [
+    "E",
+    "W",
+    "F",
+    "I",
+    "B",
+    "C4",
+    "UP",
+    "S", 
+    "BLE",
+    "T20",
+    "T10",
+    "PT",
+    "RUF",
+    "DTZ",
+    "ERA",
+    "FURB",
+    "Q",
+]
+ignore = [
+    "C408",
+    "RUF001",
+    "RUF002",
+    "RUF003",
+    "S110",
+]
+fixable = [
+    "I",
+]
+
+[tool.ruff.lint.flake8-quotes]
+inline-quotes = "single"
+multiline-quotes = "double"
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+combine-as-imports = true
+lines-after-imports = 2
+
+[tool.ruff.format]
+quote-style = "single"
+indent-style = "space"
+skip-magic-trailing-comma = false
+line-ending = "auto"
