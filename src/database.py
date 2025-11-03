@@ -4,7 +4,7 @@ from fastapi import Depends
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-from config import config
+from .config import config
 
 
 DATABASE_URL = f'postgresql+asyncpg://{config.db.user}:{config.db.password.get_secret_value()}@{config.db.host}:{config.db.port}/{config.db.dbname}'
