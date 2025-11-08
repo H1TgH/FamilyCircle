@@ -1,15 +1,15 @@
-from datetime import datetime, date
-from enum import Enum as PyEnum
+from datetime import date, datetime
+from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime as TIMESTAMP, Date as PGDate, Enum, String, func
+from sqlalchemy import Date as PGDate, DateTime as TIMESTAMP, Enum, String, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
 from src.database import Base
 
 
-class RoleEnum(str, PyEnum):
+class RoleEnum(StrEnum):
     ADMIN = 'admin'
     VOLUNTEER = 'volunteer'
     ELDER = 'elder'

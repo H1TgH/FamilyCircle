@@ -20,6 +20,9 @@ line-length = 120
 indent-width = 4
 target-version = "py313"
 src = ["src"]
+exclude = [
+    "alembic",
+]
 
 [tool.ruff.lint]
 preview = true
