@@ -4,7 +4,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class BaseConfig(BaseSettings):
-    model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')
+    model_config = SettingsConfigDict(
+        env_file='.env',
+        env_file_encoding='utf-8',
+        extra='allow'
+    )
 
 
 class DataBaseConfig(BaseConfig):
@@ -19,8 +23,13 @@ class DataBaseConfig(BaseConfig):
     )
 
 
+class SecureConfig(BaseConfig):
+    secret_key: SecretStr
+
+
 class Config(BaseSettings):
     db: DataBaseConfig = Field(default_factory=DataBaseConfig)
+    app: SecureConfig = Field(default_factory=SecureConfig)
 
     @classmethod
     def load(cls):
