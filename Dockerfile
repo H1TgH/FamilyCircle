@@ -11,3 +11,5 @@ RUN useradd -m -s /bin/bash FamilyCircle
 USER FamilyCircle
 
 EXPOSE 8000
+
+CMD alembic upgrade head && uvicorn src.main:app --host 0.0.0.0 --port 8000 --reload

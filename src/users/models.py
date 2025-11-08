@@ -1,18 +1,18 @@
-from datetime import datetime
+from datetime import datetime, date
 from enum import Enum as PyEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime as TIMESTAMP, Enum, String, func
+from sqlalchemy import DateTime as TIMESTAMP, Date as PGDate, Enum, String, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
-from ..database import Base
+from src.database import Base
 
 
 class RoleEnum(str, PyEnum):
-    ADMIN = 'ADMIN'
-    VOLUNTEER = 'VOLUNTEER'
-    ELDER = 'ELDER'
+    ADMIN = 'admin'
+    VOLUNTEER = 'volunteer'
+    ELDER = 'elder'
 
 
 class UserModel(Base):
@@ -41,9 +41,34 @@ class UserModel(Base):
         index=True
     )
 
+    surname: Mapped[str] = mapped_column(
+        String,
+        nullable=False
+    )
+
+    name: Mapped[str] = mapped_column(
+        String,
+        nullable=False
+    )
+
+    patronymic: Mapped[str] = mapped_column(
+        String,
+        nullable=True
+    )
+
+    phone_number: Mapped[str] = mapped_column(
+        String,
+        nullable=False
+    )
+
     password: Mapped[str] = mapped_column(
         String,
         nullable=False
+    )
+
+    birthday: Mapped[date] = mapped_column(
+        PGDate,
+        nullable=True
     )
 
     role: Mapped[RoleEnum] = mapped_column(
