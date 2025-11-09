@@ -2,7 +2,7 @@ from datetime import date, datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import Date as PGDate, DateTime as TIMESTAMP, Enum, String, func
+from sqlalchemy import Boolean, Date as PGDate, DateTime as PGDateTime, Enum, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column
 
@@ -77,14 +77,57 @@ class UserModel(Base):
     )
 
     created_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
+        PGDateTime(timezone=True),
         nullable=False,
         server_default=func.now()
     )
 
     updated_at: Mapped[datetime] = mapped_column(
-        TIMESTAMP,
+        PGDateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
         onupdate=func.now()
+    )
+
+
+class RefreshTokenModel(Base):
+    __tablename__ = 'refresh_tokens'
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID,
+        primary_key=True,
+        unique=True,
+        nullable=False,
+        default=uuid4
+    )
+
+    user_id: Mapped[UUID] = mapped_column(
+        PGUUID,
+        ForeignKey('users.id', ondelete='CASCADE'),
+        nullable=False
+    )
+
+    token: Mapped[str] = mapped_column(
+        String,
+        unique=True,
+        nullable=False,
+        index=True
+    )
+
+    expires_at: Mapped[datetime] = mapped_column(
+        PGDateTime(timezone=True),
+        nullable=False
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        PGDateTime(timezone=True),
+        nullable=False,
+        server_default=func.now()
+    )
+
+    is_revoked: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False,
+        server_default='false'
     )
