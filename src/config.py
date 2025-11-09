@@ -25,11 +25,14 @@ class DataBaseConfig(BaseConfig):
 
 class SecureConfig(BaseConfig):
     secret_key: SecretStr
+    algorithm: str
+    access_ttl: int = Field(alias='ACCESS_TOKEN_EXPIRE_MINUTES')
+    refresh_ttl: int = Field(alias='REFRESH_TOKEN_EXPIRE_DAYS')
 
 
 class Config(BaseSettings):
     db: DataBaseConfig = Field(default_factory=DataBaseConfig)
-    app: SecureConfig = Field(default_factory=SecureConfig)
+    secure: SecureConfig = Field(default_factory=SecureConfig)
 
     @classmethod
     def load(cls):
