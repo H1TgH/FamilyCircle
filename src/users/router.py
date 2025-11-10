@@ -3,8 +3,13 @@ from sqlalchemy import or_, select
 
 from src.database import SessionDep
 from src.users.models import RefreshTokenModel, RoleEnum, UserModel
-from src.users.schemas import ElderRegistrationSchema, UserRegistrationResponseSchema, VolunteerRegistrationSchema
-from src.users.utils import create_access_token, create_refresh_token, get_password_hash
+from src.users.schemas import (
+    ElderRegistrationSchema,
+    LoginRequestSchema,
+    TokenResponseSchema,
+    VolunteerRegistrationSchema,
+)
+from src.users.utils import create_access_token, create_refresh_token, get_password_hash, verify_password
 
 
 users_router = APIRouter()
@@ -80,7 +85,7 @@ async def _register_user(
 
 @users_router.post(
     '/api/v1/users/register/elder',
-    response_model=UserRegistrationResponseSchema,
+    response_model=TokenResponseSchema,
     status_code=status.HTTP_201_CREATED,
     tags=['users']
 )
@@ -93,7 +98,7 @@ async def register_elder(
 
 @users_router.post(
     '/api/v1/users/register/volunteer',
-    response_model=UserRegistrationResponseSchema,
+    response_model=TokenResponseSchema,
     status_code=status.HTTP_201_CREATED,
     tags=['users']
 )
@@ -102,3 +107,53 @@ async def register_volunteer(
     session: SessionDep
 ):
     return await _register_user(user_data, RoleEnum.VOLUNTEER, session)
+
+
+@users_router.post(
+    '/api/v1/users/login',
+    response_model=TokenResponseSchema,
+    tags=['users']
+)
+async def login_user(
+    creds: LoginRequestSchema,
+    session: SessionDep
+):
+    result = await session.execute(
+        select(UserModel).where(
+            or_(
+                UserModel.login == creds.login_or_email,
+                UserModel.email == creds.login_or_email
+            )
+        )
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Incorrect login/email or password',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+
+    if not verify_password(creds.password, user.password):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail='Incorrect login/email or password',
+            headers={'WWW-Authenticate': 'Bearer'},
+        )
+
+    access_token = create_access_token(user.id, user.role)
+    refresh_token, expires_at = create_refresh_token(user.id)
+
+    refresh_token_model = RefreshTokenModel(
+        user_id=user.id,
+        token=refresh_token,
+        expires_at=expires_at,
+    )
+    session.add(refresh_token_model)
+    await session.commit()
+
+    return {
+        'access_token': access_token,
+        'refresh_token': refresh_token
+    }
