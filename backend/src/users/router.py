@@ -252,3 +252,30 @@ async def refresh_token(
         'access_token': new_access_token,
         'refresh_token': new_refresh_token
     }
+
+
+@users_router.post(
+    '/api/v1/users/logout',
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=['users']
+)
+async def logout(
+    token_data: RefreshTokenRequestSchema,
+    session: SessionDep
+):
+    result = await session.execute(
+        select(RefreshTokenModel).where(
+            RefreshTokenModel.token == token_data.refresh_token
+        )
+    )
+    stored_token = result.scalar_one_or_none()
+
+    if stored_token:
+        await session.execute(
+            delete(RefreshTokenModel).where(
+                RefreshTokenModel.id == stored_token.id
+            )
+        )
+        await session.commit()
+
+    return None
