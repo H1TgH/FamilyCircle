@@ -27,3 +27,7 @@ class TokenResponseSchema(BaseModel):
 class LoginRequestSchema(BaseModel):
     login_or_email: str
     password: str
+
+
+class RefreshTokenRequestSchema(BaseModel):
+    refresh_token: str
