@@ -19,6 +19,11 @@ class VolunteerRegistrationSchema(UserRegistrationSchema):
     birthday: PastDate
 
 
-class UserRegistrationResponseSchema(BaseModel):
+class TokenResponseSchema(BaseModel):
     access_token: str
     refresh_token: str
+
+
+class LoginRequestSchema(BaseModel):
+    login_or_email: str
+    password: str
