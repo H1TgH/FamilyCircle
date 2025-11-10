@@ -51,7 +51,7 @@ def decode_token(token: str) -> dict[str, Any]:
             algorithms=[config.secure.algorithm]
         )
         return payload
-    except jwt.ExpiredSignatureError as err:
-        raise ValueError('Token has expired') from err
-    except jwt.InvalidTokenError as err:
-        raise ValueError('Invalid token') from err
+    except jwt.ExpiredSignatureError as e:
+        raise ValueError('Token has expired') from e
+    except jwt.InvalidTokenError as e:
+        raise ValueError('Invalid token') from e
