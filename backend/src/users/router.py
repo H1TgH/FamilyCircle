@@ -6,9 +6,9 @@ from sqlalchemy import delete, or_, select
 from src.database import SessionDep
 from src.users.models import RefreshTokenModel, RoleEnum, UserModel
 from src.users.schemas import (
-    RelativeRegistrationSchema,
     LoginRequestSchema,
     RefreshTokenRequestSchema,
+    RelativeRegistrationSchema,
     TokenResponseSchema,
     VolunteerRegistrationSchema,
 )
