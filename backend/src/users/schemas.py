@@ -11,7 +11,7 @@ class UserRegistrationSchema(BaseModel):
     password: str
 
 
-class ElderRegistrationSchema(UserRegistrationSchema):
+class RelativeRegistrationSchema(UserRegistrationSchema):
     pass
 
 

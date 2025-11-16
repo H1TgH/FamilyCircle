@@ -6,7 +6,7 @@ from sqlalchemy import delete, or_, select
 from src.database import SessionDep
 from src.users.models import RefreshTokenModel, RoleEnum, UserModel
 from src.users.schemas import (
-    ElderRegistrationSchema,
+    RelativeRegistrationSchema,
     LoginRequestSchema,
     RefreshTokenRequestSchema,
     TokenResponseSchema,
@@ -19,7 +19,7 @@ users_router = APIRouter()
 
 
 async def _register_user(
-    user_data: ElderRegistrationSchema | VolunteerRegistrationSchema,
+    user_data: RelativeRegistrationSchema | VolunteerRegistrationSchema,
     role: RoleEnum,
     session: SessionDep
 ) -> dict[str, str]:
@@ -87,16 +87,16 @@ async def _register_user(
 
 
 @users_router.post(
-    '/api/v1/users/register/elder',
+    '/api/v1/users/register/relative',
     response_model=TokenResponseSchema,
     status_code=status.HTTP_201_CREATED,
     tags=['users']
 )
-async def register_elder(
-    user_data: ElderRegistrationSchema,
+async def register_relative(
+    user_data: RelativeRegistrationSchema,
     session: SessionDep
 ):
-    return await _register_user(user_data, RoleEnum.ELDER, session)
+    return await _register_user(user_data, RoleEnum.RELATIVE, session)
 
 
 @users_router.post(

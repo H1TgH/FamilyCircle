@@ -12,7 +12,7 @@ from src.database import Base
 class RoleEnum(StrEnum):
     ADMIN = 'admin'
     VOLUNTEER = 'volunteer'
-    ELDER = 'elder'
+    RELATIVE = 'relative'
 
 
 class UserModel(Base):
