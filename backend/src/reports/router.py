@@ -7,8 +7,8 @@ from src.database import SessionDep
 from src.reports.models import ReportModel
 from src.reports.schemas import ReportCreateSchema, ReportResponseSchema
 from src.requests.models import RequestModel, RequestStatusEnum
+from src.users.dependencies import get_current_user
 from src.users.models import UserModel
-from users.dependencies import get_current_user
 
 
 reports_router = APIRouter()
