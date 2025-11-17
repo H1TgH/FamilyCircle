@@ -7,7 +7,8 @@ from sqlalchemy.engine import Connection
 from sqlalchemy.ext.asyncio import async_engine_from_config
 
 from src.database import DATABASE_URL, Base
-from src.users.models import UserModel
+from src.users.models import ElderModel, UserModel, RefreshTokenModel
+from src.requests.models import RequestModel
 
 
 config = context.config

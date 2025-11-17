@@ -7,7 +7,7 @@ from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from src.database import Base
-from src.users.models import UserModel
+from src.users.models import ElderModel, UserModel
 
 
 class RequestStatusEnum(StrEnum):
@@ -27,6 +27,11 @@ class RequestModel(Base):
 
     relative_id: Mapped[UUID] = mapped_column(
         ForeignKey('users.id'),
+        nullable=False
+    )
+
+    elder_id: Mapped[UUID] = mapped_column(
+        ForeignKey('elders.id'),
         nullable=False
     )
 
@@ -80,3 +85,4 @@ class RequestModel(Base):
 
     relative: Mapped[UserModel] = relationship('UserModel', foreign_keys=[relative_id])
     volunteer: Mapped[UserModel] = relationship('UserModel', foreign_keys=[volunteer_id])
+    elder: Mapped[ElderModel] = relationship('ElderModel', foreign_keys=[elder_id])
