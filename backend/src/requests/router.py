@@ -2,11 +2,11 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import delete, select
 
 from src.database import SessionDep
 from src.requests.models import RequestModel, RequestStatusEnum
-from src.requests.schemas import RequestCreationResponseSchema, RequestCreationSchema, RequestResponseSchema
+from src.requests.schemas import RequestCreationResponseSchema, RequestCreationSchema, RequestResponseSchema, RequestUpdateSchema
 from src.users.dependencies import get_current_user
 from src.users.models import ElderModel, UserModel
 
@@ -140,3 +140,75 @@ async def get_request_by_id(
         )
 
     return request
+
+
+@request_router.patch(
+    '/api/v1/requests/{request_id}',
+    response_model=RequestResponseSchema,
+    tags=['requests']
+)
+async def update_request(
+    request_id: UUID,
+    request_data: RequestUpdateSchema,
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user)
+):
+    result = await session.execute(
+        select(RequestModel)
+        .where(RequestModel.id == request_id)
+    )
+    request = result.scalar_one_or_none()
+
+    if not request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Request not found'
+        )
+
+    if user.id != request.relative_id and user.id != request.volunteer_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You do not have permission to update this request'
+        )
+
+    update_data = request_data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(request, key, value)
+
+    await session.commit()
+    await session.refresh(request)
+
+    return request
+
+
+@request_router.delete(
+    '/api/v1/requests/{request_id}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=['requests']
+)
+async def delete_request(
+    request_id: UUID,
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user)
+):
+    result = await session.execute(
+        select(RequestModel).where(RequestModel.id == request_id)
+    )
+    request = result.scalar_one_or_none()
+
+    if not request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Request not found'
+        )
+
+    if user.id != request.relative_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You cannot delete this request'
+        )
+
+    await session.execute(delete(RequestModel).where(RequestModel.id == request_id))
+    await session.commit()
+
+    return None

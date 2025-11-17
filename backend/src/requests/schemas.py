@@ -31,3 +31,11 @@ class RequestResponseSchema(BaseModel):
     scheduled_time: str
     status: RequestStatusEnum
     created_at: datetime
+
+
+class RequestUpdateSchema(BaseModel):
+    check_list: list[str] | None
+    description: str | None
+    address: str | None
+    scheduled_time: datetime | None
+    status: RequestStatusEnum | None
