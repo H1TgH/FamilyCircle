@@ -2,7 +2,7 @@ from datetime import datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import DateTime as PGDateTime, Enum, ForeignKey, String, func
+from sqlalchemy import ARRAY, DateTime as PGDateTime, Enum, ForeignKey, String, func
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -33,6 +33,11 @@ class RequestModel(Base):
     volunteer_id: Mapped[UUID] = mapped_column(
         ForeignKey('users.id'),
         nullable=True
+    )
+
+    check_list: Mapped[list[str]] = mapped_column(
+        ARRAY(String),
+        nullable=False
     )
 
     category: Mapped[str] = mapped_column(
