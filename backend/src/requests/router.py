@@ -124,24 +124,19 @@ async def get_available_requests(
 )
 async def get_request_by_id(
     request_id: UUID,
-    session: SessionDep = Depends(),
+    session: SessionDep,
     user: UserModel = Depends(get_current_user)
 ):
     result = await session.execute(
-        select(RequestModel).where(RequestModel.id == request_id)
+        select(RequestModel)
+        .where(RequestModel.id == request_id)
     )
     request = result.scalar_one_or_none()
 
-    if not request:
+    if request is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='Request not found'
-        )
-
-    if request.relative_id != user.id and request.volunteer_id != user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail='You do not have access to this request'
         )
 
     return request
