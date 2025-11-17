@@ -1,9 +1,12 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from datetime import datetime
+from uuid import UUID
+
+from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import select
 
 from src.database import SessionDep
 from src.requests.models import RequestModel, RequestStatusEnum
-from src.requests.schemas import RequestCreationResponseSchema, RequestCreationSchema
+from src.requests.schemas import RequestCreationResponseSchema, RequestCreationSchema, RequestResponseSchema
 from src.users.dependencies import get_current_user
 from src.users.models import ElderModel, UserModel
 
@@ -58,3 +61,87 @@ async def create_requests(
     return {
         'request_id': new_request.id
     }
+
+
+@request_router.get(
+    '/api/v1/requests/me',
+    response_model=list[RequestResponseSchema],
+    tags=['requests']
+)
+async def get_requests_list(
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user),
+    limit: int = Query(15, ge=1, le=40),
+    cursor: datetime | None = Query(None)
+):
+    query = select(RequestModel).where(
+        RequestModel.relative_id == user.id
+    )
+
+    if cursor:
+        query = query.where(RequestModel.created_at < cursor)
+
+    query = query.order_by(RequestModel.created_at.desc()).limit(limit)
+
+    result = await session.execute(query)
+    requests = result.scalars().all()
+
+    return requests
+
+
+@request_router.get(
+    '/api/v1/requests/available',
+    response_model=list[RequestResponseSchema],
+    tags=['requests']
+)
+async def get_available_requests(
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user),
+    category: str | None = Query(None),
+    limit: int = Query(30, ge=1, le=60),
+    cursor: datetime | None = Query(None)
+):
+    query = select(RequestModel).where(RequestModel.status == RequestStatusEnum.OPEN)
+
+    if category:
+        query = query.where(RequestModel.category == category)
+
+    if cursor:
+        query = query.where(RequestModel.created_at < cursor)
+
+    query = query.order_by(RequestModel.created_at.desc()).limit(limit)
+
+    result = await session.execute(query)
+    requests = result.scalars().all()
+
+    return requests
+
+
+@request_router.get(
+    '/api/v1/requests/{request_id}',
+    response_model=RequestResponseSchema,
+    tags=['requests']
+)
+async def get_request_by_id(
+    request_id: UUID,
+    session: SessionDep = Depends(),
+    user: UserModel = Depends(get_current_user)
+):
+    result = await session.execute(
+        select(RequestModel).where(RequestModel.id == request_id)
+    )
+    request = result.scalar_one_or_none()
+
+    if not request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Request not found'
+        )
+
+    if request.relative_id != user.id and request.volunteer_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You do not have access to this request'
+        )
+
+    return request

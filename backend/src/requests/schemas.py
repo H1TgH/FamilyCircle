@@ -3,6 +3,8 @@ from uuid import UUID
 
 from pydantic import BaseModel
 
+from src.requests.models import RequestStatusEnum
+
 
 class RequestCreationSchema(BaseModel):
     elder_id: UUID
@@ -15,3 +17,17 @@ class RequestCreationSchema(BaseModel):
 
 class RequestCreationResponseSchema(BaseModel):
     request_id: UUID
+
+
+class RequestResponseSchema(BaseModel):
+    id: UUID
+    relative_id: UUID
+    elder_id: UUID
+    volunteer_id: UUID | None
+    check_list: str
+    category: str
+    description: str
+    address: str
+    scheduled_time: str
+    status: RequestStatusEnum
+    created_at: datetime
