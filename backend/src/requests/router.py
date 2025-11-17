@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import delete, select
 
 from src.database import SessionDep
-from src.requests.models import RequestModel, RequestStatusEnum
+from src.requests.models import ElderModel, RequestModel, RequestStatusEnum
 from src.requests.schemas import (
     RequestCreationResponseSchema,
     RequestCreationSchema,
@@ -13,7 +13,7 @@ from src.requests.schemas import (
     RequestUpdateSchema,
 )
 from src.users.dependencies import get_current_user
-from src.users.models import ElderModel, UserModel
+from src.users.models import UserModel
 
 
 request_router = APIRouter()
