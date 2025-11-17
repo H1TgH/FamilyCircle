@@ -7,13 +7,16 @@ from sqlalchemy import delete, select
 from src.database import SessionDep
 from src.requests.models import ElderModel, RequestModel, RequestStatusEnum
 from src.requests.schemas import (
+    ElderCreationSchema,
+    ElderResponseSchema,
+    ElderUpdateSchema,
     RequestCreationResponseSchema,
     RequestCreationSchema,
     RequestResponseSchema,
     RequestUpdateSchema,
 )
 from src.users.dependencies import get_current_user
-from src.users.models import UserModel
+from src.users.models import RoleEnum, UserModel
 
 
 request_router = APIRouter()
@@ -59,7 +62,7 @@ async def create_requests(
         status=RequestStatusEnum.OPEN
     )
 
-    await session.add(new_request)
+    session.add(new_request)
     await session.commit()
     await session.refresh(new_request)
 
@@ -164,7 +167,7 @@ async def update_request(
     )
     request = result.scalar_one_or_none()
 
-    if not request:
+    if request is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='Request not found'
@@ -201,7 +204,7 @@ async def delete_request(
     )
     request = result.scalar_one_or_none()
 
-    if not request:
+    if request is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='Request not found'
@@ -214,6 +217,165 @@ async def delete_request(
         )
 
     await session.execute(delete(RequestModel).where(RequestModel.id == request_id))
+    await session.commit()
+
+    return None
+
+
+@request_router.post(
+    '/api/v1/elders',
+    response_model=ElderResponseSchema,
+    status_code=status.HTTP_201_CREATED,
+    tags=['elders']
+)
+async def create_elder(
+    elder_data: ElderCreationSchema,
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user)
+):
+    if user.role != RoleEnum.RELATIVE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Only relatives can create elders'
+        )
+
+    new_elder = ElderModel(
+        relative_id=user.id,
+        full_name=elder_data.full_name,
+        birthday=elder_data.birthday,
+        health_status=elder_data.health_status,
+        physical_limitations=elder_data.physical_limitations,
+        disease=elder_data.disease,
+        address=elder_data.address,
+        features=elder_data.features,
+        hobbies=elder_data.hobbies,
+        comments=elder_data.comments
+    )
+
+    if elder_data.avatar_url is not None:
+        new_elder.avatar_url = elder_data.avatar_url
+
+    session.add(new_elder)
+    await session.commit()
+    await session.refresh(new_elder)
+
+    return new_elder
+
+
+@request_router.get(
+    '/api/v1/elders/me',
+    response_model=list[ElderResponseSchema],
+    tags=['elders']
+)
+async def get_my_elders(
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user)
+):
+    result = await session.execute(
+        select(ElderModel)
+        .where(ElderModel.relative_id == user.id)
+    )
+    elders = result.scalars().all()
+
+    return elders
+
+
+@request_router.get(
+    '/api/v1/elders/{elder_id}',
+    response_model=ElderResponseSchema,
+    tags=['elders']
+)
+async def get_elder(
+    elder_id: UUID,
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user)
+):
+    result = await session.execute(
+        select(ElderModel)
+        .where(ElderModel.id == elder_id)
+    )
+    elder = result.scalar_one_or_none()
+
+    if elder is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Elder not found'
+        )
+
+    if user.role == RoleEnum.RELATIVE and elder.relative_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You do not have access to this elder'
+        )
+
+    return elder
+
+
+@request_router.patch(
+    '/api/v1/elders/{elder_id}',
+    response_model=ElderResponseSchema,
+    tags=['elders']
+)
+async def update_elder(
+    elder_id: UUID,
+    elder_data: ElderUpdateSchema,
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user)
+):
+    result = await session.execute(
+        select(ElderModel)
+        .where(ElderModel.id == elder_id)
+    )
+    elder = result.scalar_one_or_none()
+
+    if elder is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Elder not found'
+        )
+
+    if elder.relative_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You cannot update this elder'
+        )
+
+    update_data = elder_data.model_dump(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(elder, key, value)
+
+    await session.commit()
+    await session.refresh(elder)
+
+    return elder
+
+
+@request_router.delete(
+    '/api/v1/elders/{elder_id}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=['elders']
+)
+async def delete_elder(
+    elder_id: UUID,
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user)
+):
+    result = await session.execute(select(ElderModel).where(ElderModel.id == elder_id))
+    elder = result.scalar_one_or_none()
+
+    if elder is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Elder not found'
+        )
+
+    if elder.relative_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You cannot delete this elder'
+        )
+
+    await session.execute(delete(ElderModel).where(ElderModel.id == elder_id))
     await session.commit()
 
     return None
