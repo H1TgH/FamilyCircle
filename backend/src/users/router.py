@@ -63,6 +63,7 @@ async def _register_user(
         password=hashed_password,
         birthday=getattr(user_data, 'birthday', None),
         role=role,
+        is_has_avatar=False
     )
 
     session.add(user)
