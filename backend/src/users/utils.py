@@ -1,9 +1,12 @@
 from datetime import UTC, datetime, timedelta
+from io import BytesIO
 from typing import Any
 from uuid import UUID
 
 import jwt
+from fastapi import UploadFile
 from passlib.context import CryptContext
+from PIL import Image
 
 from src.config import config
 from src.minio import MinioClient
@@ -76,3 +79,17 @@ async def get_avatar_presigned_url(user: UserModel) -> str | None:
         )
 
         return url
+
+
+async def convert_to_webp(uploaded: UploadFile) -> bytes:
+    raw_data = await uploaded.read()
+
+    buffer_in = BytesIO(raw_data)
+    image = Image.open(buffer_in)
+    image = image.convert('RGB')
+
+    buffer_out = BytesIO()
+    image.save(buffer_out, format='WEBP', quality=85)
+    buffer_out.seek(0)
+
+    return buffer_out.read()
