@@ -11,11 +11,33 @@ services:
       - postgres
 
   postgres:
-    image: postgres:latest
+    image: postgres:18.1-alpine
     volumes:
       - postgres_data:/var/lib/postgresql
     env_file:
       - ".env"
 
+  minio:
+    image: minio/minio:RELEASE.2025-09-07T16-13-09Z
+    command: server /s3_data --console-address ":9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    env_file:
+      - ".env"
+    volumes:
+      - minio_data:/s3_data
+
+  minio_setup:
+    image: minio/mc
+    depends_on:
+      - minio
+    entrypoint: ["/bin/sh", "/minio_setup.sh"]
+    env_file:
+      - ".env"
+    volumes:
+      - ./minio_setup.sh:/minio_setup.sh
+
 volumes:
   postgres_data:
+  minio_data:
