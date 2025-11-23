@@ -1,3 +1,5 @@
+from typing import Dict
+
 from pydantic import Field
 from pydantic.types import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -31,34 +33,30 @@ class SecureConfig(BaseConfig):
 
 
 class MinioConfig(BaseConfig):
-    avatars_bucket: str
-    reports_bucket: str
-    minio_url: str
+    buckets: str
+    url: str
     root_user: SecretStr
     root_password: SecretStr
 
-    @classmethod
-    def from_env_buckets(cls):
-        import os
-        raw = os.getenv('MINIO_BUCKETS', '')
-        mapping = {}
-        for item in raw.split(','):
-            if not item:
+    model_config = SettingsConfigDict(
+        env_prefix='MINIO_'
+    )
+
+    @property
+    def define_buckets(self) -> Dict[str, str]:
+        buckets = {}
+        for item in self.buckets.split(','):
+            if not item or ':' not in item:
                 continue
-            key, value = item.split(':')
-            mapping[f'{key}_bucket'] = value
-
-        mapping['minio_url'] = os.getenv('MINIO_URL')
-        mapping['root_user'] = os.getenv('MINIO_ROOT_USER')
-        mapping['root_password'] = os.getenv('MINIO_ROOT_PASSWORD')
-
-        return cls(**mapping)
+            key, value = item.split(':', 1)
+            buckets[key.strip()] = value.strip()
+        return buckets
 
 
 class Config(BaseSettings):
     db: DataBaseConfig = Field(default_factory=DataBaseConfig)
     secure: SecureConfig = Field(default_factory=SecureConfig)
-    minio: MinioConfig = Field(default_factory=MinioConfig.from_env_buckets)
+    minio: MinioConfig = Field(default_factory=MinioConfig)
 
     @classmethod
     def load(cls):
