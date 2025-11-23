@@ -16,6 +16,7 @@ dependencies = [
     "sqlalchemy>=2.0.44",
     "uvicorn>=0.38.0",
     "bcrypt==4.3.0",
+    "aioboto3>=15.5.0",
 ]
 
 [tool.ruff]
