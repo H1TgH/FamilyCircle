@@ -19,6 +19,7 @@ from src.users.schemas import (
     VolunteerRegistrationSchema,
 )
 from src.users.utils import (
+    convert_to_webp,
     create_access_token,
     create_refresh_token,
     decode_token,
@@ -365,10 +366,14 @@ async def update_user(
             )
 
         minio_client = MinioClient(bucket_name=bucket_name)
-        avatar_key = f'user_{current_user.id}.'
-        data = await avatar.read()
+        avatar_key = f'user_{current_user.id}.webp'
+        data = await convert_to_webp(avatar)
 
-        await minio_client.upload_file(file_name=avatar_key, data=data, content_type='image/png')
+        await minio_client.upload_file(
+            file_name=avatar_key,
+            data=data,
+            content_type='image/webp'
+        )
 
         await session.execute(
             update(UserModel)
