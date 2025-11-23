@@ -1,4 +1,9 @@
+from uuid import UUID
+
+from fastapi import Form
 from pydantic import BaseModel, EmailStr, PastDate
+
+from src.users.models import RoleEnum
 
 
 class UserRegistrationSchema(BaseModel):
@@ -31,3 +36,51 @@ class LoginRequestSchema(BaseModel):
 
 class RefreshTokenRequestSchema(BaseModel):
     refresh_token: str
+
+
+class UserSchema(BaseModel):
+    id: UUID
+    login: str
+    email: str
+    surname: str
+    name: str
+    patronymic: str | None
+    phone_number: str
+    birthday: PastDate | None
+    role: RoleEnum
+    is_has_avatar: bool
+    avatar_presigned_url: str | None = None
+
+    class Config:
+        from_attributes = True
+
+
+class UserUpdateSchema(BaseModel):
+    login: str | None = None
+    email: EmailStr | None = None
+    surname: str | None = None
+    name: str | None = None
+    patronymic: str | None = None
+    phone_number: str | None = None
+    birthday: PastDate | None = None
+
+    @classmethod
+    def as_form(
+        cls,
+        login: str | None = Form(None),
+        email: str | None = Form(None),
+        surname: str | None = Form(None),
+        name: str | None = Form(None),
+        patronymic: str | None = Form(None),
+        phone_number: str | None = Form(None),
+        birthday: PastDate | None = Form(None)
+    ):
+        return cls(
+            login=login,
+            email=email,
+            surname=surname,
+            name=name,
+            patronymic=patronymic,
+            phone_number=phone_number,
+            birthday=birthday
+        )
