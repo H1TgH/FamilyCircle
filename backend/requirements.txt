@@ -76,6 +76,8 @@ multidict==6.7.0
     #   yarl
 passlib==1.7.4
     # via family-circle
+pillow==12.0.0
+    # via family-circle
 propcache==0.4.1
     # via
     #   aiohttp
