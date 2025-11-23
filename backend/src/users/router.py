@@ -1,18 +1,31 @@
 from datetime import UTC, datetime
+from uuid import UUID
 
-from fastapi import APIRouter, HTTPException, status
-from sqlalchemy import delete, or_, select
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from sqlalchemy import delete, or_, select, update
 
+from src.config import config
 from src.database import SessionDep
+from src.minio import MinioClient
+from src.users.dependencies import get_current_user
 from src.users.models import RefreshTokenModel, RoleEnum, UserModel
 from src.users.schemas import (
     LoginRequestSchema,
     RefreshTokenRequestSchema,
     RelativeRegistrationSchema,
     TokenResponseSchema,
+    UserSchema,
+    UserUpdateSchema,
     VolunteerRegistrationSchema,
 )
-from src.users.utils import create_access_token, create_refresh_token, decode_token, get_password_hash, verify_password
+from src.users.utils import (
+    create_access_token,
+    create_refresh_token,
+    decode_token,
+    get_avatar_presigned_url,
+    get_password_hash,
+    verify_password,
+)
 
 
 users_router = APIRouter()
@@ -280,3 +293,100 @@ async def logout(
         await session.commit()
 
     return None
+
+
+@users_router.get(
+    '/api/v1/users/me',
+    response_model=UserSchema,
+    tags=['users']
+)
+async def get_me(user: UserModel = Depends(get_current_user)):
+    avatar_url = await get_avatar_presigned_url(user)
+
+    user_schema = UserSchema.model_validate(user)
+    data = user_schema.model_dump()
+    data['avatar_presigned_url'] = avatar_url
+
+    return data
+
+
+@users_router.get(
+    '/api/v1/users/{user_id}',
+    response_model=UserSchema,
+    tags=['users']
+)
+async def get_user_by_id(
+    user_id: UUID,
+    session: SessionDep
+):
+    result = await session.execute(select(UserModel).where(UserModel.id == user_id))
+    user = result.scalar_one_or_none()
+
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='User not found'
+        )
+
+    presigned_url = await get_avatar_presigned_url(user)
+
+    return UserSchema.model_validate({
+        **user.__dict__,
+        'avatar_presigned_url': presigned_url
+    })
+
+
+@users_router.put(
+    '/api/v1/users/me',
+    response_model=UserSchema,
+    tags=['users']
+)
+async def update_user(
+    session: SessionDep,
+    update_data: UserUpdateSchema = Depends(UserUpdateSchema.as_form),
+    current_user: UserModel = Depends(get_current_user),
+    avatar: UploadFile | None = File(None)
+):
+    if update_data:
+        update_fields = update_data.model_dump(exclude_none=True)
+        if update_fields:
+            await session.execute(
+                update(UserModel)
+                .where(UserModel.id == current_user.id)
+                .values(**update_fields)
+            )
+
+    if avatar:
+        bucket_name = config.minio.define_buckets['avatars']
+        if not bucket_name:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='Avatars bucket not configured'
+            )
+
+        minio_client = MinioClient(bucket_name=bucket_name)
+        avatar_key = f'user_{current_user.id}.'
+        data = await avatar.read()
+
+        await minio_client.upload_file(file_name=avatar_key, data=data, content_type='image/png')
+
+        await session.execute(
+            update(UserModel)
+            .where(UserModel.id == current_user.id)
+            .values(is_has_avatar=True)
+        )
+
+    await session.commit()
+
+    result = await session.execute(
+        select(UserModel)
+        .where(UserModel.id == current_user.id)
+    )
+    updated_user = result.scalar_one()
+
+    presigned_url = await get_avatar_presigned_url(updated_user)
+
+    return UserSchema.model_validate({
+        **updated_user.__dict__,
+        'avatar_presigned_url': presigned_url
+    })
