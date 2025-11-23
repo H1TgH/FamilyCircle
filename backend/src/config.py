@@ -1,5 +1,3 @@
-from typing import Dict
-
 from pydantic import Field
 from pydantic.types import SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -43,7 +41,7 @@ class MinioConfig(BaseConfig):
     )
 
     @property
-    def define_buckets(self) -> Dict[str, str]:
+    def define_buckets(self) -> dict[str, str]:
         buckets = {}
         for item in self.buckets.split(','):
             if not item or ':' not in item:

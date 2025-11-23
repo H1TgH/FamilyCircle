@@ -1,5 +1,7 @@
-from aioboto3.session import Session
 from contextlib import asynccontextmanager
+
+from aioboto3.session import Session
+
 from src.config import config
 
 
