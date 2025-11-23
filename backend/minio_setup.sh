@@ -10,9 +10,11 @@ done
 echo "MinIO is up! Creating buckets..."
 
 IFS=',' read -ra BUCKETS <<< "$MINIO_BUCKETS"
-for BUCKET in "${BUCKETS[@]}"; do
-    echo "Creating bucket: $BUCKET"
-    mc mb myminio/$BUCKET --ignore-existing
+for BUCKET_PAIR in "${BUCKETS[@]}"; do
+    NAME="${BUCKET_PAIR##*:}"
+    echo "Creating bucket: $NAME"
+    mc mb myminio/$NAME --ignore-existing
 done
+
 
 echo "Buckets created successfully!"

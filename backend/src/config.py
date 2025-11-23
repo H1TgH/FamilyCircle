@@ -30,9 +30,33 @@ class SecureConfig(BaseConfig):
     refresh_ttl: int = Field(alias='REFRESH_TOKEN_EXPIRE_DAYS')
 
 
+class MinioConfig(BaseConfig):
+    avatars_bucket: str
+    reports_bucket: str
+    root_user: SecretStr
+    root_password: SecretStr
+
+    @classmethod
+    def from_env_buckets(cls):
+        import os
+        raw = os.getenv('MINIO_BUCKETS', '')
+        mapping = {}
+        for item in raw.split(','):
+            if not item:
+                continue
+            key, value = item.split(':')
+            mapping[f'{key}_bucket'] = value
+
+        mapping['root_user'] = os.getenv('MINIO_ROOT_USER')
+        mapping['root_password'] = os.getenv('MINIO_ROOT_PASSWORD')
+
+        return cls(**mapping)
+
+
 class Config(BaseSettings):
     db: DataBaseConfig = Field(default_factory=DataBaseConfig)
     secure: SecureConfig = Field(default_factory=SecureConfig)
+    minio: MinioConfig = Field(default_factory=MinioConfig.from_env_buckets)
 
     @classmethod
     def load(cls):
