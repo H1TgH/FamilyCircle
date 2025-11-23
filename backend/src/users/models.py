@@ -76,6 +76,12 @@ class UserModel(Base):
         nullable=False
     )
 
+    is_has_avatar: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         PGDateTime(timezone=True),
         nullable=False,
