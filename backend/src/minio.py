@@ -17,7 +17,7 @@ class MinioClient:
             's3',
             aws_access_key_id=config.minio.root_user.get_secret_value(),
             aws_secret_access_key=config.minio.root_password.get_secret_value(),
-            endpoint_url=config.minio.minio_url
+            endpoint_url=config.minio.url
         ) as client:
             yield client
 
