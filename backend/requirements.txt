@@ -97,6 +97,8 @@ python-dateutil==2.9.0.post0
     #   botocore
 python-dotenv==1.2.1
     # via pydantic-settings
+python-multipart==0.0.20
+    # via family-circle
 ruff==0.14.3
     # via family-circle
 s3transfer==0.14.0
