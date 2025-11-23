@@ -33,6 +33,7 @@ class SecureConfig(BaseConfig):
 class MinioConfig(BaseConfig):
     avatars_bucket: str
     reports_bucket: str
+    minio_url: str
     root_user: SecretStr
     root_password: SecretStr
 
@@ -47,6 +48,7 @@ class MinioConfig(BaseConfig):
             key, value = item.split(':')
             mapping[f'{key}_bucket'] = value
 
+        mapping['minio_url'] = os.getenv('MINIO_URL')
         mapping['root_user'] = os.getenv('MINIO_ROOT_USER')
         mapping['root_password'] = os.getenv('MINIO_ROOT_PASSWORD')
 
