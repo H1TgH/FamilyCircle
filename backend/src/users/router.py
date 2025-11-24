@@ -6,7 +6,8 @@ from sqlalchemy import delete, or_, select, update
 
 from src.config import config
 from src.database import SessionDep
-from src.minio import MinioClient
+from src.s3_storage.client import MinioClient
+from src.s3_storage.utils import convert_to_webp, get_avatar_presigned_url
 from src.users.dependencies import get_current_user
 from src.users.models import RefreshTokenModel, RoleEnum, UserModel
 from src.users.schemas import (
@@ -19,11 +20,9 @@ from src.users.schemas import (
     VolunteerRegistrationSchema,
 )
 from src.users.utils import (
-    convert_to_webp,
     create_access_token,
     create_refresh_token,
     decode_token,
-    get_avatar_presigned_url,
     get_password_hash,
     verify_password,
 )
@@ -337,7 +336,7 @@ async def get_user_by_id(
     })
 
 
-@users_router.put(
+@users_router.patch(
     '/api/v1/users/me',
     response_model=UserSchema,
     tags=['users']
