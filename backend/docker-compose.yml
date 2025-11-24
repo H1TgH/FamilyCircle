@@ -3,6 +3,7 @@ services:
     build: .
     volumes:
       - ./alembic:/app/alembic
+      - ./src:/app/src 
     ports:
       - "8000:8000"
     env_file:
