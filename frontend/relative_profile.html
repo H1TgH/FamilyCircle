@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="./static/styles/style_relatives.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/awesome/css/all.css" />
+</head>
+
+<body>
+    <header class="header-bar">
+        <div class="logo">
+            <img src="./static/images/logo.png" alt="Family Circle Logo" />
+        </div>
+        <div class="header-icons">
+            <i class="fas fa-bell"></i>
+            <div class="profile-icon">
+                <img src="./static/images/profile.png" alt="Профиль" />
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav-bar">
+        <div class="nav-links-wrapper">
+            <a href="./relative_scroll.html" class="nav-item">
+                <img src="./static/images/lenta.png" alt="Лента иконка" />
+                <span>Лента</span>
+            </a>
+            <a href="#" class="nav-item">
+                <img src="./static/images/list.png" alt="Заявки иконка" />
+                <span>Заявки</span>
+            </a>
+            <a href="#" class="nav-item">
+                <img src="./static/images/thanks.png" alt="Поблагодарить иконка" />
+                <span>Поблагодарить</span>
+            </a>
+        </div>
+    </nav>
+
+    <main class="container">
+        <h2 class="title">Личный кабинет</h2>
+
+        <section class="profile-section">
+            <div class="avatar_photo">
+                <label for="avatar-upload">
+                    <img class="avatar" src="avatar.jpg" alt="Фото пользователя" />
+                </label>
+                <input id="avatar-upload" type="file" accept="image/*" class="avatar-input" />
+            </div>
+            <div class="info">
+                <h3 class="name">Фамилия Имя Отчество</h3>
+                <p class="label">О себе:</p>
+                <p class="label">Контактные данные:</p>
+            </div>
+        </section>
+
+        <div class="divider"></div>
+
+        <div class="button-wrapper">
+            <button class="add-btn" id="showFormBtn">+ Добавить родственника</button>
+        </div>
+        <!-- ФОРМА ДОБАВЛЕНИЯ РОДСТВЕННИКА (изначально скрыта) -->
+        <div id="relativeFormContainer" class="form-container" style="display: none;">
+            <form id="relativeForm" class="relative-form">
+                <div class="relative-card-content">
+                    <div class="avatar_photo">
+                        <label for="avatar-upload">
+                            <img class="avatar" src="avatar.jpg" alt="Фото пользователя" />
+                        </label>
+                        <input id="avatar-upload" type="file" accept="image/*" class="avatar-input" />
+                    </div>
+                    <div class="form-fields-wrapper">
+                        <div class="form-group">
+                            <label for="fullName">ФИО:*</label>
+                            <input type="text" id="fullName" name="fullName" required placeholder="Введите ФИО">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="birthYear">Год рождения:*</label>
+                                <input type="text" id="birthYear" name="birthYear" required placeholder="16.11.1960">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="healthStatus">Состояние здоровья:*</label>
+                                <input type="text" id="healthStatus" name="healthStatus" required
+                                    placeholder="Например: хорошее">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="physicalLimitations">Физические ограничения:</label>
+                                <input type="text" id="physicalLimitations" name="physicalLimitations"
+                                    placeholder="Например: нет">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="diseases">Заболевания:*</label>
+                                <input type="text" id="diseases" name="diseases" required
+                                    placeholder="Например: здоровая">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="address">Адрес проживания:*</label>
+                            <input type="text" id="address" name="address" required
+                                placeholder="г. Екатеринбург, ул.Бебеля 170, кв 30">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="features">Особенности:*</label>
+                            <input type="text" id="features" name="features" required placeholder="-">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="hobbies">Увлечения:*</label>
+                            <input type="text" id="hobbies" name="hobbies" required placeholder="вязание">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="comment">Комментарий:</label>
+                            <textarea id="comment" name="comment" rows="2"
+                                placeholder="Дополнительная информация"></textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn" id="cancelFormBtn">Отмена</button>
+                    <button type="submit" class="save-btn">Сохранить</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Здесь будет отображаться список добавленных родственников -->
+        <div id="relativesList" class="relatives-list">
+            <!-- Добавленные родственники будут здесь -->
+        </div>
+    </main>
+
+    <footer class="footer">
+        <img src="./static/images/logo.png" alt="Logo" class="footer-logo" />
+    </footer>
+
+    <script src="./static/js/modal.js"></script>
+</body>
+
+</html>
