@@ -1,0 +1,694 @@
+/*ЛИЧНЫЙ КАБИНЕТ РОДСТВЕННИКА */
+
+/* --- СБРОС СТИЛЕЙ И ОСНОВА --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+    font-family: Arial, sans-serif, 'Montserrat Alternates';
+}
+
+body {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #ffffff;
+    color: #333;
+}
+
+/* --- ШАПКА --- */
+.header-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    padding: 10px 40px;    
+    background: #FFD3A4;
+
+    height: 70px;       
+}
+
+.logo img {
+    height: 60px;
+    object-fit: contain;
+}
+
+.header-icons {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-icons i {
+    font-size: 20px;
+    color: #8b5a2e;
+}
+
+.profile-icon {
+    width: 40px;
+    height: 40px;
+    background-color: #bd7435;
+    border-radius: 50%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.profile-icon img {
+    height: 24px;
+    width: 24px;
+}
+
+/* --- НАВИГАЦИЯ --- */
+.nav-bar {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+
+    margin-top: 0;         
+    position: relative;
+    z-index: 2;
+}
+
+.nav-links-wrapper {
+    background: #FFF7E5;
+
+    /* ✔ Верхняя граница ровная, нижние — скруглённые */
+    border-radius: 0 0 35px 35px;
+
+    padding: 10px 40px;       
+    height: 55px;           
+
+    width: 55%;
+    min-width: 520px;
+    max-width: 780px;
+
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.nav-item {
+    text-decoration: none;
+    color: #333;
+    font-size: 16px;
+    font-weight: 600;
+
+    display: flex;
+    align-items: center;
+    gap: 6px;
+
+    padding: 6px 14px;
+    border-radius: 16px;
+}
+
+.nav-item img {
+    width: 20px;
+    height: 20px;
+}
+
+.nav-item.active {
+    background: #E6DDC2;
+}
+
+
+/* --- ОСНОВНОЙ КОНТЕНТ (.container) --- */
+
+.container {
+    width: 80%;
+    max-width: 130vh;
+    margin: 40px auto;
+    text-align: center;
+    flex-grow: 1; /* Ключ к "sticky footer" */
+    padding: 20px;
+}
+
+.title {
+    font-size: 24px;
+    margin-bottom: 30px;
+    color: #444;
+}
+
+.profile-section {
+    display: flex;
+    align-items: center;
+    gap: 30px;
+    margin-bottom: 30px;
+    justify-content: center;
+    padding: 20px; /* Добавим отступ для визуала */
+
+}
+
+/* --- АВАТАР --- */
+
+.avatar_photo {
+    position: relative;
+    cursor: pointer;
+    width: 120px;
+    height: 120px;
+}
+
+.avatar {
+    width: 120px;
+    height: 120px;
+    min-width: 120px; /* ← Гарантирует одинаковый размер */
+    min-height: 120px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid #AF6425;
+    transition: transform 0.3s ease;
+}
+
+.avatar:hover {
+    transform: scale(1.05);
+}
+
+.avatar-input {
+    display: none;
+}
+
+/* --- ИНФОРМАЦИОННЫЙ БЛОК --- */
+
+.info {
+    text-align: left;
+    flex-grow: 1;
+}
+
+.name {
+    font-size: 21px;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #222;
+}
+
+.label {
+    margin: 8px 0;
+    font-size: 18px;
+    padding-top: 15px;
+    color: #000000;
+}
+
+/* --- РАЗДЕЛИТЕЛЬ И КНОПКА --- */
+
+.divider {
+    width: 80%;
+    height: 2px;
+    background: #c5a38c;
+    margin: 40px auto;
+}
+
+.add-btn {
+    background: #bd7435;
+    font-family: 'Montserrat Alternates', sans-serif; 
+    color: white;
+    font-weight: bold; 
+    padding: 12px 30px;
+    border: none;
+    border-radius: 50px;
+    font-size: 24px;
+    cursor: pointer;
+    transition: background-color 0.3s ease, transform 0.2s ease;
+    display: inline-block;
+}
+
+.button-wrapper {
+    width: 100%;
+    display: flex; 
+    justify-content: center; 
+    margin: 20px 0; 
+}
+.add-btn:hover {
+    background-color: #a6652f;
+    transform: translateY(-2px);
+}
+
+/* --- ФУТЕР --- */
+
+.footer {
+    background: #FFD3A4;
+    padding: 40px 0;
+    display: flex;
+    justify-content: flex-start; /* Выравнивает содержимое по левому краю */
+    align-items: center; /* Выравнивает по центру по вертикали */
+    border-top: 1px solid #c5a38c;
+}
+
+.footer-logo {
+    height: 89px;
+    margin-bottom: 5px;
+}
+
+/* Стили для формы добавления родственника */
+.form-container {
+    background: #FFF7E6; /* Светло-бежевый фон */
+    border: 1px solid #AF6425; /* Бежевая рамка */
+    border-radius: 50px; /* Слегка скругленные углы */
+    margin: 20px auto;
+    padding: 0;
+    width: 100%; /* Ограничиваем ширину */
+}
+
+.relative-form {
+    padding: 25px 30px;
+}
+
+.relative-card-content {
+    display: flex;
+    align-items: flex-start; /* Выравнивание элементов по верху */
+    gap: 20px;
+    margin-bottom: 20px; /* Отступ перед кнопками */
+}
+
+
+.form-fields-wrapper {
+    flex-grow: 1; /* Занимает оставшееся пространство */
+}
+
+.form-group {
+    margin-bottom: 15px; /* Отступ между группами полей */
+}
+
+.form-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 15px; /* Отступ для ряда */
+}
+
+.form-row .form-group {
+    flex: 1;
+    margin-bottom: 0; /* Убираем лишний отступ у групп внутри ряда */
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+    color: #4c4c4c;
+    font-size: 0.9em;
+    text-align: left;
+    
+}
+
+.form-group input,
+.form-group select,
+.form-group textarea {
+    width: 100%;
+    padding: 5px 0; /* Убираем боковые отступы, оставляем только вертикальные */
+    border: none; /* Убираем все границы */
+    border-bottom: 1px solid #ccc; /* Только нижняя граница */
+    background-color: transparent; /* Прозрачный фон */
+    border-radius: 0; /* Без скругления углов */
+    font-size: 1em;
+    box-sizing: border-box;
+    color: #333;
+}
+
+.form-group input:focus,
+.form-group select:focus,
+.form-group textarea:focus {
+    outline: none;
+    border-bottom-color: #bd7435; /* Цвет подчеркивания при фокусе */
+    box-shadow: none; /* Убираем тень при фокусе */
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 80px;
+    border: 1px solid #ccc; /* Для textarea оставляем полную рамку, если нужно */
+    border-radius: 5px;
+    padding: 10px; /* Возвращаем padding для textarea */
+}
+
+.form-group textarea:focus {
+    border-color: #bd7435;
+}
+
+
+/* Разделителя нет на эталонной картинке */
+.form-divider {
+    display: none;
+}
+
+.form-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.cancel-btn,
+.save-btn {
+    padding: 10px 25px;
+    border: none;
+    border-radius: 5px;
+    font-size: 1em;
+    cursor: pointer;
+    font-weight: 600;
+}
+
+.cancel-btn {
+    background-color: #f0f0f0;
+    color: #666;
+    border: 1px solid #ccc;
+    border-radius: 50px;
+}
+
+.cancel-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.save-btn {
+    background-color: #AF6425;
+    color: white;
+    border-radius: 50px;
+}
+
+.save-btn:hover {
+    background-color: #bd7435;
+}
+
+/* Стили для списка родственников */
+.relatives-list {
+    margin-top: 30px;
+    padding: 0 10px;
+}
+
+.relative-card {
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 15px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+}
+
+.relative-card h4 {
+    margin: 0 0 10px 0;
+    color: #333;
+    font-size: 1.2em;
+}
+
+.relative-card p {
+    margin: 5px 0;
+    color: #666;
+}
+
+/* Адаптивность */
+@media (max-width: 650px) {
+    .relative-card-content {
+        flex-direction: column;
+        align-items: center;
+    }
+
+    .form-row {
+        flex-direction: column;
+        gap: 0;
+    }
+    
+    .form-row .form-group {
+        margin-bottom: 15px;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .cancel-btn,
+    .save-btn {
+        width: 100%;
+    }
+    
+    .relative-form {
+        padding: 20px;
+    }
+}
+
+/* ===== Карточка поста ===== */
+.container_list{
+
+    width: 80%;
+    max-width: 130vh;
+    margin: 40px auto;
+    text-align: center;
+    flex-grow: 1; /* Ключ к "sticky footer" */
+    padding: 20px;
+    border-left: 1px solid #FFD3A4;
+    border-right: 1px solid #FFD3A4;
+}
+.post-card {
+    width: 75%;
+    margin: 40px auto;
+    border: 1px solid #e7cdb7;
+    border-left: 2px solid #e7cdb7;
+    border-right: 2px solid #e7cdb7;
+    border-radius: 8px;
+    background: #ffffff;
+    padding: 25px 30px;
+    font-family: "Inter", sans-serif;
+}
+
+/* ===== Хедер (аватар + инфо + меню) ===== */
+.post-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+/* Левая часть: аватар + инфо */
+.post-user {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.post-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.post-user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.post-name {
+    font-size: 15px;
+    font-weight: 600;
+    color: #3a332c;
+}
+
+.post-task,
+.post-status {
+    font-size: 13px;
+    color: #7b6f64;
+    margin: 0;
+}
+
+/* ===== Кнопка меню (⋮) ===== */
+.post-menu-wrapper {
+    position: relative;
+}
+
+.post-menu-btn {
+    background: none;
+    border: none;
+    font-size: 22px;
+    cursor: pointer;
+    color: #5a524a;
+}
+.post-menu-btn:hover {
+    color: #000;
+}
+
+/* Выпадающее меню */
+.post-menu {
+    position: absolute;
+    right: 0;
+    top: 28px;
+    background: #fff;
+    border: 1px solid #e7cdb7;
+    border-radius: 6px;
+    width: 120px;
+    padding: 5px 0;
+    display: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    z-index: 20;
+}
+
+.menu-item {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 8px 12px;
+    text-align: left;
+    cursor: pointer;
+    font-size: 14px;
+    color: #4d463f;
+}
+.menu-item:hover {
+    background: #f5ece5;
+}
+
+
+/* ===== Основной текст ===== */
+.post-text {
+    margin: 18px 0 22px;
+    font-size: 15px;
+    line-height: 1.5;
+    color: #403a33;
+}
+
+/* ===== Фото + рамки сверху/снизу ===== */
+.post-image-wrapper {
+    border-top: 1px solid #e7cdb7;
+    border-bottom: 1px solid #e7cdb7;
+    padding: 20px 0;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+}
+
+.post-image {
+    width: 60%;
+    border-radius: 6px;
+}
+
+/* ===== Иконки ===== */
+.post-actions {
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    margin-top: 15px;
+}
+
+.post-icon {
+    width: 25px;
+    cursor: pointer;
+    opacity: 0.85;
+}
+.post-icon:hover {
+    opacity: 1;
+}
+
+/* ===== Дата ===== */
+.post-time {
+    text-align: right;
+    font-size: 12px;
+    color: #8f8377;
+    margin-top: 5px;
+}
+/* ===== Обертка кнопки ===== */
+.create-post-wrapper {
+    width: 75%;
+    margin: 20px auto 40px;
+    display: flex;
+    justify-content: right;
+}
+
+/* ===== Кнопка "Создать пост" ===== */
+.create-post-btn {
+    padding: 20px 20px;
+    font-size: 22px;
+    font-weight: 600;
+    color: #fff;
+    background-color: #985D3C;
+    border: none;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+.create-post-btn:hover {
+    background-color: #7b492b;
+}
+.modal {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.3);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+}
+
+.modal-content {
+    background: #fff;
+    width: 600px;
+    max-width: 90%;
+    padding: 30px;
+    border-radius: 14px;
+    border: 1px solid #e5bfa6;
+    position: relative;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-close {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    background: none;
+    border: none;
+    font-size: 26px;
+    cursor: pointer;
+    color: #b77c55;
+}
+
+.modal-title {
+    font-size: 15px;
+    color: #00000080;
+    margin-bottom: 25px;
+    text-align: left;
+    border-bottom: 1px solid #232222;
+}
+
+.modal-upload-area {
+    border: 2px dashed #8c6f5e;
+    border-radius: 20px;
+    padding: 60px 20px;
+    margin-bottom: 25px;
+    color: #00000080;
+    font-size: 18px;
+    text-align: center;
+}
+
+.modal-upload-area input {
+    margin-top: 10px;
+}
+
+.modal-submit {
+    background: #985D3C;
+    color: white;
+    border: none;
+    padding: 12px 35px;
+    font-size: 16px;
+    border-radius: 30px;
+    cursor: pointer;
+    transition: 0.2s;
+    width: auto;       
+    display: inline-block;
+    margin-left: auto;   
+
+}
+
+.modal-submit:hover {
+    background: #9b5933;
+}
+.modal-input {
+    width: 100%;
+    border: none;
+    border-bottom: 1px solid #8c6f5e; /* тонкая линия подчеркивания */
+    padding: 10px 6px 6px 6px;
+    font-size: 15px;
+    color: #4b3b33;
+    outline: none;
+    margin-bottom: 20px;
+    resize: vertical;
+    min-height: 40px;
+    background: transparent;
+    box-sizing: border-box;
+}
