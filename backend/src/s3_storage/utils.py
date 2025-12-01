@@ -22,7 +22,7 @@ async def get_avatar_presigned_url(user: UserModel) -> str | None:
     async with minio_client.get_client() as client:
         url = await client.generate_presigned_url(
             'get_object',
-            Params={'Bucket': bucket_name, 'Key': f'user_{user.id}'},
+            Params={'Bucket': bucket_name, 'Key': f'user_{user.id}.webp'},
             ExpiresIn=600
         )
 
