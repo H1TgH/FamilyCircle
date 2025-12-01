@@ -78,7 +78,10 @@ async def create_report(
         for i, report_image in enumerate(images):
             try:
                 if not report_image.content_type or not report_image.content_type.startswith('image/'):
-                    raise HTTPException(400, detail='File must be an image')
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail='File must be an image'
+                    )
 
                 webp_data = await convert_to_webp(report_image)
 
