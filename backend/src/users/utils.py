@@ -1,6 +1,6 @@
 from datetime import UTC, datetime, timedelta
 from typing import Any
-from uuid import UUID
+from uuid import UUID, uuid4
 
 import jwt
 from passlib.context import CryptContext
@@ -26,7 +26,8 @@ def create_access_token(user_id: UUID, role: RoleEnum) -> str:
         'sub': str(user_id),
         'role': role.value,
         'exp': expire,
-        'type': 'access'
+        'type': 'access',
+        'jti': str(uuid4())
     }
     token = jwt.encode(payload, config.secure.secret_key.get_secret_value(), algorithm=config.secure.algorithm)
     return token
@@ -37,7 +38,8 @@ def create_refresh_token(user_id: UUID) -> tuple[str, datetime]:
     payload = {
         'sub': str(user_id),
         'exp': expire,
-        'type': 'refresh'
+        'type': 'refresh',
+        'jti': str(uuid4())
     }
     token = jwt.encode(payload, config.secure.secret_key.get_secret_value(), algorithm=config.secure.algorithm)
     return token, expire
