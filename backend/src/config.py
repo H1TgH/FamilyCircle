@@ -51,10 +51,15 @@ class MinioConfig(BaseConfig):
         return buckets
 
 
+class RedisConfig(BaseConfig):
+    url: str = Field(alias='REDIS_URL')
+
+
 class Config(BaseSettings):
     db: DataBaseConfig = Field(default_factory=DataBaseConfig)
     secure: SecureConfig = Field(default_factory=SecureConfig)
     minio: MinioConfig = Field(default_factory=MinioConfig)
+    redis: RedisConfig = Field(default_factory=RedisConfig)
 
     @classmethod
     def load(cls):
