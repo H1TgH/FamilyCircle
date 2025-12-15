@@ -1,3 +1,4 @@
+from datetime import datetime
 from uuid import UUID
 
 from pydantic import BaseModel
@@ -29,3 +30,13 @@ class ReportResponseSchema(ReportBaseSchema):
 
     class Config:
         from_attributes = True
+
+
+class ReportFeedSchema(BaseModel):
+    id: UUID
+    description: str
+    created_at: datetime
+    images: list[ReportImageSchema] = []
+    volunteer_name: str
+    volunteer_surname: str
+    request_category: str

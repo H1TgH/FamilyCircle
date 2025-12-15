@@ -35,3 +35,7 @@ class MinioClient:
                 Body=data,
                 ContentType=content_type
             )
+
+    async def delete_file(self, file_name: str):
+        async with self.get_client() as client:
+            await client.delete_object(Bucket=self.bucket_name, Key=file_name)
