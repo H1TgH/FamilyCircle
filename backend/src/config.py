@@ -55,11 +55,20 @@ class RedisConfig(BaseConfig):
     url: str = Field(alias='REDIS_URL')
 
 
+class SmtpConfig(BaseConfig):
+    host: str = Field(alias='SMTP_HOST')
+    port: int = Field(alias='SMTP_PORT')
+    user: str = Field(alias='SMTP_USER')
+    password: SecretStr = Field(alias='SMTP_PASSWORD')
+    sender_name: str = Field(alias='SMTP_FROM')
+
+
 class Config(BaseSettings):
     db: DataBaseConfig = Field(default_factory=DataBaseConfig)
     secure: SecureConfig = Field(default_factory=SecureConfig)
     minio: MinioConfig = Field(default_factory=MinioConfig)
     redis: RedisConfig = Field(default_factory=RedisConfig)
+    smtp: SmtpConfig = Field(default_factory=SmtpConfig)
 
     @classmethod
     def load(cls):
