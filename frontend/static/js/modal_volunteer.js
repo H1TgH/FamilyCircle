@@ -32,9 +32,8 @@ document.addEventListener("DOMContentLoaded", () => {
     // Добавляем вторую карточку
     list.appendChild(completedRow);
 });
-
 document.addEventListener('DOMContentLoaded', function() {
-    // Элементы модального окна
+    // Элементы
     const modal = document.getElementById('reportModal');
     const closeBtn = document.querySelector('.close-btn');
     const cancelBtn = document.querySelector('.cancel-btn');
@@ -44,15 +43,17 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileList = document.getElementById('fileList');
     const reportForm = document.getElementById('reportForm');
     
+    // Элемент для уведомлений (находим контейнер с иконками)
+    const headerIcons = document.querySelector('.header-icons');
+
     let uploadedFiles = [];
 
-    // Открытие модального окна
+    // --- Логика Модального Окна ---
     addReportBtn.addEventListener('click', function() {
         modal.style.display = 'block';
         document.body.style.overflow = 'hidden';
     });
 
-    // Закрытие модального окна
     function closeModal() {
         modal.style.display = 'none';
         document.body.style.overflow = 'auto';
@@ -61,14 +62,13 @@ document.addEventListener('DOMContentLoaded', function() {
     closeBtn.addEventListener('click', closeModal);
     cancelBtn.addEventListener('click', closeModal);
 
-    // Закрытие при клике вне окна
     window.addEventListener('click', function(event) {
         if (event.target === modal) {
             closeModal();
         }
     });
 
-    // Обработка загрузки файлов
+    // --- Логика Загрузки Файлов ---
     uploadArea.addEventListener('click', function() {
         fileInput.click();
     });
@@ -88,7 +88,6 @@ document.addEventListener('DOMContentLoaded', function() {
         e.preventDefault();
         this.style.borderColor = '#e0e0e0';
         this.style.backgroundColor = '#fff';
-        
         if (e.dataTransfer.files.length) {
             handleFiles(e.dataTransfer.files);
         }
@@ -100,7 +99,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // Обработка выбранных файлов
     function handleFiles(files) {
         for (let file of files) {
             if (file.type.startsWith('image/')) {
@@ -111,7 +109,6 @@ document.addEventListener('DOMContentLoaded', function() {
         fileInput.value = '';
     }
 
-    // Отображение загруженных файлов
     function displayFile(file) {
         const fileItem = document.createElement('div');
         fileItem.className = 'file-item';
@@ -121,14 +118,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 <i class="fas fa-image"></i>
                 <span>${file.name} (${formatFileSize(file.size)})</span>
             </div>
-            <button class="remove-file" data-name="${file.name}">
+            <button class="remove-file" type="button" data-name="${file.name}">
                 <i class="fas fa-times"></i>
             </button>
         `;
         
         fileList.appendChild(fileItem);
         
-        // Удаление файла
         const removeBtn = fileItem.querySelector('.remove-file');
         removeBtn.addEventListener('click', function() {
             const fileName = this.getAttribute('data-name');
@@ -137,7 +133,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // Форматирование размера файла
     function formatFileSize(bytes) {
         if (bytes === 0) return '0 Bytes';
         const k = 1024;
@@ -146,7 +141,7 @@ document.addEventListener('DOMContentLoaded', function() {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    // Обработка отправки формы
+    // --- Логика Отправки и УВЕДОМЛЕНИЯ ---
     reportForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -156,21 +151,7 @@ document.addEventListener('DOMContentLoaded', function() {
             alert('Пожалуйста, опишите ваши впечатления');
             return;
         }
-        
-        // Создаем объект FormData для отправки
-        const formData = new FormData();
-        formData.append('report', reportText);
-        
-        uploadedFiles.forEach((file, index) => {
-            formData.append(`photo_${index}`, file);
-        });
-        
-        // Здесь будет отправка данных на сервер
-        console.log('Отправка отчета:', {
-            text: reportText,
-            files: uploadedFiles.map(f => f.name)
-        });
-        
+
         // Имитация отправки
         const submitBtn = document.querySelector('.submit-btn');
         const originalText = submitBtn.textContent;
@@ -179,18 +160,48 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.disabled = true;
         
         setTimeout(() => {
-            alert('Отчет успешно отправлен на проверку!');
+            // 1. Закрываем модальное окно и сбрасываем форму
             closeModal();
             resetForm();
-            
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
-            
-            // Здесь можно обновить интерфейс или показать сообщение об успехе
+
+            // 2. ВЫЗЫВАЕМ УВЕДОМЛЕНИЕ В КОЛОКОЛЬЧИКЕ
+            showBellNotification();
+
         }, 1500);
     });
 
-    // Сброс формы
+    // Функция создания и показа уведомления
+    function showBellNotification() {
+        // Проверяем, есть ли уже окно уведомления, если нет - создаем
+        let popup = document.getElementById('bell-notification-popup');
+        
+        if (!popup) {
+            popup = document.createElement('div');
+            popup.id = 'bell-notification-popup';
+            popup.className = 'notification-popup';
+            // Вставляем ваше сообщение
+            popup.innerHTML = `
+                <p>Вы опубликовали отчет, он пока на проверке, при успешном выполненни задание будет закрыто!</p>
+            `;
+            headerIcons.appendChild(popup);
+        }
+
+        // Показываем уведомление
+        popup.style.display = 'block';
+
+        // Скрываем уведомление автоматически через 6 секунд (опционально)
+        setTimeout(() => {
+            popup.style.display = 'none';
+        }, 6000);
+        
+        // Скрываем при клике на него
+        popup.addEventListener('click', function() {
+            popup.style.display = 'none';
+        });
+    }
+
     function resetForm() {
         document.getElementById('reportText').value = '';
         uploadedFiles = [];

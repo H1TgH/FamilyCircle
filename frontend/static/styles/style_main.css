@@ -56,6 +56,55 @@ body {
     height: 24px;
     width: 24px;
 }
+.header-icons {
+    position: relative;
+    cursor: pointer;
+}
+
+/* Стили для всплывающего окна уведомления */
+.notification-popup {
+    display: none; /* Скрыто по умолчанию */
+    position: absolute;
+    top: 50px; /* Отступ сверху от иконок */
+    right: 50px; /* Сдвиг влево (под колокольчик) */
+    width: 280px;
+    background-color: #ffffff;
+    border: 1px solid #e0e0e0;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+    border-radius: 10px;
+    padding: 15px;
+    z-index: 1000;
+    animation: fadeIn 0.3s ease-in-out;
+}
+
+/* Треугольник сверху (стрелочка) */
+.notification-popup::before {
+    content: "";
+    position: absolute;
+    top: -6px;
+    right: 20px;
+    width: 12px;
+    height: 12px;
+    background: #fff;
+    border-left: 1px solid #e0e0e0;
+    border-top: 1px solid #e0e0e0;
+    transform: rotate(45deg);
+}
+
+/* Текст внутри сообщения */
+.notification-popup p {
+    margin: 0;
+    font-size: 13px;
+    color: #333;
+    line-height: 1.4;
+    font-family: sans-serif;
+}
+
+/* Анимация появления */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
 
 /* --- НАВИГАЦИЯ --- */
 .nav-bar {

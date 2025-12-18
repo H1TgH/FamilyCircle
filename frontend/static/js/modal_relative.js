@@ -291,19 +291,34 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 document.addEventListener("click", function (e) {
+    // Проверяем, был ли клик по кнопке с тремя точками
     const menuBtn = e.target.closest(".post-menu-btn");
-    const menus = document.querySelectorAll(".post-menu");
+    
+    // Все меню на странице
+    const allMenus = document.querySelectorAll(".post-menu");
 
-    // Скрыть все меню
-    menus.forEach(menu => menu.style.display = "none");
+    // Если кликнули НЕ на кнопку меню -> закрываем все открытые меню
+    if (!menuBtn) {
+        allMenus.forEach(menu => menu.style.display = "none");
+        return;
+    }
 
-    // Если нажата кнопка — открыть её меню
-    if (menuBtn) {
-        const menu = menuBtn.parentElement.querySelector(".post-menu");
-        menu.style.display = "block";
+    // Если кликнули НА кнопку меню:
+    // 1. Находим меню, относящееся к этой кнопке
+    const currentMenu = menuBtn.parentElement.querySelector(".post-menu");
+    
+    // 2. Запоминаем его текущее состояние (открыто или нет)
+    const isOpened = currentMenu.style.display === "block";
+
+    // 3. Закрываем вообще все меню (на случай, если открыто другое)
+    allMenus.forEach(menu => menu.style.display = "none");
+
+    // 4. Если наше меню было закрыто — открываем его. 
+    // Если было открыто — оно останется закрытым (благодаря шагу 3).
+    if (!isOpened) {
+        currentMenu.style.display = "block";
     }
 });
-
 
 
 
