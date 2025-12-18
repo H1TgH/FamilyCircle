@@ -41,6 +41,20 @@ services:
     volumes:
       - ./minio_setup.sh:/minio_setup.sh
 
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  celery:
+    build: .
+    command: celery -A src.notifications.celery_app worker -l info
+    env_file:
+      - ".env"
+    depends_on:
+      - redis
+      - postgres
+
 volumes:
   postgres_data:
   minio_data:
