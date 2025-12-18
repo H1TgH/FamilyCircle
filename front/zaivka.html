@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Создание анкеты</title>
+    <link rel="stylesheet" href="/css/zaivka.css">
+</head>
+<body>
+
+    <!-- Шапка -->
+    <header class="header">
+        <img src="/img/logo.png" alt="Логотип" style="width: 100px; height: 65px;">
+        <div style="display: flex;gap: 20px">
+            <img src="/img/icons8-напоминания-64 1.png">
+            <div class="user"><img src="/img/Кнопка _Вотйти_.png" alt=""></div>
+        </div>
+        
+    </header>
+
+    <!-- Основная страница с кнопкой "Создать" и контейнером карточек -->
+    <main class="main">
+        <div>
+            <nav class="nav">
+                <a href="#" style="border-bottom-left-radius: 20px;">Лента</a>
+                <a href="#" style="background-color:#FFAD58;">Заявки</a>
+                <a href="#" style="border-bottom-right-radius: 20px;">Поблагодарить</a>
+            </nav>
+        </div>
+        <div style="margin: 10%;">
+            <button class="create-btn" id="createBtn">+ Создать чек-лист</button>
+        </div>
+        <div class="cards-container" id="cardsContainer"></div>
+    </main>
+
+    <!-- Страница с формой создания анкеты (скрыта по умолчанию) -->
+    <div id="formPage" class="form-page">
+        <!-- Единая форма создания анкеты -->
+        <section class="form-section">
+            <h2>Создание чек-листа</h2>
+
+            <h3>Название чек-листа</h3>
+            <input type="text" id="specialty" placeholder="Введите название чек-листа">
+
+            <h3>Задачи <small>(можно добавить несколько)</small></h3>
+            <div id="tasksContainer">
+                <!-- Задачи будут добавляться динамически -->
+            </div>
+            <button type="button" class="add-task-btn" id="addTaskBtn">+ Добавить задачу</button>
+
+            <h3>Общее время выполнения помощи</h3>
+            <div class="total-time-inputs">
+                <div class="time-input-group">
+                    <label>Часы:</label>
+                    <input type="number" id="totalHours" min="0" placeholder="ЧЧ" value="0">
+                </div>
+                <div class="time-input-group">
+                    <label>Дни:</label>
+                    <input type="number" id="totalDays" min="0" placeholder="ДД" value="0">
+                </div>
+                <div class="time-input-group">
+                    <label>Месяцы:</label>
+                    <input type="number" id="totalMonths" min="0" placeholder="ММ" value="0">
+                </div>
+            </div>
+
+            <h3>Комментарий</h3>
+            <textarea id="comment" placeholder="Введите комментарий..."></textarea>
+
+            <div class="form-buttons">
+                <button class="cancel-btn" id="cancelBtn">Отмена</button>
+                <button class="publish-btn" id="publishBtn">Опубликовать</button>
+            </div>
+            <input type="hidden" id="editCardId" value="">
+        </section>
+    </div>
+
+    <!-- Футер -->
+    <footer class="footer">
+        <div class="logo">
+            <img src="img/logo.png" alt="FAMILY Logo" class="logo-img">
+    </footer>
+
+    <script src="/js/zaivka.js"></script>
+
+</body>
+</html>
