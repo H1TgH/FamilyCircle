@@ -13,6 +13,8 @@ services:
 
   postgres:
     image: postgres:18.1-alpine
+    ports:
+      - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql
     env_file:
@@ -38,6 +40,20 @@ services:
       - ".env"
     volumes:
       - ./minio_setup.sh:/minio_setup.sh
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+
+  celery:
+    build: .
+    command: celery -A src.notifications.celery_app worker -l info
+    env_file:
+      - ".env"
+    depends_on:
+      - redis
+      - postgres
 
 volumes:
   postgres_data:

@@ -3,8 +3,10 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import delete, select
+from sqlalchemy.orm import selectinload
 
 from src.database import SessionDep
+from src.notifications.tasks import send_completion_email
 from src.requests.models import ElderModel, RequestModel, RequestStatusEnum
 from src.requests.schemas import (
     ElderCreationSchema,
@@ -163,9 +165,11 @@ async def update_request(
 ):
     result = await session.execute(
         select(RequestModel)
+        .options(selectinload(RequestModel.elder))
         .where(RequestModel.id == request_id)
     )
     request = result.scalar_one_or_none()
+    old_status = request.status
 
     if request is None:
         raise HTTPException(
@@ -185,6 +189,17 @@ async def update_request(
 
     await session.commit()
     await session.refresh(request)
+
+    new_status = request.status
+
+    if (
+        old_status != RequestStatusEnum.DONE
+        and new_status == RequestStatusEnum.DONE
+    ):
+        send_completion_email.delay(
+            to_email=user.email,
+            elder_name=request.elder.full_name,
+        )
 
     return request
 
