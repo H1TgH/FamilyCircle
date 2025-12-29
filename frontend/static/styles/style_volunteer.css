@@ -519,3 +519,60 @@
         flex-direction: column-reverse;
     } 
 }
+
+/* затемнение фона */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* карточка */
+.modal-card {
+    background: #fff;
+    border-radius: 22px;
+    padding: 32px 36px;
+    width: 560px;
+    position: relative;
+
+    border: 2px solid #f1c29b; /* оранжевая рамка */
+}
+
+/* кнопка закрытия */
+.modal-close {
+    position: absolute;
+    top: 18px;
+    right: 20px;
+    cursor: pointer;
+    font-size: 22px;
+    color: #f1c29b;
+}
+
+.modal-card h3 {
+    margin: 0 0 14px;
+    font-size: 20px;
+}
+
+.modal-card p {
+    margin: 10px 0;          
+    line-height: 1.5;       
+    font-size: 15px;
+}
+
+/* аватар */
+.modal-card img {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* выравнивание */
+.modal-card > div {
+    display: flex;
+    gap: 24px;
+}
