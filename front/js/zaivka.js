@@ -450,3 +450,4 @@ window.viewDetails = viewDetails;
 
 // Для отладки в консоли
 console.log('Файл zavka2.js загружен');
+

@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет волонтера</title>
+    <link rel="stylesheet" href="./static/styles/style_zaivka.css">
+    <link rel="stylesheet" href="./static/styles/style_main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/awesome/css/all.css" />
+</head>
+
+<body>
+    <header class="header-bar">
+        <div class="logo">
+            <img src="./static/images/logo.png" alt="Family Circle Logo" />
+        </div>
+        <div class="header-icons">
+            <i class="fas fa-bell"></i>
+            <div class="profile-icon">
+                <img src="./static/images/profile.png" alt="Профиль" />
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav-bar">
+        <div class="nav-links-wrapper">
+            <a href="./volunteer_scroll.html" class="nav-item">
+                <img src="./static/images/lenta.png" alt="Лента иконка" />
+                <span>Лента</span>
+            </a>
+            <a href="#" class="nav-item active">
+                <img src="./static/images/list.png" alt="Заявки иконка" />
+                <span>Заявки</span>
+            </a>
+            <a href="#" class="nav-item">
+                <img src="./static/images/thanks.png" alt="Поблагодарить иконка" />
+                <span>Поблагодарить</span>
+            </a>
+        </div>
+    </nav>
+
+    <main class="container volunteer-main-list">
+        <div class="requests-list">
+            <!-- КАРТОЧКА 1 -->
+            <div class="request-row">
+                <div class="report-number">1.</div>
+
+                <!-- Карточка родственника -->
+                <div class="relative-card">
+                    <img src="./static/images/avatar.png" alt="Анна">
+                    <p class="name">Иванова<br>Анна<br>Николаевна</p>
+                    <a href="#" class="details-link">Подробнее →</a>
+                </div>
+
+                <!-- Основная карточка задания -->
+                <div class="task-card-wrapper">
+                    <article class="report-card">
+                        <div class="report-date">~ 12.11.2025- 20.12.2025</div>
+                        <h3 class="report-title">Покупка фруктов</h3>
+
+                        <div class="report-body">
+                            <!-- Подопечный -->
+                            <div class="elder-card">
+                                <img src="./static/images/old-women.png">
+                                <p><strong>Иванова<br>Нина Алексеевна</strong></p>
+                                <a href="#" class="details-link">Подробнее →</a>
+                            </div>
+
+                            <div class="task-table">
+                                <div class="task-header">
+                                    <div></div>
+                                    <div>Частота выполнения</div>
+                                    <div>Расписание</div>
+                                </div>
+
+                                <div class="task-row-item">
+                                    <div class="task-item">
+                                        1) Бананы 0.5 кг
+                                        <span class="sub-text">Важно выбирать свежие бананы!</span>
+                                    </div>
+                                    <div class="task-frequency">Еженедельно</div>
+                                    <div class="task-time">10:00</div>
+                                </div>
+                                <div class="task-row-item">
+                                    <div class="task-item">2) Яблоки 3 кг</div>
+                                    <div class="task-frequency">Еженедельно</div>
+                                    <div class="task-time">10:00</div>
+                                </div>
+                                <div class="task-row-item">
+                                    <div class="task-item">3) Виноград 2 кг</div>
+                                    <div class="task-frequency">Ежемесячно</div>
+                                    <div class="task-time">10:00</div>
+                                </div>
+                                <div class="task-row-item">
+                                    <div class="task-item">4) Персики 1 кг</div>
+                                    <div class="task-frequency">Еженедельно</div>
+                                    <div class="task-time">10:00</div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="status">Статус: <span>неоплачен</span></p>
+                    </article>
+                    <button class="respond-btn">Откликнуться</button>
+                </div>
+            </div>
+
+            <!-- КАРТОЧКА 2 (Дубликат для примера) -->
+            <div class="request-row">
+                <div class="report-number">2.</div>
+                <div class="relative-card">
+                    <img src="./static/images/avatar.png" alt="Анна">
+                    <p class="name">Иванова<br>Анна<br>Николаевна</p>
+                    <a href="#" class="details-link">Подробнее →</a>
+                </div>
+                <div class="task-card-wrapper">
+                    <article class="report-card">
+                        <div class="report-date">~ 12.11.2025- 20.12.2025</div>
+                        <h3 class="report-title">Покупка лекарства</h3>
+                        <div class="report-body">
+                            <div class="elder-card">
+                                <img src="./static/images/old-women.png">
+                                <p><strong>Иванова<br>Нина Алексеевна</strong></p>
+                                <a href="#" class="details-link">Подробнее →</a>
+                            </div>
+                            <div class="task-table">
+                                <div class="task-header">
+                                    <div></div>
+                                    <div>Частота выполнения</div>
+                                    <div>Расписание</div>
+                                </div>
+                                <div class="task-row-item">
+                                    <div class="task-item">
+                                        1) Валидол </div>
+                                    <div class="task-frequency">Еженедельно</div>
+                                    <div class="task-time">10:00</div>
+                                </div>
+                                <div class="task-row-item">
+                                    <div class="task-item">2) Аспирин </div>
+                                    <div class="task-frequency">Еженедельно</div>
+                                    <div class="task-time">10:00</div>
+                                </div>
+                                <div class="task-row-item">
+                                    <div class="task-item">3) Кирдиомагнил </div>
+                                    <div class="task-frequency">Еженедельно</div>
+                                    <div class="task-time">10:00</div>
+                                </div>
+                                <div class="task-row-item">
+                                    <div class="task-item">4) Парацетамол</div>
+                                    <div class="task-frequency">Раз в две недели</div>
+                                    <div class="task-time">10:00</div>
+                                </div>
+                            </div>
+                        </div>
+                        <p class="status">Статус: <span>неоплачен</span></p>
+                    </article>
+                    <button class="respond-btn">Откликнуться</button>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <img src="./static/images/logo.png" alt="Logo" class="footer-logo" />
+    </footer>
+
+    <script src="./static/js/zaivka_volunteer.js"></script>
+</body>
+
+</html>
