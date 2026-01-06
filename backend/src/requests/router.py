@@ -169,21 +169,36 @@ async def update_request(
         .where(RequestModel.id == request_id)
     )
     request = result.scalar_one_or_none()
-    old_status = request.status
-
+    
     if request is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail='Request not found'
         )
+    
+    old_status = request.status
 
-    if user.id != request.relative_id and user.id != request.volunteer_id:
+    if request_data.volunteer_id is not None and user.role == RoleEnum.VOLUNTEER:
+        if request.volunteer_id is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Request already has a volunteer assigned'
+            )
+        if request.status != RequestStatusEnum.OPEN:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Can only respond to open requests'
+            )
+        request.volunteer_id = user.id
+        if request_data.status is None:
+            request.status = RequestStatusEnum.IN_PROGRESS
+    elif user.id != request.relative_id and user.id != request.volunteer_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail='You do not have permission to update this request'
         )
 
-    update_data = request_data.model_dump(exclude_unset=True)
+    update_data = request_data.model_dump(exclude_unset=True, exclude={'volunteer_id'})
     for key, value in update_data.items():
         setattr(request, key, value)
 

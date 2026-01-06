@@ -39,7 +39,7 @@ async function loadElders() {
 
 async function loadRequests() {
     try {
-        const response = await fetchWithAuth('/api/v1/requests/me?limit=50');
+        const response = await fetchWithAuth('/api/v1/requests/me?limit=30');
         if (response.ok) {
             const requests = await response.json();
             renderCards(requests);

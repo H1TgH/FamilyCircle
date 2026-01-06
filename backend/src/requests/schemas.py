@@ -39,6 +39,7 @@ class RequestUpdateSchema(BaseModel):
     address: str | None = None
     scheduled_time: datetime | None = None
     status: RequestStatusEnum | None = None
+    volunteer_id: UUID | None = None
 
 
 class ElderCreationSchema(BaseModel):
