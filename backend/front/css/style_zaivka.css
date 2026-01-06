@@ -1,0 +1,310 @@
+/* --- ВКЛАДКИ (TABS) --- */
+.tabs-container {
+    display: flex;
+    justify-content: center;
+    margin: 20px 0 40px 0;
+}
+
+.tab-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 60px;
+    border: 1px solid #F1CBA8;
+    background-color: #fff;
+    font-size: 18px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+.tab-btn img {
+    width: 24px;
+}
+
+.tab-btn.active {
+    background-color: #c66a2e; /* Оранжевый активный цвет */
+}
+
+/* --- КОНТЕЙНЕР --- */
+.volunteer-main-list {
+    max-width: 1200px;
+    margin: 30px auto;
+    padding: 20px;
+}
+
+/* --- СТРОКА ЗАЯВКИ (REQUEST ROW) --- */
+.request-row {
+    display: flex;
+    gap: 20px;
+    margin-bottom: 60px;
+    align-items: flex-start;
+}
+
+.report-number {
+    font-size: 24px;
+    font-weight: bold;
+    color: #555;
+    padding-top: 10px;
+    min-width: 30px;
+}
+
+/* Карточка человека (слева) */
+.relative-card, .elder-card {
+    border: 1px solid #F1CBA8;
+    border-radius: 15px;
+    padding: 15px 10px;
+    text-align: center;
+    width: 150px;
+    background: #fff;
+}
+
+.relative-card img {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 10px;
+}
+
+.elder-card img {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin-bottom: 10px;
+}
+
+.relative-card .name {
+    font-size: 14px;
+    line-height: 1.2;
+    font-weight: 500;
+}
+
+.details-link {
+    display: block;
+    margin-top: 8px;
+    font-size: 12px;
+    color: #888;
+    text-decoration: none;
+}
+
+/* Основная белая карточка с заданием */
+.task-card-wrapper {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.report-card {
+    border: 1px solid #F1CBA8;
+    border-radius: 25px;
+    padding: 30px;
+    position: relative;
+    background-color: #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+}
+
+.report-date {
+    position: absolute;
+    top: 20px;
+    right: 30px;
+    font-size: 13px;
+    color: #999;
+}
+
+.report-title {
+    color: #B06D32;
+    font-size: 24px;
+    margin-bottom: 25px;
+}
+
+/* Внутреннее содержимое карточки */
+.report-body {
+    display: flex;
+    gap: 30px;
+}
+
+/* Таблица заданий справа */
+.task-table {
+    flex-grow: 1;
+}
+
+.task-header, .task-row-item {
+    display: grid;
+    grid-template-columns: 2.5fr 1.5fr 1fr; 
+    column-gap: 27px; 
+    text-align: left; 
+}
+
+.task-header {
+    font-weight: bold;
+    font-size: 14px;
+    margin-bottom: 15px;
+    border-bottom: 1px solid #eee;
+    padding-bottom: 5px;
+}
+
+.task-time, .task-header div:last-child {
+    text-align: right;
+}
+
+.task-item {
+    font-weight: 500;
+}
+
+.sub-text {
+    display: block;
+    font-size: 12px;
+    color: #999;
+    font-weight: normal;
+    margin-top: 4px;
+}
+
+.task-frequency, .task-time {
+    text-align: left;
+}
+
+/* Статус оплаты */
+.status {
+    margin-top: 20px;
+    font-size: 14px;
+}
+
+.status span {
+    font-weight: bold;
+}
+
+/* --- КНОПКА ОТКЛИКНУТЬСЯ --- */
+.respond-btn {
+    align-self: flex-end; 
+    background-color: #985D3C;
+    color: white;
+    border: none;
+    padding: 15px 60px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 15px;
+    cursor: pointer;
+    margin-top: -25px; /* Наложение на карточку */
+    margin-right: 20px;
+    z-index: 10;
+    transition: transform 0.2s, background 0.3s;
+}
+
+.respond-btn:hover {
+    background-color: #8e5627;
+    transform: translateY(-2px);
+}
+
+/* затемнение фона */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* карточка */
+.modal-card {
+    background: #fff;
+    border-radius: 22px;
+    padding: 32px 36px;
+    width: 560px;
+    position: relative;
+
+    border: 2px solid #f1c29b; /* оранжевая рамка */
+}
+
+/* кнопка закрытия */
+.modal-close {
+    position: absolute;
+    top: 18px;
+    right: 20px;
+    cursor: pointer;
+    font-size: 22px;
+    color: #f1c29b;
+}
+
+.modal-card h3 {
+    margin: 0 0 14px;
+    font-size: 20px;
+}
+
+.modal-card p {
+    margin: 10px 0;          
+    line-height: 1.5;       
+    font-size: 15px;
+}
+
+/* аватар */
+.modal-card img {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* выравнивание */
+.modal-card > div {
+    display: flex;
+    gap: 24px;
+}
+
+/* стили для уведомления под колокольчиком */
+.bell-notification-popup {
+    position: absolute;
+    top: 55px;    
+    right: 35px;      
+    width: 280px;
+    background: #ffffff;
+    border: 1px solid #dddee0; 
+    border-radius: 10px;
+    padding: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+    z-index: 1000;
+    font-size: 13px;
+    line-height: 1.4;
+    color: #333;
+    display: none; 
+    animation: fadeInSlide 0.3s ease-out;
+}
+
+.bell-notification-popup::before {
+    content: '';
+    position: absolute;
+    top: -10px;
+    right: 20px; 
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid #dddee0;
+}
+
+.bell-notification-popup::after {
+    content: '';
+    position: absolute;
+    top: -8.5px;
+    right: 20px;
+    border-left: 10px solid transparent;
+    border-right: 10px solid transparent;
+    border-bottom: 10px solid #fff;
+}
+
+.bell-notification-popup hr {
+    border: none;
+    border-top: 1px solid #eee;
+    margin: 10px 0;
+}
+
+.notif-subtext {
+    font-size: 12px;
+    color: #666;
+}
+
+@keyframes fadeInSlide {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}

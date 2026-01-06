@@ -1,32 +1,47 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Создание анкеты</title>
-    <link rel="stylesheet" href="/css/zaivka.css">
+    <link rel="stylesheet" href="./css/zaivka.css">
+    <link rel="stylesheet" href="./css/style_main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/awesome/css/all.css" />
 </head>
+
 <body>
 
-    <!-- Шапка -->
-    <header class="header">
-        <img src="/img/logo.png" alt="Логотип" style="width: 100px; height: 65px;">
-        <div style="display: flex;gap: 20px">
-            <img src="/img/icons8-напоминания-64 1.png">
-            <div class="user"><img src="/img/Кнопка _Вотйти_.png" alt=""></div>
+    <header class="header-bar">
+        <div class="logo">
+            <img src="./img/logo.png" alt="Family Circle Logo" />
         </div>
-        
+        <div class="header-icons">
+            <i class="fas fa-bell"></i>
+            <div class="profile-icon">
+                <img src="./img/profile.png" alt="Профиль" />
+            </div>
+        </div>
     </header>
 
-    <!-- Основная страница с кнопкой "Создать" и контейнером карточек -->
-    <main class="main">
-        <div>
-            <nav class="nav">
-                <a href="#" style="border-bottom-left-radius: 20px;">Лента</a>
-                <a href="#" style="background-color:#FFAD58;">Заявки</a>
-                <a href="#" style="border-bottom-right-radius: 20px;">Поблагодарить</a>
-            </nav>
+    <nav class="nav-bar">
+        <div class="nav-links-wrapper">
+            <a href=".relative_scroll" class="nav-item">
+                <img src="./img/lenta.png" alt="Лента иконка" />
+                <span>Лента</span>
+            </a>
+            <a href="#" class="nav-item active">
+                <img src="./img/list.png" alt="Заявки иконка" />
+                <span>Заявки</span>
+            </a>
+            <a href="#" class="nav-item">
+                <img src="./img/thanks.png" alt="Поблагодарить иконка" />
+                <span>Поблагодарить</span>
+            </a>
         </div>
+    </nav>
+    <main class="main">
         <div style="margin: 10%;">
             <button class="create-btn" id="createBtn">+ Создать чек-лист</button>
         </div>
@@ -78,10 +93,11 @@
     <!-- Футер -->
     <footer class="footer">
         <div class="logo">
-            <img src="img/logo.png" alt="FAMILY Logo" class="logo-img">
+            <img src="./img/logo.png" alt="FAMILY Logo" class="logo-img">
     </footer>
 
-    <script src="/js/zaivka.js"></script>
-    <script src="/js/auth.js"></script>
+    <script src="./js/zaivka.js"></script>
+
 </body>
+
 </html>

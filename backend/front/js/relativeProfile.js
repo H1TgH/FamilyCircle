@@ -161,15 +161,18 @@ async function loadElders() {
 
 function updateProfileUI(user) {
     const nameElement = document.querySelector('.profile-section .name');
-    if (nameElement && user.surname && user.name && user.patronymic) {
-        nameElement.textContent = `${user.surname} ${user.name} ${user.patronymic}`;
+    if (nameElement) {
+        const fullName = [user.surname, user.name, user.patronymic]
+            .filter(Boolean)
+            .join(' ');
+        nameElement.textContent = fullName;
     }
     
     const avatarImg = document.querySelector('.profile-section .avatar');
     if (avatarImg && user.avatar_presigned_url) {
         avatarImg.src = user.avatar_presigned_url;
         avatarImg.onerror = function() {
-            this.src = '/img/avatar-placeholder.png';
+            this.src = '/img/profile.png';
         };
     }
 }
@@ -267,9 +270,7 @@ function createElderCard(elder) {
     card.innerHTML = `
         <div class="relative-card-content">
             <div class="avatar_photo">
-                <label for="elder-avatar-${elder.id}">
-                    <img class="avatar" src="${elder.avatar_url || '/img/profile.png'}" alt="${elder.full_name}">
-                </label>
+                <img class="avatar" src="${elder.avatar_url || '/img/profile.png'}" alt="${escapeHtml(elder.full_name)}">
             </div>
             <div class="form-fields-wrapper">
                 <div class="form-group">
@@ -322,8 +323,13 @@ function createElderCard(elder) {
                 ` : ''}
             </div>
         </div>
+        <div class="form-actions">
+            <button type="button" class="cancel-btn edit-elder-btn" data-id="${elder.id}">Редактировать</button>
+            <button type="button" class="save-btn delete-elder-btn" data-id="${elder.id}">Удалить</button>
+        </div>
     `;
 
+    attachElderCardEvents(card);
     return card;
 }
 
@@ -335,12 +341,12 @@ async function submitElderForm(formData) {
                 full_name: formData.fullName,
                 birthday: formatDate(formData.birthYear),
                 health_status: formData.healthStatus,
-                physical_limitations: formData.physicalLimitations || null,
+                physical_limitations: formData.physicalLimitations || '',
                 disease: formData.diseases,
                 address: formData.address,
                 features: formData.features,
                 hobbies: formData.hobbies,
-                comments: formData.comment || null,
+                comments: formData.comment || '',
                 avatar_url: null
             })
         });
@@ -370,12 +376,12 @@ async function updateElder(elderId, formData) {
                 full_name: formData.fullName,
                 birthday: formatDate(formData.birthYear),
                 health_status: formData.healthStatus,
-                physical_limitations: formData.physicalLimitations || null,
+                physical_limitations: formData.physicalLimitations || '',
                 disease: formData.diseases,
                 address: formData.address,
                 features: formData.features,
                 hobbies: formData.hobbies,
-                comments: formData.comment || null
+                comments: formData.comment || ''
             })
         });
 
@@ -428,8 +434,6 @@ function addElderToList(elder) {
 
     const elderCard = createElderCard(elder);
     relativesList.insertBefore(elderCard, relativesList.firstChild);
-    
-    attachElderCardEvents(elderCard);
 }
 
 function updateElderCard(elderId, elderData) {
@@ -437,7 +441,6 @@ function updateElderCard(elderId, elderData) {
     if (card) {
         const newCard = createElderCard(elderData);
         card.parentNode.replaceChild(newCard, card);
-        attachElderCardEvents(newCard);
     }
 }
 

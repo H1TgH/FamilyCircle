@@ -4,10 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="css/style_relatives.css">
+    <title>Лента отчетов</title>
+    <link rel="stylesheet" href="/css/style_relatives.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="/css/awesome/css/all.css" />
 </head>
 
 <body>
@@ -25,11 +24,11 @@
 
     <nav class="nav-bar">
         <div class="nav-links-wrapper">
-            <a href="relative_scroll.html" class="nav-item active">
+            <a href="/relative_scroll" class="nav-item active">
                 <img src="/img/lenta.png" alt="Лента иконка" />
                 <span>Лента</span>
             </a>
-            <a href="#" class="nav-item">
+            <a href="/zaivka" class="nav-item">
                 <img src="/img/list.png" alt="Заявки иконка" />
                 <span>Заявки</span>
             </a>
@@ -42,89 +41,7 @@
 
     <main class="container_list">
         <div class="post-list">
-
-            <section class="post-card">
-
-                <div class="post-header">
-
-                    <div class="post-user">
-                        <img src="/img/avatar.png" class="post-avatar" alt="Аватар">
-
-                        <div class="post-user-info">
-                            <h3 class="post-name">Иванова Анна Алексеевна</h3>
-                            <p class="post-task">Задание: Покупка фруктов</p>
-                            <p class="post-status">Статус: выполнено</p>
-                        </div>
-                    </div>
-
-                    <div class="post-menu-wrapper">
-                        <button class="post-menu-btn">⋮</button>
-
-                        <div class="post-menu">
-                            <button class="menu-item">Изменить</button>
-                            <button class="menu-item">Удалить</button>
-                        </div>
-                    </div>
-                </div>
-
-                <p class="post-text">
-                    Я была безмерно рада помочь Ивановой Нине Алексеевне. Я надеюсь, что мы вновь еще увидимся с этой
-                    прекрасной и веселой женщиной.
-                </p>
-
-                <div class="post-image-wrapper">
-                    <img src="/img/post_1.png" class="post-image" alt="Фото">
-                </div>
-
-                <div class="post-actions">
-                    <img src="/img/heart.svg" class="post-icon" alt="Лайк">
-                    <img src="/img/chat.svg" class="post-icon" alt="Комментарий">
-                </div>
-
-                <p class="post-time">1 м назад</p>
-
-            </section>
-            <section class="post-card">
-
-                <div class="post-header">
-
-                    <div class="post-user">
-                        <img src="/img/avatar.png" class="post-avatar" alt="Аватар">
-
-                        <div class="post-user-info">
-                            <h3 class="post-name">Иванова Анна Алексеевна</h3>
-                            <p class="post-task">Задание: Покупка фруктов</p>
-                            <p class="post-status">Статус: в работе</p>
-                        </div>
-                    </div>
-
-                    <div class="post-menu-wrapper">
-                        <button class="post-menu-btn">⋮</button>
-
-                        <div class="post-menu">
-                            <button class="menu-item">Изменить</button>
-                            <button class="menu-item">Удалить</button>
-                        </div>
-                    </div>
-                </div>
-
-                <p class="post-text">
-                    Только посмотите на этую милую женщину!
-                </p>
-
-                <div class="post-image-wrapper">
-                    <img src="/img/post_2.png" class="post-image" alt="Фото">
-                </div>
-
-                <div class="post-actions">
-                    <img src="/img/heart.svg" class="post-icon" alt="Лайк">
-                    <img src="/img/chat.svg" class="post-icon" alt="Комментарий">
-                </div>
-
-                <p class="post-time">1 н назад</p>
-
-            </section>
-
+            <!-- Посты будут загружены через JS -->
         </div>
         <div class="create-post-wrapper">
             <button class="create-post-btn">Создать пост</button>
@@ -134,24 +51,19 @@
     <footer class="footer">
         <img src="/img/logo.png" alt="Logo" class="footer-logo" />
     </footer>
-    <!-- ================= МОДАЛЬНОЕ ОКНО СОЗДАНИЯ ПОСТА ================= -->
+
+    <!-- Модальное окно создания поста -->
     <div class="modal" id="createPostModal">
         <div class="modal-content">
             <button class="modal-close" id="closeModal">×</button>
-
-            <textarea id="postText" class="modal-input" rows="3"
-                placeholder="Делитесь своими впечатлениями, общайтесь, благодарите!"></textarea>
-
-            <div class="modal-upload-area">
-                <p>Загрузите фотографии</p>
-                <input type="file" id="imageInput" multiple>
-            </div>
-
+            <h3 class="modal-title">Создать отчет</h3>
+            <!-- Форма будет добавлена через JS -->
             <button class="modal-submit">Опубликовать</button>
         </div>
     </div>
 
-    <script src="static/js/modal.js"></script>
+    <script src="/js/auth.js"></script>
+    <script src="/js/reportsFeed.js"></script>
 </body>
 
 </html>

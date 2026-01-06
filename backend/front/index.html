@@ -1,26 +1,103 @@
+<!DOCTYPE html>
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Family Circle - Уход за семьёй</title>
-    <link rel="stylesheet" href="/css/style_index.css">
+    <link rel="stylesheet" href="./css/style_index.css">
+    <style>
+        /* Дополнительные стили для кнопок авторизации */
+        .auth-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        
+        .auth-btn {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 5px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
+        .account-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .account-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .logout-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .logout-btn:hover {
+            background-color: #da190b;
+        }
+        
+        .login-btn {
+            background-color: #2196F3;
+            color: white;
+        }
+        
+        .login-btn:hover {
+            background-color: #0b7dda;
+        }
+        
+        /* Адаптация существующих кнопок */
+        .buttom-input {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 0;
+        }
+        
+        /* Для мобильных устройств */
+        @media (max-width: 768px) {
+            .auth-container {
+                flex-direction: column;
+                gap: 5px;
+            }
+            
+            .auth-btn {
+                width: 100%;
+                justify-content: center;
+            }
+        }
+    </style>
 </head>
 <body>
+    <!-- Шапка -->
     <header class="header">
         <div class="container">
-            <div class="logo"><img class="logo-img" src="/img/logo.png" alt="logo"></div>
+            <div class="logo"><img class="logo-img" src="img/logo.png" alt="logo"></div>
             <nav class="nav">
                 <ul>
-                    <li><a href="/">Главная</a></li>
+                    <li><a href="./index.html">Главная</a></li>
                     <li><a href="#">Вопросы</a></li>
+                    <!-- Дополнительные пункты меню для авторизованных пользователей -->
+                    <li id="relativeNav" style="display: none;"><a href="./relative_profile">Профиль</a></li>
+                    <li id="volunteerNav" style="display: none;"><a href="./volunteer_profile">Профиль</a></li>
                 </ul>
             </nav>
-            <div class="button-cont">
-                <a id="authButton" href="/input">
-                    <button class="buttom-input">
-                        Войти <img src="/img/input.png" style="height: 50px; width: 50px;">
+            <div class="button-cont" id="authButtonsContainer">
+                <!-- Кнопки будут вставлены через JavaScript -->
+                <div class="auth-container" id="authButtons">
+                    <!-- По умолчанию показываем кнопку входа -->
+                    <button class="auth-btn login-btn" onclick="window.location.href='./input'">
+                        Войти <img src="./img/input.png" style="height: 20px; width: 20px;">
                     </button>
-                </a>
+                </div>
             </div>
         </div>
     </header>
@@ -29,36 +106,44 @@
     <section class="hero">
         <div class="container" style="display: flex; justify-content: space-between; padding: 0px;">
             <div class="hero-content">
-                <p>В “Family Grcle" мы верим, что каждый пожилой человек заслуживает внимание и заботу, вне зависимости от расстояния. 
+                <p>В "Family Circle" мы верим, что каждый пожилой человек заслуживает внимание и заботу, вне зависимости от расстояния. 
                     Мы создали онлайн-платформу, где пожилые люди, их родственники и отзывчивые волонтеры могут легко взаимодействовать и оказывать поддержку.</p>
             </div>
             <div class="hero-image">
-                <img src="/img/backround.png">
+                <img src="./img/backround.png">
             </div>
         </div>
     </section>
+
+    <!-- Блок приветствия для авторизованных пользователей -->
+    <div id="welcomeMessage" style="display: none; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; text-align: center;">
+        <div class="container">
+            <h2>Добро пожаловать обратно!</h2>
+            <p id="userGreeting">Вы вошли в систему как <span id="userName">Пользователь</span></p>
+        </div>
+    </div>
 
     <!-- Блоки услуг -->
     <section class="services">
         <div class="container">
             <div class="service-grid">
                 <div class="service-card">
-                    <div class="icon"><img src="/img/help.png" width="150px"></div>
+                    <div class="icon"><img src="./img/help.png" width="150px"></div>
                     <h3>Помощь всегда рядом</h3>
                     <p>Закажите доставку продуктов, лекарств, попросите о помощи по дому или просто организуйте приятную прогулку для вашего близкого.</p>
                 </div>
                 <div class="service-card">
-                    <div class="icon"><img src="/img/photo.png" width="150px"></div>
+                    <div class="icon"><img src="./img/photo.png" width="150px"></div>
                     <h3>Будьте в курсе событий</h3>
                     <p>"Семейная лента" позволит вам видеть, что с вашим родственником все хорошо. Делитесь отчетами, фотографиями и моментами радости!</p>
                 </div>
                 <div class="service-card">
-                    <div class="icon"><img src="/img/photo.png" width="150px"></div>
+                    <div class="icon"><img src="./img/photo.png" width="150px"></div>
                     <h3>Чувствуйте заботу на расстоянии</h3>
                     <p>Мы помогаем создать ощущение присутствия и тепла, даже если вас разделяют километры.</p>
                 </div>
                 <div class="service-card">
-                    <div class="icon"><img src="/img/start.png" width="150px"></div>
+                    <div class="icon"><img src="./img/start.png" width="150px"></div>
                     <h3>Благодарите за доброту</h3>
                     <p>Поддержите волонтеров и выразите им свою благодарность за их бесценную помощь.</p>
                 </div>
@@ -92,10 +177,21 @@
     <section class="cta">
         <div class="container">
             <div class="cta-content">
-                <h2>Станьте частью “Family Grcle” !</h2>
-                <div style="display: flex; justify-content: space-evenly;">
-                    <a href="/zaivka"> <button class="cta-button">Найти поддержку</button></a>
-                    <a href="/regis_V"><button class="cta-button">Стать волонтером</button></a>
+                <h2>Станьте частью "Family Circle" !</h2>
+                <div style="display: flex; justify-content: space-evenly; flex-wrap: wrap; gap: 20px;">
+                    <!-- Ссылки меняются в зависимости от роли пользователя -->
+                    <a href="./zaivka.html" id="findSupportBtn"> 
+                        <button class="cta-button">Найти поддержку</button>
+                    </a>
+                    <a href="./regis_V.html" id="becomeVolunteerBtn">
+                        <button class="cta-button">Стать волонтером</button>
+                    </a>
+                    
+                    <!-- Дополнительные кнопки для авторизованных пользователей -->
+                    <div id="authUserButtons" style="display: none;">
+                        <button class="cta-button" onclick="goToProfile()">Мой профиль</button>
+                        <button class="cta-button" onclick="goToRequests()" id="requestsBtn" style="display: none;">Мои заявки</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -104,10 +200,161 @@
     <!-- Футер -->
     <footer class="footer">
         <div class="container">
-            <div class="logo"><img class="logo-img" src="img/logo.png" alt="logo"></div>
+            <div class="logo"><img class="logo-img" src="./img/logo.png" alt="logo"></div>
         </div>
     </footer>
 
-    <script src="/js/auth.js"></script>
+    <script src="./js/auth.js"></script>
+    <script>
+        // Скрипт для главной страницы
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Инициализация главной страницы');
+            updateNavigation();
+            updatePageContent();
+        });
+
+        function updateNavigation() {
+            const authButtons = document.getElementById('authButtons');
+            const relativeNav = document.getElementById('relativeNav');
+            const volunteerNav = document.getElementById('volunteerNav');
+            
+            if (!authButtons) return;
+            
+            if (isAuthenticated()) {
+                console.log('Пользователь авторизован, обновляем навигацию');
+                
+                // Обновляем кнопки в шапке
+                if (isRelative()) {
+                    authButtons.innerHTML = `
+                        <button class="auth-btn account-btn" onclick="goToProfile()">
+                            Мой профиль
+                        </button>
+                        <button class="auth-btn logout-btn" onclick="logout()">
+                            Выйти
+                        </button>
+                    `;
+                    if (relativeNav) relativeNav.style.display = 'block';
+                    if (volunteerNav) volunteerNav.style.display = 'none';
+                } else if (isVolunteer()) {
+                    authButtons.innerHTML = `
+                        <button class="auth-btn account-btn" onclick="goToProfile()">
+                            Профиль волонтера
+                        </button>
+                        <button class="auth-btn logout-btn" onclick="logout()">
+                            Выйти
+                        </button>
+                    `;
+                    if (relativeNav) relativeNav.style.display = 'none';
+                    if (volunteerNav) volunteerNav.style.display = 'block';
+                }
+            } else {
+                // Кнопки для неавторизованных пользователей
+                authButtons.innerHTML = `
+                    <button class="auth-btn login-btn" onclick="window.location.href='./input'">
+                        Войти <img src="./img/input.png" style="height: 20px; width: 20px;">
+                    </button>
+                `;
+                if (relativeNav) relativeNav.style.display = 'none';
+                if (volunteerNav) volunteerNav.style.display = 'none';
+            }
+        }
+
+        function updatePageContent() {
+            const welcomeMessage = document.getElementById('welcomeMessage');
+            const authUserButtons = document.getElementById('authUserButtons');
+            const findSupportBtn = document.getElementById('findSupportBtn');
+            const becomeVolunteerBtn = document.getElementById('becomeVolunteerBtn');
+            const requestsBtn = document.getElementById('requestsBtn');
+            
+            if (isAuthenticated()) {
+                // Показываем приветственное сообщение
+                if (welcomeMessage) {
+                    welcomeMessage.style.display = 'block';
+                    // Получаем информацию о пользователе
+                    getUserInfo().then(user => {
+                        if (user && document.getElementById('userName')) {
+                            const roleText = isRelative() ? 'родственник' : 'волонтер';
+                            document.getElementById('userName').textContent = `${user.name || 'Пользователь'} (${roleText})`;
+                        }
+                    });
+                }
+                
+                // Показываем кнопки для авторизованных пользователей
+                if (authUserButtons) {
+                    authUserButtons.style.display = 'flex';
+                    authUserButtons.style.gap = '20px';
+                    authUserButtons.style.justifyContent = 'center';
+                    authUserButtons.style.width = '100%';
+                }
+                
+                // Адаптируем ссылки в зависимости от роли
+                if (isRelative()) {
+                    // Для родственников
+                    if (findSupportBtn) {
+                        findSupportBtn.href = './zaivka.html';
+                    }
+                    if (requestsBtn) {
+                        requestsBtn.style.display = 'block';
+                        requestsBtn.onclick = function() {
+                            window.location.href = './relative_scroll';
+                        };
+                    }
+                } else if (isVolunteer()) {
+                    // Для волонтеров
+                    if (findSupportBtn) {
+                        findSupportBtn.href = './volunteer_scroll';
+                        findSupportBtn.querySelector('button').textContent = 'Просмотреть заявки';
+                    }
+                    if (requestsBtn) {
+                        requestsBtn.style.display = 'block';
+                        requestsBtn.textContent = 'Мои задания';
+                        requestsBtn.onclick = function() {
+                            window.location.href = './volunteer_assignments';
+                        };
+                    }
+                }
+                
+                // Скрываем кнопку "Стать волонтером" если пользователь уже волонтер
+                if (isVolunteer() && becomeVolunteerBtn) {
+                    becomeVolunteerBtn.style.display = 'none';
+                }
+                
+            } else {
+                // Скрываем элементы для неавторизованных
+                if (welcomeMessage) welcomeMessage.style.display = 'none';
+                if (authUserButtons) authUserButtons.style.display = 'none';
+                
+                // Восстанавливаем стандартные ссылки
+                if (findSupportBtn) {
+                    findSupportBtn.href = './zaivka.html';
+                    findSupportBtn.querySelector('button').textContent = 'Найти поддержку';
+                }
+                if (becomeVolunteerBtn) {
+                    becomeVolunteerBtn.style.display = 'block';
+                }
+            }
+        }
+
+        function goToProfile() {
+            if (isRelative()) {
+                window.location.href = './relative_profile';
+            } else if (isVolunteer()) {
+                window.location.href = './volunteer_profile';
+            }
+        }
+
+        function goToRequests() {
+            if (isRelative()) {
+                window.location.href = './relative_scroll';
+            } else if (isVolunteer()) {
+                window.location.href = './volunteer_assignments';
+            }
+        }
+
+        // Экспортируем функции для использования в auth.js
+        window.updateNavigation = updateNavigation;
+        window.goToProfile = goToProfile;
+        window.goToRequests = goToRequests;
+    </script>
 </body>
 </html>
