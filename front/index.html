@@ -3,14 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Family Circle - Уход за семьёй</title>
+    <title>Family Circle</title>
     <link rel="stylesheet" href="css/style_index.css">
+    <link rel="stylesheet" href="css/style_index_help.css" id="accessible-stylesheet" disabled>
 </head>
 <body>
-    <!-- Шапка -->
+    
     <header class="header">
         <div class="container">
             <div class="logo"><img class="logo-img" src="img/logo.png" alt="logo"></div>
+            <button class="accessibility-toggle button-help" id="accessibilityToggle" 
+                    aria-label="Переключить версию для слабовидящих">
+                Версия для слабовидящих
+            </button>
             <nav class="nav">
                 <ul>
                     <li><a href="/index.html">Главная</a></li>
@@ -18,12 +23,14 @@
                 </ul>
             </nav>
             <div class="button-cont">
-                <a href="/input.html"><button class="buttom-input">Войти <img src="/img/input.png" style="height: 50px; width: 50px;"></button></a>
+                <button id="userAuthButton" class="buttom-input">
+                    <!-- Содержимое менятся через JS -->
+                </button>
             </div>
         </div>
     </header>
 
-    <!-- Основной заголовок и изображение -->
+    
     <section class="hero">
         <div class="container" style="display: flex; justify-content: space-between; padding: 0px;">
             <div class="hero-content">
@@ -36,7 +43,7 @@
         </div>
     </section>
 
-    <!-- Блоки услуг -->
+    
     <section class="services">
         <div class="container">
             <div class="service-grid">
@@ -64,7 +71,7 @@
         </div>
     </section>
 
-    <!-- Как проходит уход -->
+    
     <section class="process">
         <div class="container" style="margin: 0 10%;">
             <h2>Как работает наша платформа?</h2>
@@ -86,24 +93,27 @@
         </div>
     </section>
 
-    <!-- Призыв к действию -->
+   
     <section class="cta">
         <div class="container">
             <div class="cta-content">
                 <h2>Станьте частью “Family Grcle” !</h2>
                 <div style="display: flex; justify-content: space-evenly;">
-                    <a href="/zaivka.html"> <button class="cta-button">Найти поддержку</button></a>
+                    <a href="/regis_R.html"> <button class="cta-button">Найти поддержку</button></a>
                     <a href="/regis_V.html"><button class="cta-button">Стать волонтером</button></a>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Футер -->
+    
     <footer class="footer">
         <div class="container">
             <div class="logo"><img class="logo-img" src="img/logo.png" alt="logo"></div>
         </div>
     </footer>
+    <script src="js\index_help.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/index_help.js"></script>
 </body>
 </html>

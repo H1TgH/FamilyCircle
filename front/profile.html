@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль - Family Circle</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .profile-container {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .user-info {
+            margin: 20px 0;
+            padding: 20px;
+            background: #f5f5f5;
+            border-radius: 8px;
+        }
+        
+        .profile-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+        
+        #logoutButton {
+            background-color: #f44336;
+        }
+        
+        #logoutButton:hover {
+            background-color: #d32f2f;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="profile-container">
+            <h1>👤 Профиль пользователя</h1>
+            
+            <div class="user-info">
+                <p><strong>Имя пользователя:</strong> <span id="username"></span></p>
+                <p><strong>Вход выполнен:</strong> <span id="loginTime"></span></p>
+            </div>
+            
+            <div class="profile-actions">
+                <button id="logoutButton" class="btn">Выйти</button>
+                <a href="/index.html" class="btn" style="background-color: #4CAF50;">На главную</a>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/auth.js"></script>
+    <script src="js/profile.js"></script>
+</body>
+</html>

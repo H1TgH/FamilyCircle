@@ -579,7 +579,6 @@ textarea {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
     width: 100%;
     margin-top: 40px;
-    padding: 20px;
 }
 
 .logo-img {
@@ -638,3 +637,4 @@ textarea {
         font-size: 16px;
         padding: 8px 10px;
     }
+}

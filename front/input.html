@@ -5,8 +5,14 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Регистрация</title>
     <link rel="stylesheet" href="/css/style.css">
+    <link rel="stylesheet" href="/css/style_help.css" id="accessible-stylesheet" disabled>
 </head>
 <body>
+    <button class="accessibility-toggle" id="accessibilityToggle" 
+            aria-label="Переключить версию для слабовидящих">
+        Версия для слабовидящих
+    </button>
+
     <div class="container">
         <form class="registration-form" action="/submit" method="POST">
             <h1>Вход</h1>
@@ -31,5 +37,9 @@
         <div class="logo">
             <img src="img/logo.png" alt="FAMILY Logo" class="logo-img">
     </footer>
+
+    <script src="js\index_help.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/login-handler.js"></script>
 </body>
 </html>

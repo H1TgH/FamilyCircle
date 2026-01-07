@@ -30,13 +30,21 @@ body {
     align-items: center;
 }
 
-.logo {
-    
-}
+
 
 .logo-img {
     height: 100px;
     width: 150px;
+}
+
+.button-help {
+    background: #AF6425 ;
+    padding: 1%;
+    border-radius: 30px ;
+    text-decoration: none;
+    color: #FFF;
+    font-size: 24px;
+    border: 3px solid #000000;
 }
 
 .nav{
