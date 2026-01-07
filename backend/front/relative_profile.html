@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>Личный кабинет - Родственник</title>
     <link rel="stylesheet" href="./css/style_relatives.css">
     <link rel="stylesheet" href="./css/style_main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -47,31 +47,33 @@
         <section class="profile-section">
             <div class="avatar_photo">
                 <label for="avatar-upload">
-                    <img class="avatar" src="avatar.jpg" alt="Фото пользователя" />
+                    <img class="avatar" src="avatar.jpg" alt="Фото пользователя" id="userAvatar" />
                 </label>
                 <input id="avatar-upload" type="file" accept="image/*" class="avatar-input" />
             </div>
             <div class="info">
-                <h3 class="name">Фамилия Имя Отчество</h3>
-                <p class="label">О себе:</p>
-                <p class="label">Контактные данные:</p>
+                <h3 class="name" id="userName">Фамилия Имя Отчество</h3>
+                <p class="label" id="userAbout">О себе:</p>
+                <p class="label" id="userContacts">Контактные данные:</p>
             </div>
         </section>
 
         <div class="divider"></div>
 
+        <h3 class="section-title">Мои пожилые родственники</h3>
+        
         <div class="button-wrapper">
             <button class="add-btn" id="showFormBtn">+ Добавить родственника</button>
         </div>
-        <!-- ФОРМА ДОБАВЛЕНИЯ РОДСТВЕННИКА (изначально скрыта) -->
+
         <div id="relativeFormContainer" class="form-container" style="display: none;">
             <form id="relativeForm" class="relative-form">
                 <div class="relative-card-content">
-                    <div class="avatar_photo">
-                        <label for="avatar-upload">
-                            <img class="avatar" src="avatar.jpg" alt="Фото пользователя" />
+                    <div class="avatar_photo small">
+                        <label for="elder-avatar-upload">
+                            <img class="avatar" src="./img/default-elder.png" alt="Фото родственника" id="elderAvatarPreview" />
                         </label>
-                        <input id="avatar-upload" type="file" accept="image/*" class="avatar-input" />
+                        <input id="elder-avatar-upload" type="file" accept="image/*" class="avatar-input" />
                     </div>
                     <div class="form-fields-wrapper">
                         <div class="form-group">
@@ -81,7 +83,7 @@
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="birthYear">Год рождения:*</label>
+                                <label for="birthYear">Дата рождения:*</label>
                                 <input type="text" id="birthYear" name="birthYear" required placeholder="16.11.1960">
                             </div>
 
@@ -137,11 +139,27 @@
             </form>
         </div>
 
-        <!-- Здесь будет отображаться список добавленных родственников -->
-        <div id="relativesList" class="relatives-list">
-            <!-- Добавленные родственники будут здесь -->
+        <div id="relativesList" class="relatives-grid">
+            <div class="empty-state" id="emptyState" style="display: none;">
+                <img src="./img/no-relatives.png" alt="Нет родственников" class="empty-state-img">
+                <p class="empty-state-text">У вас пока нет добавленных пожилых родственников</p>
+                <p class="empty-state-subtext">Нажмите кнопку "Добавить родственника" чтобы добавить первого</p>
+            </div>
         </div>
     </main>
+
+    <div id="confirmModal" class="modal" style="display: none;">
+        <div class="modal-content small">
+            <button class="modal-close" id="closeConfirmModal">&times;</button>
+            <h3 class="modal-title">Удаление родственника</h3>
+            <p>Вы уверены, что хотите удалить этого родственника?</p>
+            <p class="modal-warning">Это действие нельзя отменить.</p>
+            <div class="modal-actions">
+                <button class="cancel-btn" id="cancelDeleteBtn">Отмена</button>
+                <button class="delete-confirm-btn" id="confirmDeleteBtn">Удалить</button>
+            </div>
+        </div>
+    </div>
 
     <footer class="footer">
         <img src="./img/logo.png" alt="Logo" class="footer-logo" />

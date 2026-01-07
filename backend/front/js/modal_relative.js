@@ -45,55 +45,94 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         function convertDateToDisplayFormat(dateString) {
-            if (dateString.includes('-')) {
+            if (dateString && dateString.includes('-')) {
                 const parts = dateString.split('-');
                 if (parts.length === 3) {
                     return `${parts[2]}.${parts[1]}.${parts[0]}`;
                 }
             }
-            return dateString;
+            return dateString || 'не указана';
         }
 
         const displayData = {
             id: relativeData.id,
-            fullName: relativeData.full_name || relativeData.fullName,
+            fullName: relativeData.full_name || relativeData.fullName || 'Не указано',
             birthYear: convertDateToDisplayFormat(relativeData.birthday || relativeData.birthYear),
-            healthStatus: relativeData.health_status || relativeData.healthStatus,
-            physicalLimitations: relativeData.physical_limitations || relativeData.physicalLimitations,
-            diseases: relativeData.disease || relativeData.diseases,
-            address: relativeData.address,
-            features: relativeData.features,
-            hobbies: relativeData.hobbies,
-            comment: relativeData.comments || relativeData.comment
+            healthStatus: relativeData.health_status || relativeData.healthStatus || 'Не указано',
+            physicalLimitations: relativeData.physical_limitations || relativeData.physicalLimitations || 'нет',
+            diseases: relativeData.disease || relativeData.diseases || 'Не указано',
+            address: relativeData.address || 'Не указан',
+            features: relativeData.features || 'Не указано',
+            hobbies: relativeData.hobbies || 'Не указано',
+            comment: relativeData.comments || relativeData.comment || ''
         };
+
+        // Скрываем состояние "пустой список"
+        const emptyState = document.getElementById('emptyState');
+        if (emptyState) {
+            emptyState.style.display = 'none';
+        }
 
         const relativeCard = document.createElement('div');
         relativeCard.className = 'relative-card';
+        relativeCard.dataset.id = displayData.id;
+        
         relativeCard.innerHTML = `
             <div class="relative-card-content">
-                <h4>${escapeHtml(displayData.fullName)}</h4>
-                <p><strong>Дата рождения:</strong> ${escapeHtml(displayData.birthYear)}</p>
-                <p><strong>Состояние здоровья:</strong> ${escapeHtml(displayData.healthStatus)}</p>
-                <p><strong>Физические ограничения:</strong> ${escapeHtml(displayData.physicalLimitations || 'не указаны')}</p>
-                <p><strong>Заболевания:</strong> ${escapeHtml(displayData.diseases)}</p>
-                <p><strong>Адрес:</strong> ${escapeHtml(displayData.address)}</p>
-                <p><strong>Особенности:</strong> ${escapeHtml(displayData.features)}</p>
-                <p><strong>Увлечения:</strong> ${escapeHtml(displayData.hobbies)}</p>
-                ${displayData.comment ? `<p><strong>Комментарий:</strong> ${escapeHtml(displayData.comment)}</p>` : ''}
-                <div class="relative-actions">
-                    <button class="edit-btn" data-id="${displayData.id}">Редактировать</button>
-                    <button class="delete-btn" data-id="${displayData.id}">Удалить</button>
+                <div class="avatar_photo small">
+                    <img class="avatar" src="./img/default-elder.png" alt="${displayData.fullName}">
+                </div>
+                <div class="relative-info">
+                    <h3 class="relative-name">${escapeHtml(displayData.fullName)}</h3>
+                    <div class="relative-details">
+                        <div class="detail-item">
+                            <span class="detail-label">Дата рождения:</span>
+                            <span class="detail-value">${escapeHtml(displayData.birthYear)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Состояние здоровья:</span>
+                            <span class="detail-value">${escapeHtml(displayData.healthStatus)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Физические ограничения:</span>
+                            <span class="detail-value">${escapeHtml(displayData.physicalLimitations)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Заболевания:</span>
+                            <span class="detail-value">${escapeHtml(displayData.diseases)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Адрес:</span>
+                            <span class="detail-value">${escapeHtml(displayData.address)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Особенности:</span>
+                            <span class="detail-value">${escapeHtml(displayData.features)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <span class="detail-label">Увлечения:</span>
+                            <span class="detail-value">${escapeHtml(displayData.hobbies)}</span>
+                        </div>
+                        ${displayData.comment ? `
+                        <div class="detail-item full-width">
+                            <span class="detail-label">Комментарий:</span>
+                            <span class="detail-value">${escapeHtml(displayData.comment)}</span>
+                        </div>
+                        ` : ''}
+                    </div>
+                    <div class="relative-actions">
+                        <button class="edit-btn" data-id="${displayData.id}">Редактировать</button>
+                        <button class="delete-btn" data-id="${displayData.id}">Удалить</button>
+                    </div>
                 </div>
             </div>
         `;
         
-        if (relativesList.children.length > 0) {
-            relativesList.insertBefore(relativeCard, relativesList.firstChild);
-        } else {
-            relativesList.appendChild(relativeCard);
-        }
-        
+        relativesList.appendChild(relativeCard);
         addCardEventListeners(relativeCard);
+        
+        // Показываем состояние "пустой список" если карточек нет
+        updateEmptyListState();
     }
 
     function addCardEventListeners(card) {
@@ -157,6 +196,21 @@ document.addEventListener('DOMContentLoaded', function() {
         } catch (error) {
             console.error('Ошибка при редактировании:', error);
             showNotification('Ошибка при загрузке данных: ' + error.message, 'error');
+        }
+    }
+
+    function updateEmptyListState() {
+        const relativesList = document.getElementById('relativesList');
+        const emptyState = document.getElementById('emptyState');
+        
+        if (!relativesList || !emptyState) return;
+        
+        const hasCards = relativesList.querySelectorAll('.relative-card').length > 0;
+        
+        if (hasCards) {
+            emptyState.style.display = 'none';
+        } else {
+            emptyState.style.display = 'block';
         }
     }
 
@@ -370,20 +424,25 @@ document.addEventListener('DOMContentLoaded', function() {
                 const relatives = await response.json();
                 
                 if (relativesList) {
-                    relativesList.innerHTML = '';
+                    // Удаляем только карточки, оставляя empty-state
+                    const cards = relativesList.querySelectorAll('.relative-card');
+                    cards.forEach(card => card.remove());
                 }
                 
-                relatives.forEach(relative => {
-                    addRelativeToList(relative);
-                });
-                
-                updateEmptyListMessage();
+                if (Array.isArray(relatives) && relatives.length > 0) {
+                    relatives.forEach(relative => {
+                        addRelativeToList(relative);
+                    });
+                } else {
+                    updateEmptyListState();
+                }
                 
             } else if (response.status === 401) {
                 console.warn('Не авторизован для загрузки родственников');
             }
         } catch (error) {
             console.warn('Не удалось загрузить список родственников:', error);
+            updateEmptyListState();
         }
     }
 
