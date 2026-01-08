@@ -311,7 +311,6 @@ function renderCards(requests) {
         return;
     }
     
-    // Убираем дубликаты по ID перед рендерингом
     const uniqueRequests = requests.filter((request, index, self) =>
         index === self.findIndex(r => r.id === request.id)
     );
@@ -326,18 +325,17 @@ function renderCards(requests) {
             </li>
         `).join('');
         
-        const statusText = getStatusText(request.status);
-        const dateStr = request.scheduled_date ? new Date(request.scheduled_date + 'T00:00:00').toLocaleDateString('ru-RU') : 'Не указана';
-        const timeStr = request.scheduled_time || 'Не указано';
+        const card = document.createElement('div');
+        card.className = 'request-card';
+        card.dataset.id = request.id;
         
-        const cardHTML = `
-            <div class="card" data-id="${request.id}">
-                <div class="time">${timeStr}<br><small>${dateStr}</small></div>
+        card.innerHTML = `
+            <div class="card">
                 <div class="card-header">
                     <img src="/img/avatar.png" alt="Аватар">
                     <div class="card-title">
                         <h3>${escapeHtml(request.task_name)}</h3>
-                        <div style="font-size: 14px; color: #666;">Статус: ${statusText}</div>
+                        <div style="font-size: 14px; color: #666;">Статус: ${getStatusText(request.status)}</div>
                     </div>
                 </div>
                 <div class="card-content">
@@ -375,7 +373,8 @@ function renderCards(requests) {
                 </div>
             </div>
         `;
-        container.insertAdjacentHTML('beforeend', cardHTML);
+        
+        container.appendChild(card);
     });
 }
 

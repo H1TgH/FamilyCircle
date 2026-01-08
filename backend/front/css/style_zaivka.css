@@ -308,3 +308,45 @@
     from { opacity: 0; transform: translateY(-10px); }
     to { opacity: 1; transform: translateY(0); }
 }
+
+.cards-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 20px;
+    padding: 20px;
+    margin-bottom: 30px;
+}
+
+.create-btn-container {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 40px;
+}
+
+.create-btn {
+    background-color: #985D3C;
+    color: white;
+    border: none;
+    padding: 15px 60px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 15px;
+    cursor: pointer;
+    transition: transform 0.2s, background 0.3s;
+}
+
+.create-btn:hover {
+    background-color: #8e5627;
+    transform: translateY(-2px);
+}
+
+.request-card {
+    border: 1px solid #F1CBA8;
+    border-radius: 25px;
+    padding: 25px;
+    background-color: #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+    width: 90%;
+    max-width: 1200px;
+}
