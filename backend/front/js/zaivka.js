@@ -6,7 +6,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     document.getElementById('createBtn').onclick = function() {
         if (elders.length === 0) {
-            alert('Сначала добавьте пожилого человека в профиле');
+            showNotification('Сначала добавьте пожилого человека в профиле', 'error');
             return;
         }
         showForm();
@@ -30,22 +30,46 @@ async function loadElders() {
     try {
         const response = await fetchWithAuth('/api/v1/elders/me');
         if (response.ok) {
-            elders = await response.json();
+            const loadedElders = await response.json();
+            // Убираем дубликаты по ID
+            elders = loadedElders.filter((elder, index, self) =>
+                index === self.findIndex(e => e.id === elder.id)
+            );
         }
     } catch (error) {
         console.error('Ошибка загрузки пожилых:', error);
+        showNotification('Ошибка загрузки списка пожилых. Попробуйте обновить страницу.', 'error');
     }
 }
 
 async function loadRequests() {
+    const container = document.getElementById('cardsContainer');
+    if (container) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loading-spinner"></div><p>Загрузка заявок...</p></div>';
+    }
+    
     try {
         const response = await fetchWithAuth('/api/v1/requests/me?limit=30');
         if (response.ok) {
             const requests = await response.json();
-            renderCards(requests);
+            // Убираем дубликаты по ID
+            const uniqueRequests = requests.filter((request, index, self) =>
+                index === self.findIndex(r => r.id === request.id)
+            );
+            renderCards(uniqueRequests);
+        } else {
+            const error = await response.json().catch(() => ({ detail: 'Не удалось загрузить заявки' }));
+            showNotification('Ошибка загрузки заявок: ' + (error.detail || 'Попробуйте обновить страницу'), 'error');
+            if (container) {
+                container.innerHTML = '<p style="text-align: center; padding: 40px; color: #f44336;">Ошибка загрузки заявок</p>';
+            }
         }
     } catch (error) {
         console.error('Ошибка загрузки заявок:', error);
+        showNotification('Ошибка соединения с сервером. Проверьте подключение к интернету.', 'error');
+        if (container) {
+            container.innerHTML = '<p style="text-align: center; padding: 40px; color: #f44336;">Ошибка соединения</p>';
+        }
     }
 }
 
@@ -88,6 +112,22 @@ function populateElderSelect() {
     
     if (!elderSelect) {
         const specialtyInput = document.getElementById('specialty');
+        if (!specialtyInput) {
+            console.error('Поле specialty не найдено');
+            return;
+        }
+        
+        // Проверяем, нет ли уже заголовка и селекта
+        const existingHeader = specialtyInput.previousElementSibling;
+        if (existingHeader && existingHeader.tagName === 'H3' && existingHeader.textContent.includes('пожилого')) {
+            elderSelect = document.getElementById('elderSelect');
+            if (elderSelect) {
+                // Обновляем опции существующего селекта
+                updateElderSelectOptions(elderSelect);
+                return;
+            }
+        }
+        
         const selectHtml = `
             <h3>Выберите пожилого человека</h3>
             <select id="elderSelect" required>
@@ -99,6 +139,38 @@ function populateElderSelect() {
         `;
         specialtyInput.insertAdjacentHTML('beforebegin', selectHtml);
         elderSelect = document.getElementById('elderSelect');
+    } else {
+        // Обновляем опции существующего селекта
+        updateElderSelectOptions(elderSelect);
+    }
+}
+
+function updateElderSelectOptions(selectElement) {
+    if (!selectElement) return;
+    
+    // Сохраняем текущее значение
+    const currentValue = selectElement.value;
+    
+    // Очищаем все опции кроме первой (пустой)
+    while (selectElement.options.length > 1) {
+        selectElement.remove(1);
+    }
+    
+    // Добавляем пожилых, убирая дубликаты
+    const uniqueElders = elders.filter((elder, index, self) =>
+        index === self.findIndex(e => e.id === elder.id)
+    );
+    
+    uniqueElders.forEach(elder => {
+        const option = document.createElement('option');
+        option.value = elder.id;
+        option.textContent = escapeHtml(elder.full_name);
+        selectElement.appendChild(option);
+    });
+    
+    // Восстанавливаем выбранное значение, если оно все еще существует
+    if (currentValue && Array.from(selectElement.options).some(opt => opt.value === currentValue)) {
+        selectElement.value = currentValue;
     }
 }
 
@@ -171,12 +243,12 @@ async function saveCard() {
     const editCardId = document.getElementById('editCardId').value;
     
     if (!elderId) {
-        alert('Пожалуйста, выберите пожилого человека');
+        showNotification('Пожалуйста, выберите пожилого человека', 'error');
         return;
     }
     
     if (!specialty) {
-        alert('Пожалуйста, введите название чек-листа');
+        showNotification('Пожалуйста, введите название чек-листа', 'error');
         document.getElementById('specialty').focus();
         return;
     }
@@ -193,7 +265,7 @@ async function saveCard() {
     });
     
     if (checkList.length === 0) {
-        alert('Пожалуйста, добавьте хотя бы одну задачу');
+        showNotification('Пожалуйста, добавьте хотя бы одну задачу', 'error');
         return;
     }
     
@@ -238,17 +310,17 @@ async function saveCard() {
         }
         
         if (response.ok) {
-            alert(editCardId ? 'Заявка обновлена!' : 'Заявка успешно создана!');
+            showNotification(editCardId ? 'Заявка обновлена!' : 'Заявка успешно создана!', 'success');
             hideForm();
             clearForm();
             loadRequests();
         } else {
-            const error = await response.json();
-            alert('Ошибка: ' + (error.detail || 'Не удалось сохранить заявку'));
+            const error = await response.json().catch(() => ({ detail: 'Не удалось сохранить заявку' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось сохранить заявку'), 'error');
         }
     } catch (error) {
         console.error('Ошибка:', error);
-        alert('Ошибка соединения с сервером');
+        showNotification('Ошибка соединения с сервером. Проверьте подключение к интернету.', 'error');
     }
 }
 
@@ -262,11 +334,16 @@ function renderCards(requests) {
     container.innerHTML = '';
     
     if (!requests || requests.length === 0) {
-        container.innerHTML = '<p style="text-align: center; padding: 40px;">Нет созданных заявок</p>';
+        container.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Нет созданных заявок</p>';
         return;
     }
     
-    requests.forEach(request => {
+    // Убираем дубликаты по ID перед рендерингом
+    const uniqueRequests = requests.filter((request, index, self) =>
+        index === self.findIndex(r => r.id === request.id)
+    );
+    
+    uniqueRequests.forEach(request => {
         const tasksList = request.check_list.map((task, index) => `
             <li class="task-list-item">
                 <div class="task-number">${index + 1}.</div>
@@ -366,15 +443,15 @@ async function deleteCard(requestId) {
         });
         
         if (response.status === 204) {
-            alert('Заявка успешно удалена');
+            showNotification('Заявка успешно удалена', 'success');
             loadRequests();
         } else {
-            const error = await response.json();
-            alert('Ошибка: ' + (error.detail || 'Не удалось удалить заявку'));
+            const error = await response.json().catch(() => ({ detail: 'Не удалось удалить заявку' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось удалить заявку'), 'error');
         }
     } catch (error) {
         console.error('Ошибка:', error);
-        alert('Ошибка соединения с сервером');
+        showNotification('Ошибка соединения с сервером. Проверьте подключение к интернету.', 'error');
     }
 }
 
@@ -384,29 +461,30 @@ async function viewDetails(requestId) {
         if (response.ok) {
             const request = await response.json();
             
-            const tasksText = request.check_list.map((task, index) => 
-                `${index + 1}. ${task}`
-            ).join('\n');
+            const details = {
+                'Категория': request.category,
+                'Статус': getStatusText(request.status),
+                'Дата создания': new Date(request.created_at).toLocaleString('ru-RU'),
+                'Запланировано': new Date(request.scheduled_time).toLocaleString('ru-RU'),
+                'Задач': `${request.check_list.length} шт.`,
+                'Список задач': request.check_list.map((task, index) => `${index + 1}. ${task}`).join('\n')
+            };
             
-            const details = `
-ЗАЯВКА: ${request.category.toUpperCase()}
-
-Статус: ${getStatusText(request.status)}
-Дата создания: ${new Date(request.created_at).toLocaleString('ru-RU')}
-Запланировано: ${new Date(request.scheduled_time).toLocaleString('ru-RU')}
-
-📋 ЗАДАЧИ (${request.check_list.length} шт.):
-${tasksText}
-
-${request.description ? `📝 ОПИСАНИЕ:\n${request.description}\n` : ''}
-${request.address ? `📍 АДРЕС:\n${request.address}` : ''}
-            `;
+            if (request.description) {
+                details['Описание'] = request.description;
+            }
+            if (request.address) {
+                details['Адрес'] = request.address;
+            }
             
-            alert(details);
+            showDetailsModal('Детали заявки', details);
+        } else {
+            const error = await response.json().catch(() => ({ detail: 'Не удалось загрузить данные' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось загрузить детали заявки'), 'error');
         }
     } catch (error) {
         console.error('Ошибка:', error);
-        alert('Ошибка загрузки деталей');
+        showNotification('Ошибка соединения с сервером', 'error');
     }
 }
 
@@ -419,6 +497,167 @@ function escapeHtml(unsafe) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+// Функция для показа уведомлений
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        background: ${type === 'success' ? '#4CAF50' : '#f44336'};
+        color: white;
+        border-radius: 8px;
+        z-index: 10000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        font-size: 14px;
+        max-width: 400px;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    // Добавляем стили для анимации, если их еще нет
+    if (!document.getElementById('notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 4000);
+}
+
+// Функция для показа модального окна с деталями
+function showDetailsModal(title, details) {
+    // Удаляем существующее модальное окно, если есть
+    const existingModal = document.getElementById('detailsModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const modal = document.createElement('div');
+    modal.id = 'detailsModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10001;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    `;
+    
+    let detailsHTML = `<h2 style="margin-top: 0; color: #333;">${escapeHtml(title)}</h2>`;
+    detailsHTML += '<div style="display: flex; flex-direction: column; gap: 12px;">';
+    
+    for (const [key, value] of Object.entries(details)) {
+        detailsHTML += `
+            <div style="border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                <strong style="color: #666; display: block; margin-bottom: 4px;">${escapeHtml(key)}:</strong>
+                <span style="color: #333; white-space: pre-line;">${escapeHtml(value)}</span>
+            </div>
+        `;
+    }
+    
+    detailsHTML += '</div>';
+    detailsHTML += `
+        <button id="closeDetailsModal" style="
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #784923;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        ">Закрыть</button>
+    `;
+    
+    modalContent.innerHTML = detailsHTML;
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    // Добавляем стили для анимации
+    if (!document.getElementById('modal-styles')) {
+        const style = document.createElement('style');
+        style.id = 'modal-styles';
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Обработчик закрытия
+    const closeBtn = modalContent.querySelector('#closeDetailsModal');
+    closeBtn.addEventListener('click', () => {
+        modal.remove();
+    });
+    
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+    
+    // Закрытие по Escape
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
 }
 
 window.removeTask = removeTask;

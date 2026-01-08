@@ -36,7 +36,7 @@ function setupFormHandlers() {
         
         const errors = validateForm(formData);
         if (errors.length > 0) {
-            alert('Пожалуйста, заполните все обязательные поля:\n' + errors.join('\n'));
+            showNotification('Пожалуйста, заполните все обязательные поля:\n' + errors.join('\n'), 'error');
             this.classList.remove('submitting');
             return;
         }
@@ -243,21 +243,46 @@ function setupAvatarUpload() {
     });
 }
 
+let isDisplayingElders = false;
+
 function displayElders(elders) {
+    // Предотвращаем параллельные рендеринги
+    if (isDisplayingElders) {
+        console.log('Отображение уже выполняется, пропускаем');
+        return;
+    }
+    
+    isDisplayingElders = true;
+    
     const relativesList = document.getElementById('relativesList');
-    if (!relativesList) return;
+    if (!relativesList) {
+        isDisplayingElders = false;
+        return;
+    }
 
     relativesList.innerHTML = '';
 
     if (!elders || elders.length === 0) {
         relativesList.innerHTML = '<p class="no-relatives">Нет добавленных пожилых</p>';
+        isDisplayingElders = false;
         return;
     }
 
-    elders.forEach(elder => {
-        const elderCard = createElderCard(elder);
-        relativesList.appendChild(elderCard);
+    // Убираем дубликаты по ID перед отображением
+    const uniqueElders = elders.filter((elder, index, self) =>
+        index === self.findIndex(e => e.id === elder.id)
+    );
+
+    uniqueElders.forEach(elder => {
+        // Дополнительная проверка на существование карточки
+        const existingCard = relativesList.querySelector(`.elder-card[data-id="${elder.id}"]`);
+        if (!existingCard) {
+            const elderCard = createElderCard(elder);
+            relativesList.appendChild(elderCard);
+        }
     });
+    
+    isDisplayingElders = false;
 }
 
 function createElderCard(elder) {

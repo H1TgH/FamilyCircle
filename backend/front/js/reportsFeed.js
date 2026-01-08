@@ -4,14 +4,33 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function loadReportsFeed() {
+    const postList = document.querySelector('.post-list');
+    if (postList) {
+        postList.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loading-spinner"></div><p>Загрузка отчетов...</p></div>';
+    }
+    
     try {
         const response = await fetchWithAuth('/api/v1/reports/feed');
         if (response.ok) {
             const reports = await response.json();
-            renderReportsFeed(reports);
+            // Убираем дубликаты по ID
+            const uniqueReports = reports.filter((report, index, self) =>
+                index === self.findIndex(r => r.id === report.id)
+            );
+            renderReportsFeed(uniqueReports);
+        } else {
+            const error = await response.json().catch(() => ({ detail: 'Не удалось загрузить отчеты' }));
+            showNotification('Ошибка загрузки отчетов: ' + (error.detail || 'Попробуйте обновить страницу'), 'error');
+            if (postList) {
+                postList.innerHTML = '<p style="text-align: center; padding: 40px; color: #f44336;">Ошибка загрузки отчетов</p>';
+            }
         }
     } catch (error) {
         console.error('Ошибка загрузки ленты:', error);
+        showNotification('Ошибка соединения с сервером. Проверьте подключение к интернету.', 'error');
+        if (postList) {
+            postList.innerHTML = '<p style="text-align: center; padding: 40px; color: #f44336;">Ошибка соединения</p>';
+        }
     }
 }
 
@@ -25,11 +44,16 @@ function renderReportsFeed(reports) {
     postList.innerHTML = '';
     
     if (!reports || reports.length === 0) {
-        postList.innerHTML = '<p class="no-reports" style="text-align: center; padding: 40px;">Нет отчетов</p>';
+        postList.innerHTML = '<p class="no-reports" style="text-align: center; padding: 40px; color: #666;">Нет отчетов</p>';
         return;
     }
     
-    reports.forEach(report => {
+    // Убираем дубликаты по ID перед рендерингом
+    const uniqueReports = reports.filter((report, index, self) =>
+        index === self.findIndex(r => r.id === report.id)
+    );
+    
+    uniqueReports.forEach(report => {
         const reportCard = createReportCard(report);
         postList.appendChild(reportCard);
     });
@@ -109,15 +133,15 @@ async function deleteReport(reportId) {
         });
         
         if (response.status === 204) {
-            alert('Отчет удален');
+            showNotification('Отчет успешно удален', 'success');
             loadReportsFeed();
         } else {
-            const error = await response.json();
-            alert('Ошибка: ' + (error.detail || 'Не удалось удалить отчет'));
+            const error = await response.json().catch(() => ({ detail: 'Не удалось удалить отчет' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось удалить отчет'), 'error');
         }
     } catch (error) {
         console.error('Ошибка удаления:', error);
-        alert('Ошибка соединения с сервером');
+        showNotification('Ошибка соединения с сервером. Проверьте подключение к интернету.', 'error');
     }
 }
 
@@ -132,7 +156,7 @@ function setupCreatePostButton() {
     createPostBtn.addEventListener('click', async function() {
         const requests = await loadUserRequests();
         if (requests.length === 0) {
-            alert('У вас нет завершенных заявок для создания отчета');
+            showNotification('У вас нет завершенных заявок для создания отчета', 'error');
             return;
         }
         
@@ -263,12 +287,12 @@ async function submitReport() {
     const imageInput = document.getElementById('imageInput');
     
     if (!requestId) {
-        alert('Пожалуйста, выберите заявку');
+        showNotification('Пожалуйста, выберите заявку', 'error');
         return;
     }
     
     if (!description) {
-        alert('Пожалуйста, введите описание');
+        showNotification('Пожалуйста, введите описание', 'error');
         document.getElementById('postText').focus();
         return;
     }
@@ -296,7 +320,7 @@ async function submitReport() {
         
         if (response.ok) {
             const report = await response.json();
-            alert('Отчет успешно создан!');
+            showNotification('Отчет успешно создан!', 'success');
             
             document.getElementById('createPostModal').style.display = 'none';
             
@@ -307,12 +331,12 @@ async function submitReport() {
             document.getElementById('imagePreview').innerHTML = '';
             
         } else {
-            const error = await response.json();
-            alert('Ошибка: ' + (error.detail || 'Не удалось создать отчет'));
+            const error = await response.json().catch(() => ({ detail: 'Не удалось создать отчет' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось создать отчет'), 'error');
         }
     } catch (error) {
         console.error('Ошибка создания отчета:', error);
-        alert('Ошибка соединения с сервером');
+        showNotification('Ошибка соединения с сервером. Проверьте подключение к интернету.', 'error');
     } finally {
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
@@ -356,6 +380,65 @@ function escapeHtml(unsafe) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+// Функция для показа уведомлений
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        background: ${type === 'success' ? '#4CAF50' : '#f44336'};
+        color: white;
+        border-radius: 8px;
+        z-index: 10000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        font-size: 14px;
+        max-width: 400px;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    // Добавляем стили для анимации, если их еще нет
+    if (!document.getElementById('notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 4000);
 }
 
 function handleLike(reportId) {

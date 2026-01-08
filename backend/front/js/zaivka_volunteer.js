@@ -25,36 +25,69 @@ async function loadAvailableRequests() {
             const requests = await response.json();
             renderRequests(requests);
         } else {
+            const errorData = await response.json().catch(() => ({ detail: 'Неизвестная ошибка' }));
+            showNotification('Ошибка загрузки заявок: ' + (errorData.detail || 'Попробуйте обновить страницу'), 'error');
             console.error('Ошибка загрузки заявок:', response.status);
         }
     } catch (error) {
         console.error('Ошибка загрузки заявок:', error);
+        showNotification('Ошибка соединения с сервером. Проверьте подключение к интернету.', 'error');
     }
 }
 
 // Отображение заявок
+let isRenderingRequests = false;
+
 async function renderRequests(requests) {
+    // Предотвращаем параллельные рендеринги
+    if (isRenderingRequests) {
+        console.log('Рендеринг уже выполняется, пропускаем');
+        return;
+    }
+    
+    isRenderingRequests = true;
+    
     const requestsList = document.querySelector('.requests-list');
     if (!requestsList) {
         console.error('Контейнер заявок не найден');
+        isRenderingRequests = false;
         return;
     }
     
-    requestsList.innerHTML = '';
+    // Показываем индикатор загрузки
+    requestsList.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loading-spinner"></div><p>Загрузка заявок...</p></div>';
     
     if (!requests || requests.length === 0) {
         requestsList.innerHTML = '<p style="text-align: center; padding: 40px;">Нет доступных заявок</p>';
+        isRenderingRequests = false;
         return;
     }
     
-    // Создаем карточки асинхронно
-    for (let index = 0; index < requests.length; index++) {
-        const requestRow = await createRequestCard(requests[index], index + 1);
-        requestsList.appendChild(requestRow);
-    }
+    // Убираем дубликаты по ID
+    const uniqueRequests = requests.filter((request, index, self) =>
+        index === self.findIndex(r => r.id === request.id)
+    );
+    
+    // Очищаем список перед добавлением
+    requestsList.innerHTML = '';
+    
+    // Создаем карточки последовательно для правильного порядка
+    const cardPromises = uniqueRequests.map(async (request, index) => {
+        const requestRow = await createRequestCard(request, index + 1);
+        return requestRow;
+    });
+    
+    const cards = await Promise.all(cardPromises);
+    
+    // Добавляем карточки в правильном порядке
+    cards.forEach(card => {
+        requestsList.appendChild(card);
+    });
     
     // Настраиваем кнопки отклика после рендеринга
     setupRespondButtons();
+    
+    isRenderingRequests = false;
 }
 
 // Создание карточки заявки
@@ -214,20 +247,21 @@ function setupRespondButtons() {
                     
                     // Показываем уведомление
                     showBellNotification(headerIcons);
+                    showNotification('Отклик успешно отправлен!', 'success');
                     
                     // Перезагружаем список заявок
                     setTimeout(() => {
                         loadAvailableRequests();
                     }, 2000);
                 } else {
-                    const error = await response.json();
-                    alert('Ошибка: ' + (error.detail || 'Не удалось откликнуться на заявку'));
+                    const error = await response.json().catch(() => ({ detail: 'Неизвестная ошибка' }));
+                    showNotification('Ошибка: ' + (error.detail || 'Не удалось откликнуться на заявку'), 'error');
                     this.textContent = originalText;
                     this.disabled = false;
                 }
             } catch (error) {
                 console.error('Ошибка отклика:', error);
-                alert('Ошибка соединения с сервером');
+                showNotification('Ошибка соединения с сервером. Проверьте подключение к интернету.', 'error');
                 this.textContent = originalText;
                 this.disabled = false;
             }
@@ -268,10 +302,19 @@ async function showRelativeDetails(userId) {
             const user = await response.json();
             const fullName = [user.surname, user.name, user.patronymic].filter(Boolean).join(' ');
             
-            alert(`Родственник:\n\nФИО: ${fullName}\nEmail: ${user.email}\nТелефон: ${user.phone_number}`);
+            // Создаем красивое модальное окно вместо alert
+            showDetailsModal('Родственник', {
+                'ФИО': fullName,
+                'Email': user.email || 'не указан',
+                'Телефон': user.phone_number || 'не указан'
+            });
+        } else {
+            const error = await response.json().catch(() => ({ detail: 'Не удалось загрузить данные' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось загрузить информацию о родственнике'), 'error');
         }
     } catch (error) {
         console.error('Ошибка загрузки родственника:', error);
+        showNotification('Ошибка соединения с сервером', 'error');
     }
 }
 
@@ -283,11 +326,23 @@ async function showElderDetails(elderId) {
             const elder = await response.json();
             const birthday = elder.birthday ? new Date(elder.birthday).toLocaleDateString('ru-RU') : 'не указано';
             
-            const details = `Пожилой человек:\n\nФИО: ${elder.full_name}\nДата рождения: ${birthday}\nСостояние здоровья: ${elder.health_status}\nАдрес: ${elder.address}\nУвлечения: ${elder.hobbies}`;
-            alert(details);
+            // Создаем красивое модальное окно вместо alert
+            showDetailsModal('Пожилой человек', {
+                'ФИО': elder.full_name,
+                'Дата рождения': birthday,
+                'Состояние здоровья': elder.health_status || 'не указано',
+                'Адрес': elder.address || 'не указан',
+                'Увлечения': elder.hobbies || 'не указаны',
+                'Особенности': elder.features || 'не указаны',
+                'Заболевания': elder.disease || 'не указаны'
+            });
+        } else {
+            const error = await response.json().catch(() => ({ detail: 'Не удалось загрузить данные' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось загрузить информацию о пожилом'), 'error');
         }
     } catch (error) {
         console.error('Ошибка загрузки пожилого:', error);
+        showNotification('Ошибка соединения с сервером', 'error');
     }
 }
 
@@ -310,6 +365,167 @@ function escapeHtml(unsafe) {
         .replace(/>/g, "&gt;")
         .replace(/"/g, "&quot;")
         .replace(/'/g, "&#039;");
+}
+
+// Функция для показа уведомлений
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        background: ${type === 'success' ? '#4CAF50' : '#f44336'};
+        color: white;
+        border-radius: 8px;
+        z-index: 10000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        font-size: 14px;
+        max-width: 400px;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    // Добавляем стили для анимации, если их еще нет
+    if (!document.getElementById('notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 4000);
+}
+
+// Функция для показа модального окна с деталями
+function showDetailsModal(title, details) {
+    // Удаляем существующее модальное окно, если есть
+    const existingModal = document.getElementById('detailsModal');
+    if (existingModal) {
+        existingModal.remove();
+    }
+    
+    const modal = document.createElement('div');
+    modal.id = 'detailsModal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 10001;
+        animation: fadeIn 0.3s ease-out;
+    `;
+    
+    const modalContent = document.createElement('div');
+    modalContent.style.cssText = `
+        background: white;
+        padding: 30px;
+        border-radius: 12px;
+        max-width: 500px;
+        width: 90%;
+        max-height: 80vh;
+        overflow-y: auto;
+        box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    `;
+    
+    let detailsHTML = `<h2 style="margin-top: 0; color: #333;">${escapeHtml(title)}</h2>`;
+    detailsHTML += '<div style="display: flex; flex-direction: column; gap: 12px;">';
+    
+    for (const [key, value] of Object.entries(details)) {
+        detailsHTML += `
+            <div style="border-bottom: 1px solid #eee; padding-bottom: 8px;">
+                <strong style="color: #666; display: block; margin-bottom: 4px;">${escapeHtml(key)}:</strong>
+                <span style="color: #333;">${escapeHtml(value)}</span>
+            </div>
+        `;
+    }
+    
+    detailsHTML += '</div>';
+    detailsHTML += `
+        <button id="closeDetailsModal" style="
+            margin-top: 20px;
+            padding: 10px 20px;
+            background: #784923;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+        ">Закрыть</button>
+    `;
+    
+    modalContent.innerHTML = detailsHTML;
+    modal.appendChild(modalContent);
+    document.body.appendChild(modal);
+    
+    // Добавляем стили для анимации
+    if (!document.getElementById('modal-styles')) {
+        const style = document.createElement('style');
+        style.id = 'modal-styles';
+        style.textContent = `
+            @keyframes fadeIn {
+                from { opacity: 0; }
+                to { opacity: 1; }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    // Обработчик закрытия
+    const closeBtn = modalContent.querySelector('#closeDetailsModal');
+    closeBtn.addEventListener('click', () => {
+        modal.remove();
+    });
+    
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+    
+    // Закрытие по Escape
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
 }
 
 // Экспорт функций для использования в HTML

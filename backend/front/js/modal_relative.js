@@ -44,6 +44,13 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
+        // Проверяем, не существует ли уже карточка с таким ID
+        const existingCard = relativesList.querySelector(`.relative-card[data-id="${relativeData.id}"]`);
+        if (existingCard) {
+            console.log('Карточка с ID', relativeData.id, 'уже существует, пропускаем');
+            return;
+        }
+
         function convertDateToDisplayFormat(dateString) {
             if (dateString && dateString.includes('-')) {
                 const parts = dateString.split('-');
@@ -413,7 +420,17 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
+    let isLoadingRelatives = false;
+    
     async function loadExistingRelatives() {
+        // Предотвращаем параллельные загрузки
+        if (isLoadingRelatives) {
+            console.log('Загрузка уже выполняется, пропускаем');
+            return;
+        }
+        
+        isLoadingRelatives = true;
+        
         try {
             console.log('Загружаем родственников...');
             const response = await fetch('/api/v1/elders/me', {
@@ -430,7 +447,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
                 
                 if (Array.isArray(relatives) && relatives.length > 0) {
-                    relatives.forEach(relative => {
+                    // Убираем дубликаты по ID перед добавлением
+                    const uniqueRelatives = relatives.filter((relative, index, self) =>
+                        index === self.findIndex(r => r.id === relative.id)
+                    );
+                    
+                    uniqueRelatives.forEach(relative => {
                         addRelativeToList(relative);
                     });
                 } else {
@@ -439,10 +461,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 
             } else if (response.status === 401) {
                 console.warn('Не авторизован для загрузки родственников');
+                showNotification('Сессия истекла. Пожалуйста, войдите заново.', 'error');
             }
         } catch (error) {
             console.warn('Не удалось загрузить список родственников:', error);
+            showNotification('Ошибка загрузки данных. Попробуйте обновить страницу.', 'error');
             updateEmptyListState();
+        } finally {
+            isLoadingRelatives = false;
         }
     }
 
