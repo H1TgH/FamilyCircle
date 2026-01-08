@@ -687,3 +687,79 @@
     color: #333;
     cursor: pointer;
 }
+
+.card-actions-gear {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #888;
+    cursor: pointer;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background 0.3s;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.card-actions-gear:hover {
+    background: #f5f5f5;
+    color: #333;
+}
+
+.action-menu {
+    position: absolute;
+    bottom: 40px;
+    right: 0;
+    background: white;
+    border: 1px solid #F1CBA8;
+    border-radius: 10px;
+    padding: 10px 0;
+    min-width: 150px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    display: none;
+    z-index: 100;
+}
+
+.action-menu.active {
+    display: block;
+}
+
+.action-item {
+    padding: 10px 20px;
+    background: none;
+    border: none;
+    text-align: left;
+    width: 100%;
+    cursor: pointer;
+    font-size: 14px;
+    color: #333;
+    transition: background 0.3s;
+}
+
+.action-item:hover {
+    background: #FFF9F0;
+}
+
+.request-card {
+    border: 1px solid #F1CBA8;
+    border-radius: 25px;
+    padding: 25px;
+    background-color: #fff;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.02);
+    width: 90%;
+    max-width: 1200px;
+    display: flex;
+    align-items: flex-start;
+    gap: 30px;
+    position: relative;
+}
+
+.card-actions {
+    display: none;
+}

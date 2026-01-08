@@ -55,6 +55,46 @@ document.addEventListener('DOMContentLoaded', function() {
     setupFrequencyRadioButtons();
 });
 
+function toggleActionMenu(button, requestId, status) {
+    const menu = button.nextElementSibling;
+    const allMenus = document.querySelectorAll('.action-menu');
+    
+    allMenus.forEach(m => {
+        if (m !== menu) {
+            m.classList.remove('active');
+        }
+    });
+    
+    menu.classList.toggle('active');
+    
+    document.addEventListener('click', function closeMenu(e) {
+        if (!menu.contains(e.target) && !button.contains(e.target)) {
+            menu.classList.remove('active');
+            document.removeEventListener('click', closeMenu);
+        }
+    });
+}
+
+async function closeCard(requestId) {
+    try {
+        const response = await fetchWithAuth(`/api/v1/requests/${requestId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'done' })
+        });
+        
+        if (response.ok) {
+            showNotification('Заявка закрыта', 'success');
+            loadRequests();
+        } else {
+            const error = await response.json().catch(() => ({ detail: 'Не удалось закрыть заявку' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось закрыть заявку'), 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка соединения с сервером', 'error');
+    }
+}
+
 async function loadElders() {
     try {
         const response = await fetchWithAuth('/api/v1/elders/me');
@@ -526,6 +566,7 @@ function renderCards(requests) {
         const card = document.createElement('div');
         card.className = 'request-card';
         card.dataset.id = request.id;
+        card.dataset.status = request.status;
         
         const frequencyText = getFrequencyText(request.frequency);
         const elder = elders.find(e => e.id === request.elder_id);
@@ -568,13 +609,6 @@ function renderCards(requests) {
                         </div>
                     ` : ''}
                 </div>
-                <div class="card-actions">
-                    ${request.status === 'open' ? `
-                        <button class="edit-btn" onclick="editCard('${request.id}')">Изменить</button>
-                        <button class="delete-btn" onclick="deleteCard('${request.id}')">Удалить</button>
-                    ` : ''}
-                    <button class="details-btn" onclick="viewDetails('${request.id}')">Подробнее о заявке</button>
-                </div>
             </div>
             <div class="card-right-section">
                 <div class="status-container">
@@ -585,6 +619,14 @@ function renderCards(requests) {
                 <button class="responses-btn" onclick="showResponses('${request.id}')">
                     Отклики (${request.response_count || 0})
                 </button>
+            </div>
+            <button class="card-actions-gear" onclick="toggleActionMenu(this, '${request.id}', '${request.status}')">
+                <i class="fas fa-cog"></i>
+            </button>
+            <div class="action-menu">
+                <button class="action-item" onclick="editCard('${request.id}')">Изменить</button>
+                <button class="action-item" onclick="deleteCard('${request.id}')">Удалить</button>
+                <button class="action-item" onclick="closeCard('${request.id}')">Закрыть</button>
             </div>
         `;
         
@@ -924,5 +966,7 @@ window.removeTask = removeTask;
 window.editCard = editCard;
 window.deleteCard = deleteCard;
 window.viewDetails = viewDetails;
-
-console.log('Файл zaivka.js загружен');
+window.showResponses = showResponses;
+window.toggleActionMenu = toggleActionMenu;
+window.closeCard = closeCard;
+window.showElderDetails = showElderDetails;
