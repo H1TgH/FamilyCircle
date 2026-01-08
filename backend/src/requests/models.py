@@ -40,9 +40,9 @@ class ElderModel(Base):
         nullable=False
     )
 
-    avatar_url: Mapped[str] = mapped_column(
-        String,
-        nullable=True
+    is_has_avatar: Mapped[bool] = mapped_column(
+        default=False,
+        nullable=False
     )
 
     birthday: Mapped[date] = mapped_column(
