@@ -734,6 +734,15 @@
     color: #999;
 }
 
+.editing-form-inline {
+    width: 100%;
+}
+
+.elder-card.editing {
+    width: 90%;
+    max-width: 1200px;
+}
+
 /* Модалка подтверждения удаления */
 .modal.small .modal-content {
     width: 400px;
@@ -849,8 +858,9 @@
 
 /* Сетка карточек */
 .relatives-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    display: flex;
+    flex-direction: column;
+    align-items: center;
     gap: 20px;
     margin-top: 30px;
     padding: 0;
@@ -864,6 +874,8 @@
     padding: 20px;
     transition: all 0.3s ease;
     box-shadow: 0 2px 8px rgba(175, 100, 37, 0.1);
+    width: 90%;
+    max-width: 1200px;
 }
 
 .elder-card:hover {
@@ -879,6 +891,29 @@
     margin-bottom: 15px;
     padding-bottom: 10px;
     border-bottom: 1px solid #E7CDB7;
+}
+
+.elder-header-left {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+}
+
+.elder-avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #AF6425;
+}
+
+.elder-avatar-edit {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #AF6425;
+    cursor: pointer;
 }
 
 .elder-name {
@@ -1000,4 +1035,13 @@
 .empty-state-subtext {
     font-size: 14px;
     color: #999;
+}
+
+.editing-form-inline {
+    width: 100%;
+}
+
+.elder-card.editing {
+    width: 90%;
+    max-width: 1200px;
 }

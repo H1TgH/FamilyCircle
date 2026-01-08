@@ -264,6 +264,22 @@ function setupElderForm() {
     elderForm.addEventListener('submit', handleElderFormSubmit);
     showFormBtn.addEventListener('click', showElderForm);
     cancelFormBtn.addEventListener('click', hideElderForm);
+    
+    const avatarInput = document.getElementById('elder-avatar-upload');
+    const avatarPreview = document.getElementById('elderAvatarPreview');
+    
+    if (avatarInput && avatarPreview) {
+        avatarInput.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    avatarPreview.src = event.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+    }
 }
 
 function setupEventListeners() {
@@ -345,13 +361,16 @@ async function handleElderFormSubmit(event) {
     const originalText = saveBtn.textContent;
     const isEditMode = elderForm.dataset.editId;
     
+    const avatarInput = document.getElementById('elder-avatar-upload');
+    const avatarFile = avatarInput && avatarInput.files.length > 0 ? avatarInput.files[0] : null;
+    
     saveBtn.textContent = isEditMode ? 'Обновление...' : 'Сохранение...';
     saveBtn.disabled = true;
     
     try {
         const success = isEditMode 
-            ? await updateElder(elderForm.dataset.editId, formData)
-            : await createElder(formData);
+            ? await updateElder(elderForm.dataset.editId, formData, avatarFile)
+            : await createElder(formData, avatarFile);
         
         if (success) {
             await loadElders();
@@ -433,17 +452,25 @@ function addElderToList(elderData) {
         address: elderData.address || 'Не указан',
         features: elderData.features || 'Не указано',
         hobbies: elderData.hobbies || 'Не указано',
-        comment: elderData.comments || elderData.comment || ''
+        comment: elderData.comments || elderData.comment || '',
+        avatarUrl: elderData.avatar_presigned_url || null
     };
 
     const elderCard = document.createElement('div');
     elderCard.className = 'elder-card';
     elderCard.dataset.id = displayData.id;
     
+    const avatarHtml = displayData.avatarUrl 
+        ? `<img class="elder-avatar" src="${escapeHtml(displayData.avatarUrl)}" alt="Аватар" onerror="this.src='./img/default-elder.png'">`
+        : `<img class="elder-avatar" src="./img/default-elder.png" alt="Аватар">`;
+    
     elderCard.innerHTML = `
         <div class="elder-card-content">
             <div class="elder-header">
-                <h3 class="elder-name">${escapeHtml(displayData.fullName)}</h3>
+                <div class="elder-header-left">
+                    ${avatarHtml}
+                    <h3 class="elder-name">${escapeHtml(displayData.fullName)}</h3>
+                </div>
                 <div class="elder-actions">
                     <button class="edit-btn" data-id="${displayData.id}">
                         <i class="fas fa-edit"></i>
@@ -526,117 +553,151 @@ function updateEmptyListState() {
     emptyState.style.display = hasCards ? 'none' : 'block';
 }
 
-function editElder(elderId) {
+async function editElder(elderId) {
     try {
-        // Скрываем все формы редактирования, если есть
         const allForms = document.querySelectorAll('.editing-form');
         allForms.forEach(form => {
+            const cardId = form.dataset.elderId;
+            if (cardId) {
+                const card = document.querySelector(`.elder-card[data-id="${cardId}"]`);
+                if (card && !card.classList.contains('editing')) {
+                    card.style.display = '';
+                }
+            }
             form.remove();
         });
         
-        // Находим карточку для редактирования
         const elderCard = document.querySelector(`.elder-card[data-id="${elderId}"]`);
         if (!elderCard) {
             throw new Error('Карточка не найдена');
         }
         
-        // Получаем данные текущей карточки для быстрого редактирования
+        const response = await fetchWithAuth(`/api/v1/elders/${elderId}`);
+        if (!response.ok) {
+            throw new Error('Не удалось загрузить данные');
+        }
+        const elderData = await response.json();
+        
         const currentData = {
-            fullName: elderCard.querySelector('.elder-name').textContent,
-            birthYear: elderCard.querySelector('.info-row:nth-child(1) .info-value').textContent,
-            healthStatus: elderCard.querySelector('.info-row:nth-child(2) .info-value').textContent,
-            physicalLimitations: elderCard.querySelector('.info-row:nth-child(3) .info-value').textContent,
-            diseases: elderCard.querySelector('.info-row:nth-child(4) .info-value').textContent,
-            address: elderCard.querySelector('.info-row:nth-child(5) .info-value').textContent,
-            features: elderCard.querySelector('.info-row:nth-child(6) .info-value').textContent,
-            hobbies: elderCard.querySelector('.info-row:nth-child(7) .info-value').textContent,
-            comment: elderCard.querySelector('.comment-text') ? elderCard.querySelector('.comment-text').textContent : ''
+            fullName: elderData.full_name || 'Не указано',
+            birthYear: convertDateToDisplayFormat(elderData.birthday),
+            healthStatus: elderData.health_status || 'Не указано',
+            physicalLimitations: elderData.physical_limitations || 'нет',
+            diseases: elderData.disease || 'Не указано',
+            address: elderData.address || 'Не указан',
+            features: elderData.features || 'Не указано',
+            hobbies: elderData.hobbies || 'Не указано',
+            comment: elderData.comments || '',
+            avatarUrl: elderData.avatar_presigned_url || null
         };
         
-        // Создаем форму редактирования
-        const editForm = document.createElement('div');
-        editForm.className = 'editing-form form-container';
-        editForm.innerHTML = `
-            <form class="relative-form">
-                <div class="relative-card-content">
-                    <div class="form-fields-wrapper">
-                        <div class="form-group">
-                            <label for="edit-fullName">ФИО:*</label>
-                            <input type="text" id="edit-fullName" value="${escapeHtml(currentData.fullName)}" required placeholder="Введите ФИО">
+        elderCard.classList.add('editing');
+        
+        const avatarHtml = currentData.avatarUrl 
+            ? `<img class="elder-avatar-edit" src="${escapeHtml(currentData.avatarUrl)}" alt="Аватар" id="edit-avatar-preview" onerror="this.src='./img/default-elder.png'">`
+            : `<img class="elder-avatar-edit" src="./img/default-elder.png" alt="Аватар" id="edit-avatar-preview">`;
+        
+        elderCard.innerHTML = `
+            <div class="elder-card-content">
+                <form class="relative-form editing-form-inline" data-elder-id="${elderId}">
+                    <div class="relative-card-content">
+                        <div class="avatar_photo small">
+                            <label for="edit-elder-avatar-upload">
+                                ${avatarHtml}
+                            </label>
+                            <input id="edit-elder-avatar-upload" type="file" accept="image/*" class="avatar-input" />
                         </div>
-
-                        <div class="form-row">
+                        <div class="form-fields-wrapper">
                             <div class="form-group">
-                                <label for="edit-birthYear">Дата рождения:*</label>
-                                <input type="text" id="edit-birthYear" value="${escapeHtml(currentData.birthYear)}" required placeholder="16.11.1960">
+                                <label for="edit-fullName">ФИО:*</label>
+                                <input type="text" id="edit-fullName" value="${escapeHtml(currentData.fullName)}" required placeholder="Введите ФИО">
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-birthYear">Дата рождения:*</label>
+                                    <input type="text" id="edit-birthYear" value="${escapeHtml(currentData.birthYear)}" required placeholder="16.11.1960">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="edit-healthStatus">Состояние здоровья:*</label>
+                                    <input type="text" id="edit-healthStatus" value="${escapeHtml(currentData.healthStatus)}" required
+                                        placeholder="Например: хорошее">
+                                </div>
+                            </div>
+
+                            <div class="form-row">
+                                <div class="form-group">
+                                    <label for="edit-physicalLimitations">Физические ограничения:</label>
+                                    <input type="text" id="edit-physicalLimitations" value="${escapeHtml(currentData.physicalLimitations)}"
+                                        placeholder="Например: нет">
+                                </div>
+
+                                <div class="form-group">
+                                    <label for="edit-diseases">Заболевания:*</label>
+                                    <input type="text" id="edit-diseases" value="${escapeHtml(currentData.diseases)}" required
+                                        placeholder="Например: здоровая">
+                                </div>
                             </div>
 
                             <div class="form-group">
-                                <label for="edit-healthStatus">Состояние здоровья:*</label>
-                                <input type="text" id="edit-healthStatus" value="${escapeHtml(currentData.healthStatus)}" required
-                                    placeholder="Например: хорошее">
-                            </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group">
-                                <label for="edit-physicalLimitations">Физические ограничения:</label>
-                                <input type="text" id="edit-physicalLimitations" value="${escapeHtml(currentData.physicalLimitations)}"
-                                    placeholder="Например: нет">
+                                <label for="edit-address">Адрес проживания:*</label>
+                                <input type="text" id="edit-address" value="${escapeHtml(currentData.address)}" required
+                                    placeholder="г. Екатеринбург, ул.Бебеля 170, кв 30">
                             </div>
 
                             <div class="form-group">
-                                <label for="edit-diseases">Заболевания:*</label>
-                                <input type="text" id="edit-diseases" value="${escapeHtml(currentData.diseases)}" required
-                                    placeholder="Например: здоровая">
+                                <label for="edit-features">Особенности:*</label>
+                                <input type="text" id="edit-features" value="${escapeHtml(currentData.features)}" required placeholder="-">
                             </div>
-                        </div>
 
-                        <div class="form-group">
-                            <label for="edit-address">Адрес проживания:*</label>
-                            <input type="text" id="edit-address" value="${escapeHtml(currentData.address)}" required
-                                placeholder="г. Екатеринбург, ул.Бебеля 170, кв 30">
-                        </div>
+                            <div class="form-group">
+                                <label for="edit-hobbies">Увлечения:*</label>
+                                <input type="text" id="edit-hobbies" value="${escapeHtml(currentData.hobbies)}" required placeholder="вязание">
+                            </div>
 
-                        <div class="form-group">
-                            <label for="edit-features">Особенности:*</label>
-                            <input type="text" id="edit-features" value="${escapeHtml(currentData.features)}" required placeholder="-">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="edit-hobbies">Увлечения:*</label>
-                            <input type="text" id="edit-hobbies" value="${escapeHtml(currentData.hobbies)}" required placeholder="вязание">
-                        </div>
-
-                        <div class="form-group">
-                            <label for="edit-comment">Комментарий:</label>
-                            <textarea id="edit-comment" rows="2"
-                                placeholder="Дополнительная информация">${escapeHtml(currentData.comment)}</textarea>
+                            <div class="form-group">
+                                <label for="edit-comment">Комментарий:</label>
+                                <textarea id="edit-comment" rows="2"
+                                    placeholder="Дополнительная информация">${escapeHtml(currentData.comment)}</textarea>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                <div class="form-actions">
-                    <button type="button" class="cancel-btn cancel-edit-btn">Отмена</button>
-                    <button type="submit" class="save-btn">Сохранить изменения</button>
-                </div>
-            </form>
+                    <div class="form-actions">
+                        <button type="button" class="cancel-btn cancel-edit-btn">Отмена</button>
+                        <button type="submit" class="save-btn">Сохранить изменения</button>
+                    </div>
+                </form>
+            </div>
         `;
         
-        // Вставляем форму после карточки
-        elderCard.after(editForm);
+        const form = elderCard.querySelector('.relative-form');
+        const cancelBtn = elderCard.querySelector('.cancel-edit-btn');
+        const avatarInput = elderCard.querySelector('#edit-elder-avatar-upload');
+        const avatarPreview = elderCard.querySelector('#edit-avatar-preview');
         
-        // Добавляем обработчики для формы редактирования
-        const form = editForm.querySelector('.relative-form');
-        const cancelBtn = editForm.querySelector('.cancel-edit-btn');
+        if (avatarInput && avatarPreview) {
+            avatarInput.addEventListener('change', function(e) {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = function(event) {
+                        avatarPreview.src = event.target.result;
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        }
         
         form.addEventListener('submit', async function(e) {
             e.preventDefault();
             await handleEditSubmit(elderId);
         });
         
-        cancelBtn.addEventListener('click', function() {
-            editForm.remove();
+        cancelBtn.addEventListener('click', async function() {
+            elderCard.classList.remove('editing');
+            await loadElders();
         });
         
     } catch (error) {
@@ -664,39 +725,46 @@ async function handleEditSubmit(elderId) {
         return;
     }
     
+    const avatarInput = document.getElementById('edit-elder-avatar-upload');
+    const avatarFile = avatarInput && avatarInput.files.length > 0 ? avatarInput.files[0] : null;
+    
     try {
-        const success = await updateElder(elderId, formData);
+        const success = await updateElder(elderId, formData, avatarFile);
         if (success) {
-            // Удаляем форму редактирования
-            const editForm = document.querySelector('.editing-form');
-            if (editForm) editForm.remove();
-            
-            // Перезагружаем список
             await loadElders();
         }
     } catch (error) {
         console.error('Ошибка при обновлении:', error);
         showNotification('Ошибка при обновлении данных: ' + error.message, 'error');
+        const elderCard = document.querySelector(`.elder-card[data-id="${elderId}"]`);
+        if (elderCard) {
+            elderCard.classList.remove('editing');
+            await loadElders();
+        }
     }
 }
 
-async function createElder(formData) {
-    const apiFormData = {
-        full_name: formData.fullName,
-        birthday: convertDateToApiFormat(formData.birthYear),
-        health_status: formData.healthStatus,
-        physical_limitations: formData.physicalLimitations,
-        disease: formData.diseases,
-        address: formData.address,
-        features: formData.features,
-        hobbies: formData.hobbies,
-        comments: formData.comment
-    };
+async function createElder(formData, avatarFile) {
+    const formDataToSend = new FormData();
+    
+    formDataToSend.append('full_name', formData.fullName);
+    formDataToSend.append('birthday', convertDateToApiFormat(formData.birthYear));
+    formDataToSend.append('health_status', formData.healthStatus);
+    formDataToSend.append('physical_limitations', formData.physicalLimitations);
+    formDataToSend.append('disease', formData.diseases);
+    formDataToSend.append('address', formData.address);
+    formDataToSend.append('features', formData.features);
+    formDataToSend.append('hobbies', formData.hobbies);
+    formDataToSend.append('comments', formData.comment);
+    
+    if (avatarFile) {
+        formDataToSend.append('avatar', avatarFile);
+    }
     
     try {
         const response = await fetchWithAuth('/api/v1/elders', {
             method: 'POST',
-            body: JSON.stringify(apiFormData)
+            body: formDataToSend
         });
         
         if (response.ok) {
@@ -712,23 +780,27 @@ async function createElder(formData) {
     }
 }
 
-async function updateElder(elderId, formData) {
-    const apiFormData = {
-        full_name: formData.fullName,
-        birthday: convertDateToApiFormat(formData.birthYear),
-        health_status: formData.healthStatus,
-        physical_limitations: formData.physicalLimitations,
-        disease: formData.diseases,
-        address: formData.address,
-        features: formData.features,
-        hobbies: formData.hobbies,
-        comments: formData.comment
-    };
+async function updateElder(elderId, formData, avatarFile) {
+    const formDataToSend = new FormData();
+    
+    formDataToSend.append('full_name', formData.fullName);
+    formDataToSend.append('birthday', convertDateToApiFormat(formData.birthYear));
+    formDataToSend.append('health_status', formData.healthStatus);
+    formDataToSend.append('physical_limitations', formData.physicalLimitations);
+    formDataToSend.append('disease', formData.diseases);
+    formDataToSend.append('address', formData.address);
+    formDataToSend.append('features', formData.features);
+    formDataToSend.append('hobbies', formData.hobbies);
+    formDataToSend.append('comments', formData.comment);
+    
+    if (avatarFile) {
+        formDataToSend.append('avatar', avatarFile);
+    }
     
     try {
         const response = await fetchWithAuth(`/api/v1/elders/${elderId}`, {
             method: 'PATCH',
-            body: JSON.stringify(apiFormData)
+            body: formDataToSend
         });
         
         if (response.ok) {

@@ -67,6 +67,31 @@ class ElderCreationSchema(BaseModel):
     hobbies: str
     comments: str
 
+    @classmethod
+    def as_form(
+        cls,
+        full_name: str = Form(...),
+        birthday: date = Form(...),
+        health_status: str = Form(...),
+        physical_limitations: str = Form(...),
+        disease: str = Form(...),
+        address: str = Form(...),
+        features: str = Form(...),
+        hobbies: str = Form(...),
+        comments: str = Form(...)
+    ):
+        return cls(
+            full_name=full_name,
+            birthday=birthday,
+            health_status=health_status,
+            physical_limitations=physical_limitations,
+            disease=disease,
+            address=address,
+            features=features,
+            hobbies=hobbies,
+            comments=comments
+        )
+
 
 class ElderUpdateSchema(BaseModel):
     full_name: str | None = None

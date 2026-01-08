@@ -2,7 +2,18 @@ from datetime import date, datetime, time
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import ARRAY, Boolean, Date as PGDate, DateTime as PGDateTime, Enum, ForeignKey, Integer, String, func, Time as PGTime
+from sqlalchemy import (
+    ARRAY,
+    Boolean,
+    Date as PGDate,
+    DateTime as PGDateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Time as PGTime,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 

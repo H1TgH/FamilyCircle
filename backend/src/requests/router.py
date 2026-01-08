@@ -1,11 +1,9 @@
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
 from sqlalchemy import delete, select, update
 from sqlalchemy.orm import selectinload
-
-from fastapi import File, UploadFile
 
 from src.config import config
 from src.database import SessionDep
@@ -268,9 +266,10 @@ async def delete_request(
     tags=['elders']
 )
 async def create_elder(
-    elder_data: ElderCreationSchema,
     session: SessionDep,
-    user: UserModel = Depends(get_current_user)
+    elder_data: ElderCreationSchema = Depends(ElderCreationSchema.as_form),
+    user: UserModel = Depends(get_current_user),
+    avatar: UploadFile | None = File(None)
 ):
     if user.role != RoleEnum.RELATIVE:
         raise HTTPException(
@@ -295,10 +294,33 @@ async def create_elder(
     await session.commit()
     await session.refresh(new_elder)
 
-    # Получаем URL аватарки
+    if avatar:
+        bucket_name = config.minio.define_buckets['avatars']
+        if not bucket_name:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='Avatars bucket not configured'
+            )
+
+        minio_client = MinioClient(bucket_name=bucket_name)
+        avatar_key = f'elder_{new_elder.id}.webp'
+        data = await convert_to_webp(avatar)
+
+        await minio_client.upload_file(
+            file_name=avatar_key,
+            data=data,
+            content_type='image/webp'
+        )
+
+        await session.execute(
+            update(ElderModel)
+            .where(ElderModel.id == new_elder.id)
+            .values(is_has_avatar=True)
+        )
+        await session.commit()
+
     avatar_url = await get_elder_avatar_presigned_url(new_elder)
-    
-    # Создаем словарь с данными пожилого
+
     elder_dict = {
         'id': new_elder.id,
         'relative_id': new_elder.relative_id,
@@ -315,7 +337,7 @@ async def create_elder(
         'created_at': new_elder.created_at,
         'updated_at': new_elder.updated_at
     }
-    
+
     return ElderResponseSchema.model_validate(elder_dict)
 
 
@@ -336,10 +358,8 @@ async def get_my_elders(
 
     elders_response = []
     for elder in elders:
-        # Получаем URL аватарки
         avatar_url = await get_elder_avatar_presigned_url(elder)
-        
-        # Создаем словарь с данными пожилого
+
         elder_dict = {
             'id': elder.id,
             'relative_id': elder.relative_id,
@@ -356,7 +376,7 @@ async def get_my_elders(
             'created_at': elder.created_at,
             'updated_at': elder.updated_at
         }
-        
+
         elders_response.append(ElderResponseSchema.model_validate(elder_dict))
 
     return elders_response
@@ -390,10 +410,8 @@ async def get_elder(
             detail='You do not have access to this elder'
         )
 
-    # Получаем URL аватарки
     avatar_url = await get_elder_avatar_presigned_url(elder)
-    
-    # Создаем словарь с данными пожилого
+
     elder_dict = {
         'id': elder.id,
         'relative_id': elder.relative_id,
@@ -410,7 +428,7 @@ async def get_elder(
         'created_at': elder.created_at,
         'updated_at': elder.updated_at
     }
-    
+
     return ElderResponseSchema.model_validate(elder_dict)
 
 
@@ -444,7 +462,6 @@ async def update_elder(
             detail='You cannot update this elder'
         )
 
-    # Обновляем данные через SQLAlchemy update для правильной работы
     if elder_data:
         update_data = elder_data.model_dump(exclude_none=True)
         if update_data:
@@ -454,7 +471,6 @@ async def update_elder(
                 .values(**update_data)
             )
 
-    # Обновляем аватарку если она загружена
     if avatar:
         bucket_name = config.minio.define_buckets['avatars']
         if not bucket_name:
@@ -473,7 +489,6 @@ async def update_elder(
             content_type='image/webp'
         )
 
-        # Устанавливаем флаг наличия аватарки
         await session.execute(
             update(ElderModel)
             .where(ElderModel.id == elder.id)
@@ -481,17 +496,14 @@ async def update_elder(
         )
 
     await session.commit()
-    
-    # Получаем обновленного пожилого
+
     result = await session.execute(
         select(ElderModel).where(ElderModel.id == elder_id)
     )
     updated_elder = result.scalar_one()
 
-    # Получаем URL обновленной аватарки
     avatar_url = await get_elder_avatar_presigned_url(updated_elder)
-    
-    # Создаем словарь с обновленными данными
+
     elder_dict = {
         'id': updated_elder.id,
         'relative_id': updated_elder.relative_id,
@@ -508,7 +520,7 @@ async def update_elder(
         'created_at': updated_elder.created_at,
         'updated_at': updated_elder.updated_at
     }
-    
+
     return ElderResponseSchema.model_validate(elder_dict)
 
 
@@ -537,7 +549,6 @@ async def delete_elder(
             detail='You cannot delete this elder'
         )
 
-    # Удаляем аватарку из хранилища если она есть
     if elder.is_has_avatar:
         bucket_name = config.minio.define_buckets['avatars']
         if bucket_name:
@@ -545,7 +556,6 @@ async def delete_elder(
             avatar_key = f'elder_{elder.id}.webp'
             await minio_client.delete_file(avatar_key)
 
-    # Удаляем запись из базы
     await session.execute(delete(ElderModel).where(ElderModel.id == elder_id))
     await session.commit()
 
