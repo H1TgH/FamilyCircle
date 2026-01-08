@@ -66,14 +66,27 @@
             <button type="button" class="add-task-btn" id="addTaskBtn">+ Добавить задачу</button>
 
             <h3>Частота проведения</h3>
-            <select id="frequency">
-                <option value="">Выберите</option>
-                <option value="once">Единоразово</option>
-                <option value="every_few_hours">Раз в несколько часов</option>
-                <option value="daily">Ежедневно</option>
-                <option value="weekly">Еженедельно</option>
-                <option value="monthly">Ежемесячно</option>
-            </select>
+            <div style="margin-bottom: 10px; font-size: 14px; color: #666;">
+                (если единоразово, то не нужно выбирать)
+            </div>
+            <div class="frequency-options">
+                <div class="frequency-option">
+                    <input type="radio" id="frequency_every_few_hours" name="frequency" value="every_few_hours" data-checked="false">
+                    <label for="frequency_every_few_hours">Раз в несколько часов</label>
+                </div>
+                <div class="frequency-option">
+                    <input type="radio" id="frequency_daily" name="frequency" value="daily" data-checked="false">
+                    <label for="frequency_daily">Ежедневно</label>
+                </div>
+                <div class="frequency-option">
+                    <input type="radio" id="frequency_weekly" name="frequency" value="weekly" data-checked="false">
+                    <label for="frequency_weekly">Еженедельно</label>
+                </div>
+                <div class="frequency-option">
+                    <input type="radio" id="frequency_monthly" name="frequency" value="monthly" data-checked="false">
+                    <label for="frequency_monthly">Ежемесячно</label>
+                </div>
+            </div>
 
             <h3>Дата выполнения</h3>
             <input type="date" id="scheduledDate">

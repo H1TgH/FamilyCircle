@@ -26,6 +26,34 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 });
 
+document.addEventListener('DOMContentLoaded', function() {
+    loadElders();
+    loadRequests();
+    
+    document.getElementById('createBtn').onclick = function() {
+        if (elders.length === 0) {
+            showNotification('Сначала добавьте пожилого человека в профиле', 'error');
+            return;
+        }
+        showForm();
+    };
+    
+    document.getElementById('cancelBtn').onclick = function() {
+        hideForm();
+        clearForm();
+    };
+    
+    document.getElementById('publishBtn').onclick = function() {
+        saveCard();
+    };
+    
+    document.getElementById('addTaskBtn').onclick = function() {
+        addTaskInput();
+    };
+    
+    setupFrequencyRadioButtons();
+});
+
 async function loadElders() {
     try {
         const response = await fetchWithAuth('/api/v1/elders/me');
@@ -85,6 +113,18 @@ function showForm() {
     }
 }
 
+function getFrequencyText(frequency) {
+    if (!frequency) return 'Единоразово';
+    
+    const frequencyMap = {
+        'every_few_hours': 'Раз в несколько часов',
+        'daily': 'Ежедневно',
+        'weekly': 'Еженедельно',
+        'monthly': 'Ежемесячно'
+    };
+    return frequencyMap[frequency] || frequency;
+}
+
 function hideForm() {
     document.getElementById('formPage').style.display = 'none';
     document.querySelector('.main').style.display = 'flex';
@@ -94,7 +134,6 @@ function clearForm() {
     document.getElementById('taskName').value = '';
     document.getElementById('comment').value = '';
     document.getElementById('editCardId').value = '';
-    document.getElementById('frequency').value = '';
     document.getElementById('scheduledDate').value = '';
     document.getElementById('scheduledTime').value = '';
     document.getElementById('durationValue').value = '0';
@@ -105,6 +144,12 @@ function clearForm() {
     if (elderSelect) {
         elderSelect.value = '';
     }
+    
+    const radioButtons = document.querySelectorAll('input[name="frequency"]');
+    radioButtons.forEach(radio => {
+        radio.checked = false;
+        radio.setAttribute('data-checked', 'false');
+    });
     
     const tasksContainer = document.getElementById('tasksContainer');
     tasksContainer.innerHTML = '';
@@ -216,12 +261,14 @@ async function saveCard() {
     const taskName = document.getElementById('taskName').value.trim();
     const comment = document.getElementById('comment').value.trim();
     const editCardId = document.getElementById('editCardId').value;
-    const frequency = document.getElementById('frequency').value;
     const scheduledDate = document.getElementById('scheduledDate').value;
     const scheduledTime = document.getElementById('scheduledTime').value;
     const durationValue = parseInt(document.getElementById('durationValue').value) || 0;
     const durationUnit = document.getElementById('durationUnit').value;
     const isShoppingChecklist = document.getElementById('isShoppingChecklist').checked;
+    
+    const frequencyRadio = document.querySelector('input[name="frequency"]:checked');
+    const frequency = frequencyRadio ? frequencyRadio.value : null;
     
     if (!elderId) {
         showNotification('Пожалуйста, выберите пожилого человека', 'error');
@@ -231,11 +278,6 @@ async function saveCard() {
     if (!taskName) {
         showNotification('Пожалуйста, введите название задачи', 'error');
         document.getElementById('taskName').focus();
-        return;
-    }
-    
-    if (!frequency) {
-        showNotification('Пожалуйста, выберите частоту проведения', 'error');
         return;
     }
 
@@ -297,6 +339,25 @@ async function saveCard() {
     }
 }
 
+function setupFrequencyRadioButtons() {
+    const radioButtons = document.querySelectorAll('input[name="frequency"]');
+    
+    radioButtons.forEach(radio => {
+        radio.addEventListener('click', function(e) {
+            if (this.checked && this.getAttribute('data-checked') === 'true') {
+                this.checked = false;
+                this.setAttribute('data-checked', 'false');
+                e.preventDefault();
+            } else {
+                radioButtons.forEach(rb => {
+                    rb.setAttribute('data-checked', 'false');
+                });
+                this.setAttribute('data-checked', 'true');
+            }
+        });
+    });
+}
+
 function renderCards(requests) {
     const container = document.getElementById('cardsContainer');
     if (!container) {
@@ -329,6 +390,8 @@ function renderCards(requests) {
         card.className = 'request-card';
         card.dataset.id = request.id;
         
+        const frequencyText = getFrequencyText(request.frequency);
+        
         card.innerHTML = `
             <div class="card">
                 <div class="card-header">
@@ -352,11 +415,9 @@ function renderCards(requests) {
                         </div>
                     ` : ''}
                     
-                    ${request.frequency ? `
-                        <div class="card-comment">
-                            <strong>🔄 Частота:</strong> ${getFrequencyText(request.frequency)}
-                        </div>
-                    ` : ''}
+                    <div class="card-comment">
+                        <strong>🔄 Частота:</strong> ${frequencyText}
+                    </div>
                     
                     ${request.is_shopping_checklist ? `
                         <div class="card-comment">
@@ -389,7 +450,7 @@ function getStatusText(status) {
 
 function getFrequencyText(frequency) {
     const frequencyMap = {
-        'once': 'Единоразово',
+        'null': 'Единоразово',
         'every_few_hours': 'Раз в несколько часов',
         'daily': 'Ежедневно',
         'weekly': 'Еженедельно',
@@ -416,13 +477,18 @@ async function editCard(requestId) {
             document.getElementById('elderSelect').value = request.elder_id;
             document.getElementById('taskName').value = request.task_name || '';
             document.getElementById('comment').value = request.description || '';
-            document.getElementById('frequency').value = request.frequency || '';
             document.getElementById('scheduledDate').value = request.scheduled_date || '';
             document.getElementById('scheduledTime').value = request.scheduled_time || '';
             document.getElementById('durationValue').value = request.duration_value || 0;
             document.getElementById('durationUnit').value = request.duration_unit || 'hours';
             document.getElementById('isShoppingChecklist').checked = request.is_shopping_checklist || false;
             document.getElementById('editCardId').value = request.id;
+            
+            const radioButtons = document.querySelectorAll('input[name="frequency"]');
+            radioButtons.forEach(radio => {
+                radio.checked = radio.value === request.frequency;
+                radio.setAttribute('data-checked', radio.value === request.frequency ? 'true' : 'false');
+            });
             
             const tasksContainer = document.getElementById('tasksContainer');
             tasksContainer.innerHTML = '';
@@ -435,7 +501,7 @@ async function editCard(requestId) {
         }
     } catch (error) {
         console.error('Ошибка:', error);
-        alert('Ошибка загрузки заявки');
+        showNotification('Ошибка загрузки заявки', 'error');
     }
 }
 
