@@ -1,4 +1,5 @@
 let elders = [];
+let elderDetailsCache = {};
 
 document.addEventListener('DOMContentLoaded', function() {
     loadElders();
@@ -59,7 +60,6 @@ async function loadElders() {
         const response = await fetchWithAuth('/api/v1/elders/me');
         if (response.ok) {
             const loadedElders = await response.json();
-            // Убираем дубликаты по ID
             elders = loadedElders.filter((elder, index, self) =>
                 index === self.findIndex(e => e.id === elder.id)
             );
@@ -99,6 +99,143 @@ async function loadRequests() {
             container.innerHTML = '<p style="text-align: center; padding: 40px; color: #f44336;">Ошибка соединения</p>';
         }
     }
+}
+
+async function showElderDetails(elderId) {
+    let elder = elders.find(e => e.id === elderId);
+    
+    if (!elder) {
+        try {
+            const response = await fetchWithAuth(`/api/v1/elders/${elderId}`);
+            if (response.ok) {
+                elder = await response.json();
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки данных пожилого:', error);
+            showNotification('Не удалось загрузить данные пожилого', 'error');
+            return;
+        }
+    }
+    
+    if (!elder) {
+        showNotification('Данные пожилого не найдены', 'error');
+        return;
+    }
+    
+    const avatarUrl = elder.avatar_presigned_url || './img/avatar.png';
+    
+    let detailsHTML = '';
+    
+    if (elder.birthday) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Дата рождения:</div>
+                <div class="detail-value">${new Date(elder.birthday).toLocaleDateString('ru-RU')}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.address) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Адрес:</div>
+                <div class="detail-value">${escapeHtml(elder.address)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.health_status) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Состояние здоровья:</div>
+                <div class="detail-value">${escapeHtml(elder.health_status)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.physical_limitations) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Физические ограничения:</div>
+                <div class="detail-value">${escapeHtml(elder.physical_limitations)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.disease) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Заболевания:</div>
+                <div class="detail-value">${escapeHtml(elder.disease)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.features) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Особенности:</div>
+                <div class="detail-value">${escapeHtml(elder.features)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.hobbies) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Хобби:</div>
+                <div class="detail-value">${escapeHtml(elder.hobbies)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.comments) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Комментарии:</div>
+                <div class="detail-value">${escapeHtml(elder.comments)}</div>
+            </div>
+        `;
+    }
+    
+    if (!detailsHTML) {
+        detailsHTML = '<p>Дополнительная информация отсутствует</p>';
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay active';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+            <div class="elder-modal-header">
+                <img src="${avatarUrl}" alt="Аватар" class="elder-modal-avatar" onerror="this.src='./img/avatar.png'">
+                <div class="elder-modal-info">
+                    <h3>${escapeHtml(elder.full_name)}</h3>
+                    <p>Пожилой человек</p>
+                </div>
+            </div>
+            <div class="elder-details-list">
+                ${detailsHTML}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+    
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
 }
 
 function showForm() {
@@ -391,14 +528,20 @@ function renderCards(requests) {
         card.dataset.id = request.id;
         
         const frequencyText = getFrequencyText(request.frequency);
+        const elder = elders.find(e => e.id === request.elder_id);
+        const elderName = elder ? elder.full_name : 'Неизвестно';
+        const avatarUrl = elder && elder.avatar_presigned_url ? elder.avatar_presigned_url : './img/avatar.png';
         
         card.innerHTML = `
-            <div class="card">
-                <div class="card-header">
-                    <img src="/img/avatar.png" alt="Аватар">
-                    <div class="card-title">
-                        <h3>${escapeHtml(request.task_name)}</h3>
-                        <div style="font-size: 14px; color: #666;">Статус: ${getStatusText(request.status)}</div>
+            <div class="card-header-section">
+                <div class="card-title">
+                    <h3>${escapeHtml(request.task_name)}</h3>
+                    <div class="elder-info-container">
+                        <img src="${avatarUrl}" alt="Аватар пожилого" class="elder-avatar" onerror="this.src='./img/avatar.png'">
+                        <div class="elder-details">
+                            <div class="elder-name">${escapeHtml(elderName)}</div>
+                            <a href="#" class="view-details-link" onclick="showElderDetails('${request.elder_id}'); return false;">Подробнее</a>
+                        </div>
                     </div>
                 </div>
                 <div class="card-content">
@@ -430,8 +573,18 @@ function renderCards(requests) {
                         <button class="edit-btn" onclick="editCard('${request.id}')">Изменить</button>
                         <button class="delete-btn" onclick="deleteCard('${request.id}')">Удалить</button>
                     ` : ''}
-                    <button class="details-btn" onclick="viewDetails('${request.id}')">Подробнее</button>
+                    <button class="details-btn" onclick="viewDetails('${request.id}')">Подробнее о заявке</button>
                 </div>
+            </div>
+            <div class="card-right-section">
+                <div class="status-container">
+                    <div class="status-text">
+                        ${renderStatus(request.status, request.volunteer)}
+                    </div>
+                </div>
+                <button class="responses-btn" onclick="showResponses('${request.id}')">
+                    Отклики (${request.response_count || 0})
+                </button>
             </div>
         `;
         
@@ -466,6 +619,31 @@ function getDurationUnitText(unit) {
         'months': 'месяцев'
     };
     return unitMap[unit] || unit;
+}
+
+function renderStatus(status, volunteer) {
+    switch(status) {
+        case 'open':
+            return 'Не в работе';
+        case 'in_progress':
+            if (volunteer) {
+                return `
+                    <div class="volunteer-assigned">
+                        <img src="${volunteer.avatar_presigned_url || './img/avatar.png'}" alt="Аватар волонтера" class="volunteer-avatar" onerror="this.src='./img/avatar.png'">
+                        <div class="volunteer-name">${escapeHtml(volunteer.full_name)}</div>
+                    </div>
+                `;
+            }
+            return 'В работе';
+        case 'done':
+            return 'Закрыто';
+        default:
+            return status;
+    }
+}
+
+function showResponses(requestId) {
+    showNotification('Функция откликов в разработке', 'info');
 }
 
 async function editCard(requestId) {
