@@ -57,44 +57,27 @@ async def create_requests(
             detail='You can create a request only for your elderly'
         )
 
-    print('DEBUG - Received frequency:', request_data.frequency)
-    print('DEBUG - Received duration_unit:', request_data.duration_unit)
-    
-    # Просто используем строки напрямую
     frequency_str = request_data.frequency
     duration_unit_str = request_data.duration_unit
-    
-    print('DEBUG - Frequency string to use:', frequency_str)
-    print('DEBUG - Duration unit string to use:', duration_unit_str)
 
-    # Создаем объект с использованием строк напрямую
     new_request = RequestModel(
         relative_id=user.id,
         elder_id=request_data.elder_id,
         task_name=request_data.task_name,
         check_list=request_data.check_list,
         description=request_data.description,
-        frequency=frequency_str,  # Просто строка
+        frequency=frequency_str,
         scheduled_date=request_data.scheduled_date,
         scheduled_time=request_data.scheduled_time,
         duration_value=request_data.duration_value,
-        duration_unit=duration_unit_str,  # Просто строка
+        duration_unit=duration_unit_str,
         is_shopping_checklist=request_data.is_shopping_checklist,
         status=RequestStatusEnum.OPEN
     )
 
-    # Дополнительный дебаг
-    print('DEBUG - RequestModel frequency attribute:', new_request.frequency)
-    print('DEBUG - RequestModel duration_unit attribute:', new_request.duration_unit)
-
     session.add(new_request)
-    
-    try:
-        await session.commit()
-    except Exception as e:
-        print('DEBUG - Exception during commit:', str(e))
-        raise
-    
+
+    await session.commit()
     await session.refresh(new_request)
 
     return {
