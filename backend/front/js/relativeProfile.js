@@ -1,137 +1,99 @@
-document.addEventListener('DOMContentLoaded', function() {
-    loadUserProfile();
-    loadElders();
+window.authHeader = null;
 
-    setupFormHandlers();
+function getAuthHeader() {
+    const token = localStorage.getItem('access_token');
+    return token ? { 'Authorization': `Bearer ${token}` } : {};
+}
+
+let isLoadingElders = false;
+let eldersList = null;
+
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('elderProfile.js загружен');
+    
+    initializePage();
     setupAvatarUpload();
 });
 
-function setupFormHandlers() {
-    const relativeForm = document.getElementById('relativeForm');
-    if (!relativeForm) return;
-    
-    const newForm = relativeForm.cloneNode(true);
-    relativeForm.parentNode.replaceChild(newForm, relativeForm);
-    
-    const freshForm = document.getElementById('relativeForm');
-    
-    freshForm.addEventListener('submit', async function(event) {
-        event.preventDefault();
-        event.stopPropagation();
-        
-        if (this.classList.contains('submitting')) return;
-        this.classList.add('submitting');
-        
-        const formData = {
-            fullName: document.getElementById('fullName').value,
-            birthYear: document.getElementById('birthYear').value,
-            healthStatus: document.getElementById('healthStatus').value,
-            physicalLimitations: document.getElementById('physicalLimitations').value,
-            diseases: document.getElementById('diseases').value,
-            address: document.getElementById('address').value,
-            features: document.getElementById('features').value,
-            hobbies: document.getElementById('hobbies').value,
-            comment: document.getElementById('comment').value
-        };
-        
-        const errors = validateForm(formData);
-        if (errors.length > 0) {
-            showNotification('Пожалуйста, заполните все обязательные поля:\n' + errors.join('\n'), 'error');
-            this.classList.remove('submitting');
-            return;
-        }
-        
-        const saveBtn = freshForm.querySelector('.save-btn');
-        const originalText = saveBtn.textContent;
-        saveBtn.textContent = 'Сохранение...';
-        saveBtn.disabled = true;
-        
-        try {
-            const success = await handleFormSubmit(formData);
-            
-            if (success) {
-                hideForm();
-                freshForm.reset();
-                delete freshForm.dataset.editId;
-            }
-        } catch (error) {
-            console.error('Ошибка:', error);
-            showNotification('Ошибка: ' + error.message, 'error');
-        } finally {
-            saveBtn.textContent = originalText;
-            saveBtn.disabled = false;
-            this.classList.remove('submitting');
-        }
-    });
-    
-    const showFormBtn = document.getElementById('showFormBtn');
-    const cancelFormBtn = document.getElementById('cancelFormBtn');
-    
-    if (showFormBtn) {
-        showFormBtn.addEventListener('click', showForm);
+function initializePage() {
+    if (!isAuthenticated()) {
+        console.log('Пользователь не авторизован');
+        return;
     }
+
+    const isProfilePage = window.location.pathname.includes('profile');
+    if (!isProfilePage) return;
     
-    if (cancelFormBtn) {
-        cancelFormBtn.addEventListener('click', hideForm);
-    }
+    console.log('Страница профиля обнаружена');
+    
+    loadUserProfile();
+    loadElders();
+    setupElderForm();
+    setupEventListeners();
 }
 
-function validateForm(formData) {
-    const errors = [];
-    
-    if (!formData.fullName.trim()) {
-        errors.push('ФИО обязательно для заполнения');
-    }
-    
-    if (!formData.birthYear.trim()) {
-        errors.push('Год рождения обязателен для заполнения');
-    }
-    
-    if (!formData.healthStatus.trim()) {
-        errors.push('Состояние здоровья обязательно для заполнения');
-    }
-    
-    if (!formData.diseases.trim()) {
-        errors.push('Заболевания обязательны для заполнения');
-    }
-    
-    if (!formData.address.trim()) {
-        errors.push('Адрес проживания обязателен для заполнения');
-    }
-    
-    if (!formData.features.trim()) {
-        errors.push('Особенности обязательны для заполнения');
-    }
-    
-    if (!formData.hobbies.trim()) {
-        errors.push('Увлечения обязательны для заполнения');
-    }
-    
-    return errors;
+function isAuthenticated() {
+    return !!localStorage.getItem('access_token');
 }
 
-function showForm() {
-    const formContainer = document.getElementById('relativeFormContainer');
-    const showFormBtn = document.getElementById('showFormBtn');
-    if (formContainer && showFormBtn) {
-        formContainer.style.display = 'block';
-        showFormBtn.style.display = 'none';
-        const fullNameInput = document.getElementById('fullName');
-        if (fullNameInput) fullNameInput.focus();
+async function fetchWithAuth(url, options = {}) {
+    const accessToken = localStorage.getItem('access_token');
+    
+    if (!options.headers) {
+        options.headers = {};
     }
-}
-
-function hideForm() {
-    const formContainer = document.getElementById('relativeFormContainer');
-    const showFormBtn = document.getElementById('showFormBtn');
-    if (formContainer && showFormBtn) {
-        formContainer.style.display = 'none';
-        showFormBtn.style.display = 'block';
-        const relativeForm = document.getElementById('relativeForm');
-        if (relativeForm) {
-            relativeForm.reset();
-            delete relativeForm.dataset.editId;
+    
+    if (accessToken) {
+        options.headers['Authorization'] = `Bearer ${accessToken}`;
+    }
+    
+    if (!options.headers['Content-Type'] && !(options.body instanceof FormData)) {
+        options.headers['Content-Type'] = 'application/json';
+    }
+    
+    let response = await fetch(url, options);
+    
+    if (response.status === 401) {
+        const refreshed = await refreshAccessToken();
+        if (refreshed) {
+            const newAccessToken = localStorage.getItem('access_token');
+            options.headers['Authorization'] = `Bearer ${newAccessToken}`;
+            response = await fetch(url, options);
+        } else {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            window.location.href = '/input';
+            throw new Error('Требуется повторная авторизация');
         }
+    }
+    
+    return response;
+}
+
+async function refreshAccessToken() {
+    const refreshToken = localStorage.getItem('refresh_token');
+    if (!refreshToken) return false;
+    
+    try {
+        const response = await fetch('/api/v1/users/refresh-token', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ refresh_token: refreshToken })
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('refresh_token', data.refresh_token);
+            return true;
+        } else {
+            return false;
+        }
+    } catch (error) {
+        console.error('Ошибка обновления токена:', error);
+        return false;
     }
 }
 
@@ -147,18 +109,28 @@ async function loadUserProfile() {
     }
 }
 
-async function loadElders() {
-    try {
-        const response = await fetchWithAuth('/api/v1/elders/me');
-        if (response.ok) {
-            const elders = await response.json();
-            displayElders(elders);
+function formatPhoneNumber(phone) {
+    if (!phone) return 'Не указан';
+    
+    // Убираем все нецифровые символы
+    const cleaned = phone.replace(/\D/g, '');
+    
+    // Форматируем российский номер
+    if (cleaned.length === 11 && cleaned.startsWith('7') || cleaned.startsWith('8')) {
+        const countryCode = cleaned.startsWith('7') ? '+7' : '8';
+        const rest = cleaned.slice(1);
+        
+        // Формат: +7 912 194 63 65
+        if (rest.length === 10) {
+            return `${countryCode} ${rest.slice(0, 3)} ${rest.slice(3, 6)} ${rest.slice(6, 8)} ${rest.slice(8)}`;
         }
-    } catch (error) {
-        console.error('Ошибка загрузки пожилых:', error);
     }
+    
+    // Если номер не соответствует формату, возвращаем как есть
+    return phone;
 }
 
+// Обновите функцию updateProfileUI:
 function updateProfileUI(user) {
     const nameElement = document.querySelector('.profile-section .name');
     if (nameElement) {
@@ -172,9 +144,75 @@ function updateProfileUI(user) {
     if (avatarImg && user.avatar_presigned_url) {
         avatarImg.src = user.avatar_presigned_url;
         avatarImg.onerror = function() {
-            this.src = '/img/profile.png';
+            this.src = './img/profile.png';
         };
     }
+    
+    // Обновляем контактные данные
+    const contactsElement = document.getElementById('userContacts');
+    if (contactsElement) {
+        let contactsHTML = 'Контактные данные:';
+        
+        if (user.phone_number) {
+            const formattedPhone = formatPhoneNumber(user.phone_number);
+            contactsHTML += ` ${formattedPhone}`;
+        }
+        
+        contactsElement.innerHTML = contactsHTML;
+    }
+    
+    // Обновляем поле "О себе" если есть данные
+    const aboutElement = document.getElementById('userAbout');
+    if (aboutElement && (user.birthday || user.address || user.about)) {
+        let aboutHTML = 'О себе:';
+        
+        if (user.birthday) {
+            const birthday = convertDateToDisplayFormat(user.birthday);
+            aboutHTML += `<br><strong>Дата рождения:</strong> ${birthday}`;
+        }
+        
+        if (user.address) {
+            aboutHTML += `<br><strong>Адрес:</strong> ${user.address}`;
+        }
+        
+        if (user.about) {
+            aboutHTML += `<br><strong>Информация:</strong> ${user.about}`;
+        }
+        
+        aboutElement.innerHTML = aboutHTML;
+    }
+}
+
+function setupAvatarUpload() {
+    const avatarInput = document.getElementById('avatar-upload');
+    const avatarLabel = document.querySelector('.profile-section label[for="avatar-upload"]');
+    
+    if (!avatarInput || !avatarLabel) return;
+    
+    avatarInput.addEventListener('change', async function(event) {
+        const file = event.target.files[0];
+        if (!file) return;
+        
+        if (!file.type.startsWith('image/')) {
+            showNotification('Пожалуйста, выберите изображение', 'error');
+            return;
+        }
+        
+        if (file.size > 5 * 1024 * 1024) {
+            showNotification('Размер файла не должен превышать 5MB', 'error');
+            return;
+        }
+        
+        const success = await updateUserAvatar(file);
+        if (success) {
+            avatarInput.value = '';
+        }
+    });
+    
+    avatarLabel.addEventListener('click', function(event) {
+        event.preventDefault();
+        avatarInput.click();
+    });
 }
 
 async function updateUserAvatar(file) {
@@ -211,317 +249,554 @@ async function updateUserAvatar(file) {
     }
 }
 
-function setupAvatarUpload() {
-    const avatarInput = document.getElementById('avatar-upload');
-    const avatarLabel = document.querySelector('.profile-section label[for="avatar-upload"]');
-    
-    if (!avatarInput || !avatarLabel) return;
-    
-    avatarInput.addEventListener('change', async function(event) {
-        const file = event.target.files[0];
-        if (!file) return;
-        
-        if (!file.type.startsWith('image/')) {
-            showNotification('Пожалуйста, выберите изображение', 'error');
-            return;
+function setupElderForm() {
+    const showFormBtn = document.getElementById('showFormBtn');
+    const formContainer = document.getElementById('relativeFormContainer');
+    const cancelFormBtn = document.getElementById('cancelFormBtn');
+    const elderForm = document.getElementById('relativeForm');
+    eldersList = document.getElementById('relativesList');
+
+    if (!showFormBtn || !formContainer || !cancelFormBtn || !elderForm) {
+        console.error('Не найдены необходимые элементы');
+        return;
+    }
+
+    elderForm.addEventListener('submit', handleElderFormSubmit);
+    showFormBtn.addEventListener('click', showElderForm);
+    cancelFormBtn.addEventListener('click', hideElderForm);
+}
+
+function setupEventListeners() {
+    document.addEventListener('keydown', function(event) {
+        const formContainer = document.getElementById('relativeFormContainer');
+        if (event.key === 'Escape' && formContainer && formContainer.style.display === 'block') {
+            hideElderForm();
         }
+    });
+}
+
+function showElderForm() {
+    const formContainer = document.getElementById('relativeFormContainer');
+    const showFormBtn = document.getElementById('showFormBtn');
+    if (formContainer && showFormBtn) {
+        formContainer.style.display = 'block';
+        showFormBtn.style.display = 'none';
+        document.getElementById('fullName').focus();
+    }
+}
+
+function hideElderForm() {
+    const formContainer = document.getElementById('relativeFormContainer');
+    const showFormBtn = document.getElementById('showFormBtn');
+    if (formContainer && showFormBtn) {
+        formContainer.style.display = 'none';
+        showFormBtn.style.display = 'block';
         
-        if (file.size > 5 * 1024 * 1024) {
-            showNotification('Размер файла не должен превышать 5MB', 'error');
-            return;
+        const elderForm = document.getElementById('relativeForm');
+        if (elderForm) {
+            elderForm.reset();
+            delete elderForm.dataset.editId;
         }
+    }
+}
+
+function validateElderForm(formData) {
+    const errors = [];
+    
+    if (!formData.fullName.trim()) errors.push('ФИО обязательно для заполнения');
+    if (!formData.birthYear.trim()) errors.push('Дата рождения обязательна для заполнения');
+    if (!formData.healthStatus.trim()) errors.push('Состояние здоровья обязательно для заполнения');
+    if (!formData.diseases.trim()) errors.push('Заболевания обязательны для заполнения');
+    if (!formData.address.trim()) errors.push('Адрес проживания обязателен для заполнения');
+    if (!formData.features.trim()) errors.push('Особенности обязательны для заполнения');
+    if (!formData.hobbies.trim()) errors.push('Увлечения обязательны для заполнения');
+    
+    return errors;
+}
+
+async function handleElderFormSubmit(event) {
+    event.preventDefault();
+    
+    const elderForm = event.target;
+    
+    if (elderForm.classList.contains('submitting')) return;
+    elderForm.classList.add('submitting');
+    
+    const formData = {
+        fullName: document.getElementById('fullName').value.trim(),
+        birthYear: document.getElementById('birthYear').value.trim(),
+        healthStatus: document.getElementById('healthStatus').value.trim(),
+        physicalLimitations: document.getElementById('physicalLimitations').value.trim(),
+        diseases: document.getElementById('diseases').value.trim(),
+        address: document.getElementById('address').value.trim(),
+        features: document.getElementById('features').value.trim(),
+        hobbies: document.getElementById('hobbies').value.trim(),
+        comment: document.getElementById('comment').value.trim()
+    };
+    
+    const errors = validateElderForm(formData);
+    if (errors.length > 0) {
+        showNotification('Пожалуйста, заполните все обязательные поля:\n' + errors.join('\n'), 'error');
+        elderForm.classList.remove('submitting');
+        return;
+    }
+    
+    const saveBtn = elderForm.querySelector('.save-btn');
+    const originalText = saveBtn.textContent;
+    const isEditMode = elderForm.dataset.editId;
+    
+    saveBtn.textContent = isEditMode ? 'Обновление...' : 'Сохранение...';
+    saveBtn.disabled = true;
+    
+    try {
+        const success = isEditMode 
+            ? await updateElder(elderForm.dataset.editId, formData)
+            : await createElder(formData);
         
-        const success = await updateUserAvatar(file);
         if (success) {
-            avatarInput.value = '';
+            await loadElders();
+            hideElderForm();
         }
-    });
-    
-    avatarLabel.addEventListener('click', function(event) {
-        event.preventDefault();
-        avatarInput.click();
-    });
+    } catch (error) {
+        console.error('Ошибка при работе с пожилым:', error);
+        showNotification('Ошибка: ' + error.message, 'error');
+    } finally {
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+        elderForm.classList.remove('submitting');
+    }
 }
 
-let isDisplayingElders = false;
-
-function displayElders(elders) {
-    // Предотвращаем параллельные рендеринги
-    if (isDisplayingElders) {
-        console.log('Отображение уже выполняется, пропускаем');
+async function loadElders() {
+    if (isLoadingElders) {
+        console.log('Загрузка уже выполняется, пропускаем');
         return;
     }
     
-    isDisplayingElders = true;
+    isLoadingElders = true;
     
-    const relativesList = document.getElementById('relativesList');
-    if (!relativesList) {
-        isDisplayingElders = false;
-        return;
-    }
-
-    relativesList.innerHTML = '';
-
-    if (!elders || elders.length === 0) {
-        relativesList.innerHTML = '<p class="no-relatives">Нет добавленных пожилых</p>';
-        isDisplayingElders = false;
-        return;
-    }
-
-    // Убираем дубликаты по ID перед отображением
-    const uniqueElders = elders.filter((elder, index, self) =>
-        index === self.findIndex(e => e.id === elder.id)
-    );
-
-    uniqueElders.forEach(elder => {
-        // Дополнительная проверка на существование карточки
-        const existingCard = relativesList.querySelector(`.elder-card[data-id="${elder.id}"]`);
-        if (!existingCard) {
-            const elderCard = createElderCard(elder);
-            relativesList.appendChild(elderCard);
+    try {
+        const response = await fetchWithAuth('/api/v1/elders/me');
+        
+        if (response.ok) {
+            const elders = await response.json();
+            
+            if (eldersList) {
+                const cards = eldersList.querySelectorAll('.elder-card');
+                cards.forEach(card => card.remove());
+            }
+            
+            if (Array.isArray(elders) && elders.length > 0) {
+                const uniqueElders = elders.filter((elder, index, self) =>
+                    index === self.findIndex(e => e.id === elder.id)
+                );
+                
+                uniqueElders.forEach(elder => {
+                    addElderToList(elder);
+                });
+            } else {
+                updateEmptyListState();
+            }
+            
+        } else if (response.status === 401) {
+            console.warn('Не авторизован');
+            showNotification('Сессия истекла. Пожалуйста, войдите заново.', 'error');
         }
-    });
-    
-    isDisplayingElders = false;
+    } catch (error) {
+        console.error('Ошибка загрузки пожилых:', error);
+        showNotification('Ошибка загрузки данных. Попробуйте обновить страницу.', 'error');
+        updateEmptyListState();
+    } finally {
+        isLoadingElders = false;
+    }
 }
 
-function createElderCard(elder) {
-    const card = document.createElement('div');
-    card.className = 'form-container elder-card';
-    card.dataset.id = elder.id;
+function addElderToList(elderData) {
+    if (!eldersList) {
+        console.warn('Элемент eldersList не найден');
+        return;
+    }
 
-    const birthday = elder.birthday ? new Date(elder.birthday).toLocaleDateString('ru-RU') : 'не указано';
+    const existingCard = eldersList.querySelector(`.elder-card[data-id="${elderData.id}"]`);
+    if (existingCard) {
+        console.log('Карточка с ID', elderData.id, 'уже существует, пропускаем');
+        return;
+    }
+
+    const displayData = {
+        id: elderData.id,
+        fullName: elderData.full_name || elderData.fullName || 'Не указано',
+        birthYear: convertDateToDisplayFormat(elderData.birthday || elderData.birthYear),
+        healthStatus: elderData.health_status || elderData.healthStatus || 'Не указано',
+        physicalLimitations: elderData.physical_limitations || elderData.physicalLimitations || 'нет',
+        diseases: elderData.disease || elderData.diseases || 'Не указано',
+        address: elderData.address || 'Не указан',
+        features: elderData.features || 'Не указано',
+        hobbies: elderData.hobbies || 'Не указано',
+        comment: elderData.comments || elderData.comment || ''
+    };
+
+    const elderCard = document.createElement('div');
+    elderCard.className = 'elder-card';
+    elderCard.dataset.id = displayData.id;
     
-    card.innerHTML = `
-        <div class="relative-card-content">
-            <div class="avatar_photo">
-                <img class="avatar" src="${elder.avatar_url || '/img/profile.png'}" alt="${escapeHtml(elder.full_name)}">
+    elderCard.innerHTML = `
+        <div class="elder-card-content">
+            <div class="elder-header">
+                <h3 class="elder-name">${escapeHtml(displayData.fullName)}</h3>
+                <div class="elder-actions">
+                    <button class="edit-btn" data-id="${displayData.id}">
+                        <i class="fas fa-edit"></i>
+                    </button>
+                    <button class="delete-btn" data-id="${displayData.id}">
+                        <i class="fas fa-trash"></i>
+                    </button>
+                </div>
             </div>
-            <div class="form-fields-wrapper">
-                <div class="form-group">
-                    <label>ФИО:</label>
-                    <div class="field-value">${escapeHtml(elder.full_name)}</div>
+            
+            <div class="elder-info-grid">
+                <div class="info-row">
+                    <span class="info-label">Дата рождения:</span>
+                    <span class="info-value">${escapeHtml(displayData.birthYear)}</span>
                 </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Дата рождения:</label>
-                        <div class="field-value">${birthday}</div>
-                    </div>
-                    <div class="form-group">
-                        <label>Состояние здоровья:</label>
-                        <div class="field-value">${escapeHtml(elder.health_status)}</div>
-                    </div>
+                <div class="info-row">
+                    <span class="info-label">Состояние здоровья:</span>
+                    <span class="info-value">${escapeHtml(displayData.healthStatus)}</span>
                 </div>
-
-                <div class="form-row">
-                    <div class="form-group">
-                        <label>Физические ограничения:</label>
-                        <div class="field-value">${elder.physical_limitations ? escapeHtml(elder.physical_limitations) : 'нет'}</div>
-                    </div>
-                    <div class="form-group">
-                        <label>Заболевания:</label>
-                        <div class="field-value">${escapeHtml(elder.disease)}</div>
-                    </div>
+                <div class="info-row">
+                    <span class="info-label">Физические ограничения:</span>
+                    <span class="info-value">${escapeHtml(displayData.physicalLimitations)}</span>
                 </div>
-
-                <div class="form-group">
-                    <label>Адрес проживания:</label>
-                    <div class="field-value">${escapeHtml(elder.address)}</div>
+                <div class="info-row">
+                    <span class="info-label">Заболевания:</span>
+                    <span class="info-value">${escapeHtml(displayData.diseases)}</span>
                 </div>
-
-                <div class="form-group">
-                    <label>Особенности:</label>
-                    <div class="field-value">${escapeHtml(elder.features)}</div>
+                <div class="info-row">
+                    <span class="info-label">Адрес проживания:</span>
+                    <span class="info-value">${escapeHtml(displayData.address)}</span>
                 </div>
-
-                <div class="form-group">
-                    <label>Увлечения:</label>
-                    <div class="field-value">${escapeHtml(elder.hobbies)}</div>
+                <div class="info-row">
+                    <span class="info-label">Особенности:</span>
+                    <span class="info-value">${escapeHtml(displayData.features)}</span>
                 </div>
-
-                ${elder.comments ? `
-                    <div class="form-group">
-                        <label>Комментарий:</label>
-                        <div class="field-value">${escapeHtml(elder.comments)}</div>
-                    </div>
-                ` : ''}
+                <div class="info-row">
+                    <span class="info-label">Увлечения:</span>
+                    <span class="info-value">${escapeHtml(displayData.hobbies)}</span>
+                </div>
             </div>
-        </div>
-        <div class="form-actions">
-            <button type="button" class="cancel-btn edit-elder-btn" data-id="${elder.id}">Редактировать</button>
-            <button type="button" class="save-btn delete-elder-btn" data-id="${elder.id}">Удалить</button>
+            
+            ${displayData.comment ? `
+            <div class="elder-comment">
+                <span class="comment-label">Комментарий:</span>
+                <span class="comment-text">${escapeHtml(displayData.comment)}</span>
+            </div>
+            ` : ''}
         </div>
     `;
-
-    attachElderCardEvents(card);
-    return card;
-}
-
-async function submitElderForm(formData) {
-    try {
-        const response = await fetchWithAuth('/api/v1/elders', {
-            method: 'POST',
-            body: JSON.stringify({
-                full_name: formData.fullName,
-                birthday: formatDate(formData.birthYear),
-                health_status: formData.healthStatus,
-                physical_limitations: formData.physicalLimitations || '',
-                disease: formData.diseases,
-                address: formData.address,
-                features: formData.features,
-                hobbies: formData.hobbies,
-                comments: formData.comment || '',
-                avatar_url: null
-            })
-        });
-
-        if (response.ok) {
-            const elder = await response.json();
-            showNotification('Пожилой успешно добавлен!', 'success');
-            addElderToList(elder);
-            return true;
-        } else {
-            const error = await response.json();
-            showNotification(error.detail || 'Ошибка добавления', 'error');
-            return false;
-        }
-    } catch (error) {
-        console.error('Ошибка:', error);
-        showNotification('Ошибка соединения', 'error');
-        return false;
-    }
-}
-
-async function updateElder(elderId, formData) {
-    try {
-        const response = await fetchWithAuth(`/api/v1/elders/${elderId}`, {
-            method: 'PATCH',
-            body: JSON.stringify({
-                full_name: formData.fullName,
-                birthday: formatDate(formData.birthYear),
-                health_status: formData.healthStatus,
-                physical_limitations: formData.physicalLimitations || '',
-                disease: formData.diseases,
-                address: formData.address,
-                features: formData.features,
-                hobbies: formData.hobbies,
-                comments: formData.comment || ''
-            })
-        });
-
-        if (response.ok) {
-            const elder = await response.json();
-            showNotification('Данные обновлены!', 'success');
-            updateElderCard(elderId, elder);
-            return true;
-        } else {
-            const error = await response.json();
-            showNotification(error.detail || 'Ошибка обновления', 'error');
-            return false;
-        }
-    } catch (error) {
-        console.error('Ошибка:', error);
-        showNotification('Ошибка соединения', 'error');
-        return false;
-    }
-}
-
-async function deleteElder(elderId) {
-    if (!confirm('Вы уверены, что хотите удалить?')) return;
-
-    try {
-        const response = await fetchWithAuth(`/api/v1/elders/${elderId}`, {
-            method: 'DELETE'
-        });
-
-        if (response.status === 204) {
-            showNotification('Пожилой удален', 'success');
-            removeElderCard(elderId);
-        } else {
-            const error = await response.json();
-            showNotification(error.detail || 'Ошибка удаления', 'error');
-        }
-    } catch (error) {
-        console.error('Ошибка:', error);
-        showNotification('Ошибка соединения', 'error');
-    }
-}
-
-function addElderToList(elder) {
-    const relativesList = document.getElementById('relativesList');
-    if (!relativesList) return;
-
-    const noRelativesMsg = relativesList.querySelector('.no-relatives');
-    if (noRelativesMsg) {
-        noRelativesMsg.remove();
-    }
-
-    const elderCard = createElderCard(elder);
-    relativesList.insertBefore(elderCard, relativesList.firstChild);
-}
-
-function updateElderCard(elderId, elderData) {
-    const card = document.querySelector(`.elder-card[data-id="${elderId}"]`);
-    if (card) {
-        const newCard = createElderCard(elderData);
-        card.parentNode.replaceChild(newCard, card);
-    }
-}
-
-function removeElderCard(elderId) {
-    const card = document.querySelector(`.elder-card[data-id="${elderId}"]`);
-    if (card) {
-        card.remove();
-    }
     
-    const relativesList = document.getElementById('relativesList');
-    if (relativesList && relativesList.children.length === 0) {
-        relativesList.innerHTML = '<p class="no-relatives">Нет добавленных пожилых</p>';
-    }
+    eldersList.appendChild(elderCard);
+    attachElderCardEvents(elderCard);
+    updateEmptyListState();
 }
 
 function attachElderCardEvents(card) {
-    const editBtn = card.querySelector('.edit-elder-btn');
-    const deleteBtn = card.querySelector('.delete-elder-btn');
+    const editBtn = card.querySelector('.edit-btn');
+    const deleteBtn = card.querySelector('.delete-btn');
     
     if (editBtn) {
         editBtn.addEventListener('click', function() {
-            const elderId = this.dataset.id;
-            openEditModal(elderId);
+            const elderId = this.getAttribute('data-id');
+            editElder(elderId);
         });
     }
     
     if (deleteBtn) {
         deleteBtn.addEventListener('click', function() {
-            const elderId = this.dataset.id;
+            const elderId = this.getAttribute('data-id');
             deleteElder(elderId);
         });
     }
 }
 
-function formatDate(dateStr) {
-    if (!dateStr) return null;
+function updateEmptyListState() {
+    const emptyState = document.getElementById('emptyState');
+    if (!eldersList || !emptyState) return;
     
-    const cleanStr = dateStr.trim();
-    const parts = cleanStr.split('.');
-    
-    if (parts.length === 3) {
-        const day = parts[0].padStart(2, '0');
-        const month = parts[1].padStart(2, '0');
-        const year = parts[2];
+    const hasCards = eldersList.querySelectorAll('.elder-card').length > 0;
+    emptyState.style.display = hasCards ? 'none' : 'block';
+}
+
+function editElder(elderId) {
+    try {
+        // Скрываем все формы редактирования, если есть
+        const allForms = document.querySelectorAll('.editing-form');
+        allForms.forEach(form => {
+            form.remove();
+        });
         
-        return `${year}-${month}-${day}`;
-    } else if (cleanStr.includes('-')) {
-        return cleanStr;
+        // Находим карточку для редактирования
+        const elderCard = document.querySelector(`.elder-card[data-id="${elderId}"]`);
+        if (!elderCard) {
+            throw new Error('Карточка не найдена');
+        }
+        
+        // Получаем данные текущей карточки для быстрого редактирования
+        const currentData = {
+            fullName: elderCard.querySelector('.elder-name').textContent,
+            birthYear: elderCard.querySelector('.info-row:nth-child(1) .info-value').textContent,
+            healthStatus: elderCard.querySelector('.info-row:nth-child(2) .info-value').textContent,
+            physicalLimitations: elderCard.querySelector('.info-row:nth-child(3) .info-value').textContent,
+            diseases: elderCard.querySelector('.info-row:nth-child(4) .info-value').textContent,
+            address: elderCard.querySelector('.info-row:nth-child(5) .info-value').textContent,
+            features: elderCard.querySelector('.info-row:nth-child(6) .info-value').textContent,
+            hobbies: elderCard.querySelector('.info-row:nth-child(7) .info-value').textContent,
+            comment: elderCard.querySelector('.comment-text') ? elderCard.querySelector('.comment-text').textContent : ''
+        };
+        
+        // Создаем форму редактирования
+        const editForm = document.createElement('div');
+        editForm.className = 'editing-form form-container';
+        editForm.innerHTML = `
+            <form class="relative-form">
+                <div class="relative-card-content">
+                    <div class="form-fields-wrapper">
+                        <div class="form-group">
+                            <label for="edit-fullName">ФИО:*</label>
+                            <input type="text" id="edit-fullName" value="${escapeHtml(currentData.fullName)}" required placeholder="Введите ФИО">
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-birthYear">Дата рождения:*</label>
+                                <input type="text" id="edit-birthYear" value="${escapeHtml(currentData.birthYear)}" required placeholder="16.11.1960">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="edit-healthStatus">Состояние здоровья:*</label>
+                                <input type="text" id="edit-healthStatus" value="${escapeHtml(currentData.healthStatus)}" required
+                                    placeholder="Например: хорошее">
+                            </div>
+                        </div>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="edit-physicalLimitations">Физические ограничения:</label>
+                                <input type="text" id="edit-physicalLimitations" value="${escapeHtml(currentData.physicalLimitations)}"
+                                    placeholder="Например: нет">
+                            </div>
+
+                            <div class="form-group">
+                                <label for="edit-diseases">Заболевания:*</label>
+                                <input type="text" id="edit-diseases" value="${escapeHtml(currentData.diseases)}" required
+                                    placeholder="Например: здоровая">
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit-address">Адрес проживания:*</label>
+                            <input type="text" id="edit-address" value="${escapeHtml(currentData.address)}" required
+                                placeholder="г. Екатеринбург, ул.Бебеля 170, кв 30">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit-features">Особенности:*</label>
+                            <input type="text" id="edit-features" value="${escapeHtml(currentData.features)}" required placeholder="-">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit-hobbies">Увлечения:*</label>
+                            <input type="text" id="edit-hobbies" value="${escapeHtml(currentData.hobbies)}" required placeholder="вязание">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="edit-comment">Комментарий:</label>
+                            <textarea id="edit-comment" rows="2"
+                                placeholder="Дополнительная информация">${escapeHtml(currentData.comment)}</textarea>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-actions">
+                    <button type="button" class="cancel-btn cancel-edit-btn">Отмена</button>
+                    <button type="submit" class="save-btn">Сохранить изменения</button>
+                </div>
+            </form>
+        `;
+        
+        // Вставляем форму после карточки
+        elderCard.after(editForm);
+        
+        // Добавляем обработчики для формы редактирования
+        const form = editForm.querySelector('.relative-form');
+        const cancelBtn = editForm.querySelector('.cancel-edit-btn');
+        
+        form.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            await handleEditSubmit(elderId);
+        });
+        
+        cancelBtn.addEventListener('click', function() {
+            editForm.remove();
+        });
+        
+    } catch (error) {
+        console.error('Ошибка при редактировании:', error);
+        showNotification('Ошибка при загрузке данных: ' + error.message, 'error');
+    }
+}
+
+async function handleEditSubmit(elderId) {
+    const formData = {
+        fullName: document.getElementById('edit-fullName').value.trim(),
+        birthYear: document.getElementById('edit-birthYear').value.trim(),
+        healthStatus: document.getElementById('edit-healthStatus').value.trim(),
+        physicalLimitations: document.getElementById('edit-physicalLimitations').value.trim(),
+        diseases: document.getElementById('edit-diseases').value.trim(),
+        address: document.getElementById('edit-address').value.trim(),
+        features: document.getElementById('edit-features').value.trim(),
+        hobbies: document.getElementById('edit-hobbies').value.trim(),
+        comment: document.getElementById('edit-comment').value.trim()
+    };
+    
+    const errors = validateElderForm(formData);
+    if (errors.length > 0) {
+        showNotification('Пожалуйста, заполните все обязательные поля:\n' + errors.join('\n'), 'error');
+        return;
     }
     
-    const date = new Date(cleanStr);
-    if (!isNaN(date.getTime())) {
-        return date.toISOString().split('T')[0];
+    try {
+        const success = await updateElder(elderId, formData);
+        if (success) {
+            // Удаляем форму редактирования
+            const editForm = document.querySelector('.editing-form');
+            if (editForm) editForm.remove();
+            
+            // Перезагружаем список
+            await loadElders();
+        }
+    } catch (error) {
+        console.error('Ошибка при обновлении:', error);
+        showNotification('Ошибка при обновлении данных: ' + error.message, 'error');
+    }
+}
+
+async function createElder(formData) {
+    const apiFormData = {
+        full_name: formData.fullName,
+        birthday: convertDateToApiFormat(formData.birthYear),
+        health_status: formData.healthStatus,
+        physical_limitations: formData.physicalLimitations,
+        disease: formData.diseases,
+        address: formData.address,
+        features: formData.features,
+        hobbies: formData.hobbies,
+        comments: formData.comment
+    };
+    
+    try {
+        const response = await fetchWithAuth('/api/v1/elders', {
+            method: 'POST',
+            body: JSON.stringify(apiFormData)
+        });
+        
+        if (response.ok) {
+            showNotification('Пожилой успешно добавлен!', 'success');
+            return true;
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Ошибка при создании пожилого:', error);
+        throw error;
+    }
+}
+
+async function updateElder(elderId, formData) {
+    const apiFormData = {
+        full_name: formData.fullName,
+        birthday: convertDateToApiFormat(formData.birthYear),
+        health_status: formData.healthStatus,
+        physical_limitations: formData.physicalLimitations,
+        disease: formData.diseases,
+        address: formData.address,
+        features: formData.features,
+        hobbies: formData.hobbies,
+        comments: formData.comment
+    };
+    
+    try {
+        const response = await fetchWithAuth(`/api/v1/elders/${elderId}`, {
+            method: 'PATCH',
+            body: JSON.stringify(apiFormData)
+        });
+        
+        if (response.ok) {
+            showNotification('Пожилой успешно обновлен!', 'success');
+            return true;
+        } else {
+            const errorData = await response.json();
+            throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Ошибка при обновлении пожилого:', error);
+        throw error;
+    }
+}
+
+async function deleteElder(elderId) {
+    if (!confirm('Вы уверены, что хотите удалить этого пожилого?')) {
+        return;
     }
     
-    return null;
+    try {
+        const response = await fetchWithAuth(`/api/v1/elders/${elderId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.ok || response.status === 204) {
+            const card = eldersList.querySelector(`.elder-card[data-id="${elderId}"]`);
+            if (card) card.remove();
+            showNotification('Пожилой успешно удален!', 'success');
+            updateEmptyListState();
+        } else if (response.status === 400) {
+            const errorData = await response.json();
+            
+            if (errorData.detail?.includes("existing requests")) {
+                showNotification('Невозможно удалить пожилого с активными заявками', 'error');
+            } else {
+                throw new Error(errorData.detail || 'Не удалось удалить пожилого');
+            }
+        } else {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+    } catch (error) {
+        console.error('Ошибка при удалении:', error);
+        showNotification('Ошибка при удалении: ' + error.message, 'error');
+    }
+}
+
+function convertDateToDisplayFormat(dateString) {
+    if (dateString && dateString.includes('-')) {
+        const parts = dateString.split('-');
+        if (parts.length === 3) {
+            return `${parts[2]}.${parts[1]}.${parts[0]}`;
+        }
+    }
+    return dateString || 'не указана';
+}
+
+function convertDateToApiFormat(dateString) {
+    if (dateString.includes('.')) {
+        const parts = dateString.split('.');
+        if (parts.length === 3) {
+            const day = parts[0].padStart(2, '0');
+            const month = parts[1].padStart(2, '0');
+            const year = parts[2];
+            return `${year}-${month}-${day}`;
+        }
+    }
+    return dateString;
 }
 
 function escapeHtml(unsafe) {
@@ -556,46 +831,4 @@ function showNotification(message, type = 'success') {
     setTimeout(() => {
         notification.remove();
     }, 3000);
-}
-
-async function openEditModal(elderId) {
-    try {
-        const response = await fetchWithAuth(`/api/v1/elders/${elderId}`);
-        if (response.ok) {
-            const elder = await response.json();
-            populateEditForm(elder);
-            showForm();
-        }
-    } catch (error) {
-        console.error('Ошибка загрузки данных:', error);
-        showNotification('Ошибка загрузки данных', 'error');
-    }
-}
-
-function populateEditForm(elder) {
-    const form = document.getElementById('relativeForm');
-    if (!form) return;
-
-    const birthday = elder.birthday ? new Date(elder.birthday).toLocaleDateString('ru-RU') : '';
-    
-    form.dataset.editId = elder.id;
-    document.getElementById('fullName').value = elder.full_name || '';
-    document.getElementById('birthYear').value = birthday;
-    document.getElementById('healthStatus').value = elder.health_status || '';
-    document.getElementById('physicalLimitations').value = elder.physical_limitations || '';
-    document.getElementById('diseases').value = elder.disease || '';
-    document.getElementById('address').value = elder.address || '';
-    document.getElementById('features').value = elder.features || '';
-    document.getElementById('hobbies').value = elder.hobbies || '';
-    document.getElementById('comment').value = elder.comments || '';
-}
-
-async function handleFormSubmit(formData) {
-    const isEdit = document.getElementById('relativeForm').dataset.editId;
-    
-    if (isEdit) {
-        return await updateElder(isEdit, formData);
-    } else {
-        return await submitElderForm(formData);
-    }
 }
