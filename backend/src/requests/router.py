@@ -22,6 +22,7 @@ from src.s3_storage.client import MinioClient
 from src.s3_storage.utils import convert_to_webp, get_elder_avatar_presigned_url
 from src.users.dependencies import get_current_user
 from src.users.models import RoleEnum, UserModel
+from src.requests.models import FrequencyEnum, DurationUnitEnum
 
 
 request_router = APIRouter()
@@ -56,23 +57,44 @@ async def create_requests(
             detail='You can create a request only for your elderly'
         )
 
+    print('DEBUG - Received frequency:', request_data.frequency)
+    print('DEBUG - Received duration_unit:', request_data.duration_unit)
+    
+    # Просто используем строки напрямую
+    frequency_str = request_data.frequency
+    duration_unit_str = request_data.duration_unit
+    
+    print('DEBUG - Frequency string to use:', frequency_str)
+    print('DEBUG - Duration unit string to use:', duration_unit_str)
+
+    # Создаем объект с использованием строк напрямую
     new_request = RequestModel(
         relative_id=user.id,
         elder_id=request_data.elder_id,
         task_name=request_data.task_name,
         check_list=request_data.check_list,
         description=request_data.description,
-        frequency=request_data.frequency,
+        frequency=frequency_str,  # Просто строка
         scheduled_date=request_data.scheduled_date,
         scheduled_time=request_data.scheduled_time,
         duration_value=request_data.duration_value,
-        duration_unit=request_data.duration_unit,
+        duration_unit=duration_unit_str,  # Просто строка
         is_shopping_checklist=request_data.is_shopping_checklist,
         status=RequestStatusEnum.OPEN
     )
 
+    # Дополнительный дебаг
+    print('DEBUG - RequestModel frequency attribute:', new_request.frequency)
+    print('DEBUG - RequestModel duration_unit attribute:', new_request.duration_unit)
+
     session.add(new_request)
-    await session.commit()
+    
+    try:
+        await session.commit()
+    except Exception as e:
+        print('DEBUG - Exception during commit:', str(e))
+        raise
+    
     await session.refresh(new_request)
 
     return {
@@ -114,14 +136,10 @@ async def get_requests_list(
 async def get_available_requests(
     session: SessionDep,
     user: UserModel = Depends(get_current_user),
-    category: str | None = Query(None),
     limit: int = Query(30, ge=1, le=60),
     cursor: datetime | None = Query(None)
 ):
     query = select(RequestModel).where(RequestModel.status == RequestStatusEnum.OPEN)
-
-    if category:
-        query = query.where(RequestModel.category == category)
 
     if cursor:
         query = query.where(RequestModel.created_at < cursor)

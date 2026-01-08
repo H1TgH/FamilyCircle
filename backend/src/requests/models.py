@@ -164,7 +164,11 @@ class RequestModel(Base):
     )
 
     frequency: Mapped[FrequencyEnum] = mapped_column(
-        Enum(FrequencyEnum, name='frequency_enum'),
+        Enum(
+            FrequencyEnum,
+            name='frequency_enum',
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         nullable=True
     )
 
@@ -184,7 +188,11 @@ class RequestModel(Base):
     )
 
     duration_unit: Mapped[DurationUnitEnum] = mapped_column(
-        Enum(DurationUnitEnum, name='duration_unit_enum'),
+        Enum(
+            DurationUnitEnum,
+            name='duration_unit_enum',
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         nullable=True
     )
 

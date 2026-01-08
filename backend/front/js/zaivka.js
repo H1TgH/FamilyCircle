@@ -238,7 +238,7 @@ async function saveCard() {
         showNotification('Пожалуйста, выберите частоту проведения', 'error');
         return;
     }
-    
+
     const taskItems = document.querySelectorAll('.task-item');
     const checkList = [];
     
@@ -260,7 +260,7 @@ async function saveCard() {
         task_name: taskName,
         check_list: checkList,
         description: comment || null,
-        frequency: frequency === 'once' ? null : frequency,
+        frequency: frequency || null,
         scheduled_date: scheduledDate || null,
         scheduled_time: scheduledTime || null,
         duration_value: durationValue > 0 ? durationValue : null,
