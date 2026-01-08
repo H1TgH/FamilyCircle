@@ -54,33 +54,56 @@
         <section class="form-section">
             <h2>Создание чек-листа</h2>
 
-            <h3>Название чек-листа</h3>
-            <input type="text" id="specialty" placeholder="Введите название чек-листа">
+            <h3>Выберите пожилого человека</h3>
+            <select id="elderSelect" required>
+                <option value="">Выберите...</option>
+            </select>
+
+            <h3>Название задачи</h3>
+            <input type="text" id="taskName" placeholder="Введите название задачи" required>
 
             <h3>Задачи <small>(можно добавить несколько)</small></h3>
             <div id="tasksContainer">
-                <!-- Задачи будут добавляться динамически -->
             </div>
             <button type="button" class="add-task-btn" id="addTaskBtn">+ Добавить задачу</button>
 
-            <h3>Общее время выполнения помощи</h3>
+            <h3>Частота проведения</h3>
+            <select id="frequency" required>
+                <option value="">Выберите частоту...</option>
+                <option value="once">Единоразово</option>
+                <option value="every_few_hours">Раз в несколько часов</option>
+                <option value="daily">Ежедневно</option>
+                <option value="weekly">Еженедельно</option>
+                <option value="monthly">Ежемесячно</option>
+            </select>
+
+            <h3>Дата выполнения</h3>
+            <input type="date" id="scheduledDate">
+
+            <h3>Время выполнения</h3>
+            <input type="time" id="scheduledTime">
+
+            <h3>Сколько займет по времени</h3>
             <div class="total-time-inputs">
                 <div class="time-input-group">
-                    <label>Часы:</label>
-                    <input type="number" id="totalHours" min="0" placeholder="ЧЧ" value="0">
-                </div>
-                <div class="time-input-group">
-                    <label>Дни:</label>
-                    <input type="number" id="totalDays" min="0" placeholder="ДД" value="0">
-                </div>
-                <div class="time-input-group">
-                    <label>Месяцы:</label>
-                    <input type="number" id="totalMonths" min="0" placeholder="ММ" value="0">
+                    <input type="number" id="durationValue" min="0" placeholder="Количество" value="0">
+                    <select id="durationUnit">
+                        <option value="hours">Часы</option>
+                        <option value="days">Дни</option>
+                        <option value="months">Месяцы</option>
+                    </select>
                 </div>
             </div>
 
             <h3>Комментарий</h3>
             <textarea id="comment" placeholder="Введите комментарий..."></textarea>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="isShoppingChecklist">
+                    Чеклист с покупкой?
+                </label>
+            </div>
 
             <div class="form-buttons">
                 <button class="cancel-btn" id="cancelBtn">Отмена</button>

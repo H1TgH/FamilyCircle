@@ -101,19 +101,19 @@ async function createRequestCard(request, number) {
     const relative = details.relative;
     const elder = details.elder;
     
-    const scheduledDate = request.scheduled_time ? new Date(request.scheduled_time) : null;
+    const scheduledDate = request.scheduled_date ? new Date(request.scheduled_date + 'T00:00:00') : null;
     const dateRange = scheduledDate ? 
         `~ ${scheduledDate.toLocaleDateString('ru-RU')}` : 
         'Дата не указана';
+    const timeStr = request.scheduled_time || '-';
     
-    // Формируем список задач из check_list
     const tasksList = request.check_list.map((task, idx) => `
         <div class="task-row-item">
             <div class="task-item">
                 ${idx + 1}) ${escapeHtml(task)}
             </div>
-            <div class="task-frequency">-</div>
-            <div class="task-time">${scheduledDate ? scheduledDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' }) : '-'}</div>
+            <div class="task-frequency">${request.frequency ? getFrequencyText(request.frequency) : '-'}</div>
+            <div class="task-time">${timeStr}</div>
         </div>
     `).join('');
     
@@ -129,11 +129,11 @@ async function createRequestCard(request, number) {
         <div class="task-card-wrapper">
             <article class="report-card">
                 <div class="report-date">${dateRange}</div>
-                <h3 class="report-title">${escapeHtml(request.category)}</h3>
+                <h3 class="report-title">${escapeHtml(request.task_name)}</h3>
                 
                 <div class="report-body">
                     <div class="elder-card">
-                        <img src="${elder?.avatar_url || '/img/profile.png'}" alt="Пожилой">
+                        <img src="${elder?.avatar_presigned_url || '/img/profile.png'}" alt="Пожилой">
                         <p><strong>${elder ? escapeHtml(elder.full_name) : 'Не указано'}</strong></p>
                         <a href="#" class="details-link" onclick="showElderDetails('${request.elder_id}'); return false;">Подробнее →</a>
                     </div>
@@ -149,7 +149,8 @@ async function createRequestCard(request, number) {
                 </div>
                 
                 ${request.description ? `<p style="margin: 10px 0; color: #666;">${escapeHtml(request.description)}</p>` : ''}
-                ${request.address ? `<p style="margin: 10px 0; color: #666;">📍 ${escapeHtml(request.address)}</p>` : ''}
+                ${request.frequency ? `<p style="margin: 10px 0; color: #666;">🔄 Частота: ${getFrequencyText(request.frequency)}</p>` : ''}
+                ${request.is_shopping_checklist ? `<p style="margin: 10px 0; color: #666;">🛒 Чеклист с покупкой</p>` : ''}
                 
                 <p class="status">Статус: <span>${getStatusText(request.status)}</span></p>
             </article>
@@ -354,6 +355,17 @@ function getStatusText(status) {
         'done': 'Выполнена'
     };
     return statusMap[status] || status;
+}
+
+function getFrequencyText(frequency) {
+    const frequencyMap = {
+        'once': 'Единоразово',
+        'every_few_hours': 'Раз в несколько часов',
+        'daily': 'Ежедневно',
+        'weekly': 'Еженедельно',
+        'monthly': 'Ежемесячно'
+    };
+    return frequencyMap[frequency] || frequency;
 }
 
 function escapeHtml(unsafe) {

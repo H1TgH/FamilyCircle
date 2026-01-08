@@ -91,12 +91,15 @@ function hideForm() {
 }
 
 function clearForm() {
-    document.getElementById('specialty').value = '';
+    document.getElementById('taskName').value = '';
     document.getElementById('comment').value = '';
     document.getElementById('editCardId').value = '';
-    document.getElementById('totalHours').value = '0';
-    document.getElementById('totalDays').value = '0';
-    document.getElementById('totalMonths').value = '0';
+    document.getElementById('frequency').value = '';
+    document.getElementById('scheduledDate').value = '';
+    document.getElementById('scheduledTime').value = '';
+    document.getElementById('durationValue').value = '0';
+    document.getElementById('durationUnit').value = 'hours';
+    document.getElementById('isShoppingChecklist').checked = false;
     
     const elderSelect = document.getElementById('elderSelect');
     if (elderSelect) {
@@ -111,38 +114,10 @@ function populateElderSelect() {
     let elderSelect = document.getElementById('elderSelect');
     
     if (!elderSelect) {
-        const specialtyInput = document.getElementById('specialty');
-        if (!specialtyInput) {
-            console.error('Поле specialty не найдено');
-            return;
-        }
-        
-        // Проверяем, нет ли уже заголовка и селекта
-        const existingHeader = specialtyInput.previousElementSibling;
-        if (existingHeader && existingHeader.tagName === 'H3' && existingHeader.textContent.includes('пожилого')) {
-            elderSelect = document.getElementById('elderSelect');
-            if (elderSelect) {
-                // Обновляем опции существующего селекта
-                updateElderSelectOptions(elderSelect);
-                return;
-            }
-        }
-        
-        const selectHtml = `
-            <h3>Выберите пожилого человека</h3>
-            <select id="elderSelect" required>
-                <option value="">Выберите...</option>
-                ${elders.map(elder => `
-                    <option value="${elder.id}">${escapeHtml(elder.full_name)}</option>
-                `).join('')}
-            </select>
-        `;
-        specialtyInput.insertAdjacentHTML('beforebegin', selectHtml);
-        elderSelect = document.getElementById('elderSelect');
-    } else {
-        // Обновляем опции существующего селекта
-        updateElderSelectOptions(elderSelect);
+        return;
     }
+    
+    updateElderSelectOptions(elderSelect);
 }
 
 function updateElderSelectOptions(selectElement) {
@@ -238,18 +213,29 @@ function removeTask(taskId) {
 
 async function saveCard() {
     const elderId = document.getElementById('elderSelect')?.value;
-    const specialty = document.getElementById('specialty').value.trim();
+    const taskName = document.getElementById('taskName').value.trim();
     const comment = document.getElementById('comment').value.trim();
     const editCardId = document.getElementById('editCardId').value;
+    const frequency = document.getElementById('frequency').value;
+    const scheduledDate = document.getElementById('scheduledDate').value;
+    const scheduledTime = document.getElementById('scheduledTime').value;
+    const durationValue = parseInt(document.getElementById('durationValue').value) || 0;
+    const durationUnit = document.getElementById('durationUnit').value;
+    const isShoppingChecklist = document.getElementById('isShoppingChecklist').checked;
     
     if (!elderId) {
         showNotification('Пожалуйста, выберите пожилого человека', 'error');
         return;
     }
     
-    if (!specialty) {
-        showNotification('Пожалуйста, введите название чек-листа', 'error');
-        document.getElementById('specialty').focus();
+    if (!taskName) {
+        showNotification('Пожалуйста, введите название задачи', 'error');
+        document.getElementById('taskName').focus();
+        return;
+    }
+    
+    if (!frequency) {
+        showNotification('Пожалуйста, выберите частоту проведения', 'error');
         return;
     }
     
@@ -269,30 +255,17 @@ async function saveCard() {
         return;
     }
     
-    const firstTaskDate = document.querySelector('.task-date')?.value;
-    const firstTaskStartTime = document.querySelector('.task-start-time')?.value;
-    
-    let scheduledTime = null;
-    if (firstTaskDate && firstTaskStartTime) {
-        scheduledTime = `${firstTaskDate}T${firstTaskStartTime}:00Z`;
-    } else if (firstTaskDate) {
-        scheduledTime = `${firstTaskDate}T12:00:00Z`;
-    } else {
-        const tomorrow = new Date();
-        tomorrow.setDate(tomorrow.getDate() + 1);
-        scheduledTime = tomorrow.toISOString();
-    }
-    
-    const elder = elders.find(e => e.id === elderId);
-    const address = elder ? elder.address : '';
-    
     const requestData = {
         elder_id: elderId,
+        task_name: taskName,
         check_list: checkList,
-        category: specialty,
-        description: comment || specialty,
-        address: address,
-        scheduled_time: scheduledTime
+        description: comment || null,
+        frequency: frequency === 'once' ? null : frequency,
+        scheduled_date: scheduledDate || null,
+        scheduled_time: scheduledTime || null,
+        duration_value: durationValue > 0 ? durationValue : null,
+        duration_unit: durationValue > 0 ? durationUnit : null,
+        is_shopping_checklist: isShoppingChecklist
     };
     
     try {
@@ -354,15 +327,16 @@ function renderCards(requests) {
         `).join('');
         
         const statusText = getStatusText(request.status);
-        const scheduledDate = new Date(request.scheduled_time);
+        const dateStr = request.scheduled_date ? new Date(request.scheduled_date + 'T00:00:00').toLocaleDateString('ru-RU') : 'Не указана';
+        const timeStr = request.scheduled_time || 'Не указано';
         
         const cardHTML = `
             <div class="card" data-id="${request.id}">
-                <div class="time">${scheduledDate.toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' })}<br><small>${scheduledDate.toLocaleDateString('ru-RU')}</small></div>
+                <div class="time">${timeStr}<br><small>${dateStr}</small></div>
                 <div class="card-header">
                     <img src="/img/avatar.png" alt="Аватар">
                     <div class="card-title">
-                        <h3>${escapeHtml(request.category)}</h3>
+                        <h3>${escapeHtml(request.task_name)}</h3>
                         <div style="font-size: 14px; color: #666;">Статус: ${statusText}</div>
                     </div>
                 </div>
@@ -380,9 +354,15 @@ function renderCards(requests) {
                         </div>
                     ` : ''}
                     
-                    ${request.address ? `
+                    ${request.frequency ? `
                         <div class="card-comment">
-                            <strong>📍 Адрес:</strong> ${escapeHtml(request.address)}
+                            <strong>🔄 Частота:</strong> ${getFrequencyText(request.frequency)}
+                        </div>
+                    ` : ''}
+                    
+                    ${request.is_shopping_checklist ? `
+                        <div class="card-comment">
+                            <strong>🛒 Чеклист с покупкой</strong>
                         </div>
                     ` : ''}
                 </div>
@@ -408,6 +388,26 @@ function getStatusText(status) {
     return statusMap[status] || status;
 }
 
+function getFrequencyText(frequency) {
+    const frequencyMap = {
+        'once': 'Единоразово',
+        'every_few_hours': 'Раз в несколько часов',
+        'daily': 'Ежедневно',
+        'weekly': 'Еженедельно',
+        'monthly': 'Ежемесячно'
+    };
+    return frequencyMap[frequency] || frequency;
+}
+
+function getDurationUnitText(unit) {
+    const unitMap = {
+        'hours': 'часов',
+        'days': 'дней',
+        'months': 'месяцев'
+    };
+    return unitMap[unit] || unit;
+}
+
 async function editCard(requestId) {
     try {
         const response = await fetchWithAuth(`/api/v1/requests/${requestId}`);
@@ -415,8 +415,14 @@ async function editCard(requestId) {
             const request = await response.json();
             
             document.getElementById('elderSelect').value = request.elder_id;
-            document.getElementById('specialty').value = request.category;
+            document.getElementById('taskName').value = request.task_name || '';
             document.getElementById('comment').value = request.description || '';
+            document.getElementById('frequency').value = request.frequency || '';
+            document.getElementById('scheduledDate').value = request.scheduled_date || '';
+            document.getElementById('scheduledTime').value = request.scheduled_time || '';
+            document.getElementById('durationValue').value = request.duration_value || 0;
+            document.getElementById('durationUnit').value = request.duration_unit || 'hours';
+            document.getElementById('isShoppingChecklist').checked = request.is_shopping_checklist || false;
             document.getElementById('editCardId').value = request.id;
             
             const tasksContainer = document.getElementById('tasksContainer');
@@ -462,10 +468,9 @@ async function viewDetails(requestId) {
             const request = await response.json();
             
             const details = {
-                'Категория': request.category,
+                'Название задачи': request.task_name,
                 'Статус': getStatusText(request.status),
                 'Дата создания': new Date(request.created_at).toLocaleString('ru-RU'),
-                'Запланировано': new Date(request.scheduled_time).toLocaleString('ru-RU'),
                 'Задач': `${request.check_list.length} шт.`,
                 'Список задач': request.check_list.map((task, index) => `${index + 1}. ${task}`).join('\n')
             };
@@ -473,8 +478,20 @@ async function viewDetails(requestId) {
             if (request.description) {
                 details['Описание'] = request.description;
             }
-            if (request.address) {
-                details['Адрес'] = request.address;
+            if (request.frequency) {
+                details['Частота'] = getFrequencyText(request.frequency);
+            }
+            if (request.scheduled_date) {
+                details['Дата выполнения'] = new Date(request.scheduled_date + 'T00:00:00').toLocaleDateString('ru-RU');
+            }
+            if (request.scheduled_time) {
+                details['Время выполнения'] = request.scheduled_time;
+            }
+            if (request.duration_value && request.duration_unit) {
+                details['Длительность'] = `${request.duration_value} ${getDurationUnitText(request.duration_unit)}`;
+            }
+            if (request.is_shopping_checklist) {
+                details['Чеклист с покупкой'] = 'Да';
             }
             
             showDetailsModal('Детали заявки', details);

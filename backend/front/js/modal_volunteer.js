@@ -4,36 +4,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
     if (!firstRow) return;
 
-    // Клонируем строку
     const completedRow = firstRow.cloneNode(true);
 
-    // Добавляем класс выполнено
     completedRow.classList.add("completed");
 
-    // Удаляем номер
     const number = completedRow.querySelector(".report-number");
     if (number) number.remove();
 
-    // Удаляем родственника
     const relative = completedRow.querySelector(".relative-card");
     if (relative) relative.remove();
 
-    // Удаляем кнопку
     const action = completedRow.querySelector(".report-action");
     if (action) action.remove();
 
-    // Добавляем плашку "Задание выполнено"
     const label = document.createElement("div");
     label.className = "completed-label";
     label.textContent = "Задание выполнено";
 
     completedRow.appendChild(label);
 
-    // Добавляем вторую карточку
     list.appendChild(completedRow);
 });
 document.addEventListener('DOMContentLoaded', function() {
-    // Элементы
     const modal = document.getElementById('reportModal');
     const closeBtn = document.querySelector('.close-btn');
     const cancelBtn = document.querySelector('.cancel-btn');
@@ -43,12 +35,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const fileList = document.getElementById('fileList');
     const reportForm = document.getElementById('reportForm');
     
-    // Элемент для уведомлений (находим контейнер с иконками)
     const headerIcons = document.querySelector('.header-icons');
 
     let uploadedFiles = [];
-
-    // --- Логика Модального Окна ---
     addReportBtn.addEventListener('click', function() {
         modal.style.display = 'block';
         document.body.style.overflow = 'hidden';
@@ -68,7 +57,6 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // --- Логика Загрузки Файлов ---
     uploadArea.addEventListener('click', function() {
         fileInput.click();
     });
@@ -141,7 +129,6 @@ document.addEventListener('DOMContentLoaded', function() {
         return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
     }
 
-    // --- Логика Отправки и УВЕДОМЛЕНИЯ ---
     reportForm.addEventListener('submit', function(e) {
         e.preventDefault();
         
@@ -152,7 +139,6 @@ document.addEventListener('DOMContentLoaded', function() {
             return;
         }
 
-        // Имитация отправки
         const submitBtn = document.querySelector('.submit-btn');
         const originalText = submitBtn.textContent;
         
@@ -160,43 +146,35 @@ document.addEventListener('DOMContentLoaded', function() {
         submitBtn.disabled = true;
         
         setTimeout(() => {
-            // 1. Закрываем модальное окно и сбрасываем форму
             closeModal();
             resetForm();
             submitBtn.textContent = originalText;
             submitBtn.disabled = false;
 
-            // 2. ВЫЗЫВАЕМ УВЕДОМЛЕНИЕ В КОЛОКОЛЬЧИКЕ
             showBellNotification();
 
         }, 1500);
     });
 
-    // Функция создания и показа уведомления
     function showBellNotification() {
-        // Проверяем, есть ли уже окно уведомления, если нет - создаем
         let popup = document.getElementById('bell-notification-popup');
         
         if (!popup) {
             popup = document.createElement('div');
             popup.id = 'bell-notification-popup';
             popup.className = 'notification-popup';
-            // Вставляем ваше сообщение
             popup.innerHTML = `
                 <p>Вы опубликовали отчет, он пока на проверке, при успешном выполненни задание будет закрыто!</p>
             `;
             headerIcons.appendChild(popup);
         }
 
-        // Показываем уведомление
         popup.style.display = 'block';
 
-        // Скрываем уведомление автоматически через 6 секунд (опционально)
         setTimeout(() => {
             popup.style.display = 'none';
         }, 6000);
         
-        // Скрываем при клике на него
         popup.addEventListener('click', function() {
             popup.style.display = 'none';
         });
@@ -212,7 +190,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 document.addEventListener('DOMContentLoaded', () => {
 
-    // ТОЛЬКО кнопка "Подробнее" внутри .elder-card
     document.querySelectorAll('.elder-card .details-link').forEach(link => {
 
         link.addEventListener('click', (e) => {
@@ -245,7 +222,6 @@ document.addEventListener('DOMContentLoaded', () => {
             overlay.appendChild(modal);
             document.body.appendChild(overlay);
 
-            // закрытие
             overlay.addEventListener('click', (ev) => {
                 if (
                     ev.target === overlay ||
