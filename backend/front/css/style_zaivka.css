@@ -763,3 +763,52 @@
 .card-actions {
     display: none;
 }
+
+.request-card.done {
+    border-color: #cccccc;
+    background-color: #f8f8f8;
+    color: #888;
+}
+
+.request-card.done .elder-name,
+.request-card.done .view-details-link,
+.request-card.done .task-description,
+.request-card.done .card-comment {
+    color: #666;
+}
+
+.request-card.done .elder-avatar {
+    filter: grayscale(50%);
+    opacity: 0.8;
+}
+
+.request-card.done .status-text {
+    color: #666;
+}
+
+.request-card.done .card-title h3 {
+    color: #888;
+}
+
+.request-card.done .view-details-link:hover {
+    color: #666;
+}
+
+.request-card.done .responses-btn {
+    background-color: #e0e0e0;
+    color: #888;
+    cursor: default;
+}
+
+.request-card.done .responses-btn:hover {
+    background-color: #e0e0e0;
+}
+
+.request-card.done .card-actions-gear {
+    color: #aaa;
+}
+
+.request-card.done .card-actions-gear:hover {
+    background: #f0f0f0;
+    color: #888;
+}

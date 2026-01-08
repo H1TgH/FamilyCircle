@@ -75,6 +75,26 @@ function toggleActionMenu(button, requestId, status) {
     });
 }
 
+async function reopenCard(requestId) {
+    try {
+        const response = await fetchWithAuth(`/api/v1/requests/${requestId}`, {
+            method: 'PATCH',
+            body: JSON.stringify({ status: 'in_progress' })
+        });
+        
+        if (response.ok) {
+            showNotification('Заявка открыта снова', 'success');
+            loadRequests();
+        } else {
+            const error = await response.json().catch(() => ({ detail: 'Не удалось открыть заявку' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось открыть заявку'), 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка соединения с сервером', 'error');
+    }
+}
+
 async function closeCard(requestId) {
     try {
         const response = await fetchWithAuth(`/api/v1/requests/${requestId}`, {
@@ -332,6 +352,103 @@ function clearForm() {
     tasksContainer.innerHTML = '';
 }
 
+function createCard(request, container, isDoneSection) {
+    const tasksList = request.check_list.map((task, index) => `
+        <li class="task-list-item">
+            <div class="task-number">${index + 1}.</div>
+            <div class="task-details">
+                <div class="task-description">${escapeHtml(task)}</div>
+            </div>
+        </li>
+    `).join('');
+    
+    const card = document.createElement('div');
+    card.className = 'request-card';
+    if (request.status === 'done' || isDoneSection) {
+        card.classList.add('done');
+    }
+    card.dataset.id = request.id;
+    card.dataset.status = request.status;
+    
+    const frequencyText = getFrequencyText(request.frequency);
+    const elder = elders.find(e => e.id === request.elder_id);
+    const elderName = elder ? elder.full_name : 'Неизвестно';
+    const avatarUrl = elder && elder.avatar_presigned_url ? elder.avatar_presigned_url : './img/avatar.png';
+    
+    const menuContent = request.status === 'done' 
+        ? `<button class="action-item" onclick="reopenCard('${request.id}')">Открыть снова</button>`
+        : `<button class="action-item" onclick="editCard('${request.id}')">Изменить</button>
+           <button class="action-item" onclick="deleteCard('${request.id}')">Удалить</button>
+           <button class="action-item" onclick="closeCard('${request.id}')">Закрыть</button>`;
+    
+    const statusText = request.status === 'done' 
+        ? 'Закрыто' 
+        : renderStatus(request.status, request.volunteer);
+    
+    const showRightSection = true; // Всегда показываем правую секцию
+    
+    card.innerHTML = `
+        <div class="card-header-section">
+            <div class="card-title">
+                <h3>${escapeHtml(request.task_name)}</h3>
+                <div class="elder-info-container">
+                    <img src="${avatarUrl}" alt="Аватар пожилого" class="elder-avatar" onerror="this.src='./img/avatar.png'">
+                    <div class="elder-details">
+                        <div class="elder-name">${escapeHtml(elderName)}</div>
+                        <a href="#" class="view-details-link" onclick="showElderDetails('${request.elder_id}'); return false;">Подробнее</a>
+                    </div>
+                </div>
+            </div>
+            <div class="card-content">
+                <div class="tasks-section">
+                    <h4>Задачи (${request.check_list.length}):</h4>
+                    <ul class="tasks-list">
+                        ${tasksList}
+                    </ul>
+                </div>
+                
+                ${request.description ? `
+                    <div class="card-comment">
+                        <strong>📝 Описание:</strong> ${escapeHtml(request.description)}
+                    </div>
+                ` : ''}
+                
+                <div class="card-comment">
+                    <strong>🔄 Частота:</strong> ${frequencyText}
+                </div>
+                
+                ${request.is_shopping_checklist ? `
+                    <div class="card-comment">
+                        <strong>🛒 Чеклист с покупкой</strong>
+                    </div>
+                ` : ''}
+            </div>
+        </div>
+        <div class="card-right-section">
+            ${showRightSection ? `
+                <div class="status-container">
+                    <div class="status-text">
+                        ${statusText}
+                    </div>
+                </div>
+                ${request.status !== 'done' ? `
+                    <button class="responses-btn" onclick="showResponses('${request.id}')">
+                        Отклики (${request.response_count || 0})
+                    </button>
+                ` : ''}
+            ` : ''}
+        </div>
+        <button class="card-actions-gear" onclick="toggleActionMenu(this, '${request.id}', '${request.status}')">
+            <i class="fas fa-cog"></i>
+        </button>
+        <div class="action-menu">
+            ${menuContent}
+        </div>
+    `;
+    
+    container.appendChild(card);
+}
+
 function populateElderSelect() {
     let elderSelect = document.getElementById('elderSelect');
     
@@ -553,85 +670,40 @@ function renderCards(requests) {
         index === self.findIndex(r => r.id === request.id)
     );
     
-    uniqueRequests.forEach(request => {
-        const tasksList = request.check_list.map((task, index) => `
-            <li class="task-list-item">
-                <div class="task-number">${index + 1}.</div>
-                <div class="task-details">
-                    <div class="task-description">${escapeHtml(task)}</div>
-                </div>
-            </li>
-        `).join('');
+    const openRequests = uniqueRequests.filter(r => r.status !== 'done');
+    const doneRequests = uniqueRequests.filter(r => r.status === 'done');
+    
+    if (openRequests.length === 0 && doneRequests.length === 0) {
+        container.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Нет созданных заявок</p>';
+        return;
+    }
+    
+    if (openRequests.length > 0) {
+        openRequests.forEach(request => {
+            createCard(request, container, false);
+        });
+    }
+    
+    const doneContainer = document.createElement('div');
+    doneContainer.className = 'done-requests-container';
+    doneContainer.style.cssText = `
+        width: 100%;
+        max-width: 1200px;
+        margin-top: 40px;
+        border-top: 2px solid #eee;
+        padding-top: 30px;
+    `;
+    
+    if (doneRequests.length > 0) {
+        const doneTitle = document.createElement('div');
+        doneContainer.appendChild(doneTitle);
         
-        const card = document.createElement('div');
-        card.className = 'request-card';
-        card.dataset.id = request.id;
-        card.dataset.status = request.status;
+        doneRequests.forEach(request => {
+            createCard(request, doneContainer, true);
+        });
         
-        const frequencyText = getFrequencyText(request.frequency);
-        const elder = elders.find(e => e.id === request.elder_id);
-        const elderName = elder ? elder.full_name : 'Неизвестно';
-        const avatarUrl = elder && elder.avatar_presigned_url ? elder.avatar_presigned_url : './img/avatar.png';
-        
-        card.innerHTML = `
-            <div class="card-header-section">
-                <div class="card-title">
-                    <h3>${escapeHtml(request.task_name)}</h3>
-                    <div class="elder-info-container">
-                        <img src="${avatarUrl}" alt="Аватар пожилого" class="elder-avatar" onerror="this.src='./img/avatar.png'">
-                        <div class="elder-details">
-                            <div class="elder-name">${escapeHtml(elderName)}</div>
-                            <a href="#" class="view-details-link" onclick="showElderDetails('${request.elder_id}'); return false;">Подробнее</a>
-                        </div>
-                    </div>
-                </div>
-                <div class="card-content">
-                    <div class="tasks-section">
-                        <h4>Задачи (${request.check_list.length}):</h4>
-                        <ul class="tasks-list">
-                            ${tasksList}
-                        </ul>
-                    </div>
-                    
-                    ${request.description ? `
-                        <div class="card-comment">
-                            <strong>📝 Описание:</strong> ${escapeHtml(request.description)}
-                        </div>
-                    ` : ''}
-                    
-                    <div class="card-comment">
-                        <strong>🔄 Частота:</strong> ${frequencyText}
-                    </div>
-                    
-                    ${request.is_shopping_checklist ? `
-                        <div class="card-comment">
-                            <strong>🛒 Чеклист с покупкой</strong>
-                        </div>
-                    ` : ''}
-                </div>
-            </div>
-            <div class="card-right-section">
-                <div class="status-container">
-                    <div class="status-text">
-                        ${renderStatus(request.status, request.volunteer)}
-                    </div>
-                </div>
-                <button class="responses-btn" onclick="showResponses('${request.id}')">
-                    Отклики (${request.response_count || 0})
-                </button>
-            </div>
-            <button class="card-actions-gear" onclick="toggleActionMenu(this, '${request.id}', '${request.status}')">
-                <i class="fas fa-cog"></i>
-            </button>
-            <div class="action-menu">
-                <button class="action-item" onclick="editCard('${request.id}')">Изменить</button>
-                <button class="action-item" onclick="deleteCard('${request.id}')">Удалить</button>
-                <button class="action-item" onclick="closeCard('${request.id}')">Закрыть</button>
-            </div>
-        `;
-        
-        container.appendChild(card);
-    });
+        container.appendChild(doneContainer);
+    }
 }
 
 function getStatusText(status) {
@@ -677,8 +749,6 @@ function renderStatus(status, volunteer) {
                 `;
             }
             return 'В работе';
-        case 'done':
-            return 'Закрыто';
         default:
             return status;
     }
