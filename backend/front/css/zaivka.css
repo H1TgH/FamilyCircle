@@ -205,13 +205,11 @@ body {
 }
 
 .task-date, .task-time, .task-frequency {
-    display: flex;
     align-items: center;
     gap: 5px;
-    background-color: #fff;
     padding: 5px 10px;
     border-radius: 15px;
-    color: #666;
+    color: #000000;
     box-shadow: 0 1px 3px rgba(0,0,0,0.1);
 }
 
@@ -314,13 +312,12 @@ body {
 /* Стили для формы */
 .form-page {
     display: none;
-    max-width: 900px;
-    margin: 25px auto;
+    min-width: 1200px;
+    margin: 45px auto;
     padding: 30px;
-    background: linear-gradient(135deg, #fffaf0, #fff5e6);
-    border-radius: 15px;
+    border-radius: 50px;
     box-shadow: 0 8px 25px rgba(0,0,0,0.1);
-    border: 2px solid #deb887;
+    border: 1px solid #deb887;
 }
 
 .form-section {
@@ -337,10 +334,9 @@ body {
 
 .form-section h3 {
     margin: 25px 0 15px;
-    color: #666;
     font-size: 20px;
-    border-bottom: 2px solid #ffdab9;
     padding-bottom: 8px;
+    font-weight: 400;
 }
 
 /* Стили для задач в форме */
@@ -354,7 +350,7 @@ body {
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-    border: 2px solid #ffdab9;
+    border: 1px solid #ffdab9;
     transition: all 0.3s;
 }
 
@@ -379,11 +375,11 @@ body {
 }
 
 .remove-task-btn {
-    background-color: #f44336;
-    color: white;
+    background-color: white;
+    color: red;
     border: none;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     border-radius: 50%;
     cursor: pointer;
     font-size: 22px;
@@ -394,33 +390,43 @@ body {
     font-weight: bold;
 }
 
-.remove-task-btn:hover {
-    background-color: #d32f2f;
-    transform: scale(1.1);
-}
-
 .task-content {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-.form-group {
+.form-row .form-group {
     margin-bottom: 15px;
+    display: flex;
 }
 
 .form-group label {
     display: block;
     margin-bottom: 8px;
-    color: #666;
-    font-weight: bold;
+    color: #000000;
     font-size: 14px;
 }
 
+.form-row .form-group label {
+    padding-top: 30px;
+}
+
+.task-date {
+    width: 15% !important;
+    height: 40px !important;
+    margin-left: 30px;
+    margin-top: 15px;
+}
+
+.task-start-time {
+    width: 6.6% !important;
+    height: 40px !important;
+    margin-left: 30px;
+    margin-top: 15px;
+}
+
 .form-row {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 20px;
     margin-bottom: 15px;
 }
 
@@ -431,8 +437,8 @@ body {
 input[type="text"], input[type="number"], input[type="date"], input[type="time"], textarea, select {
     width: 100%;
     padding: 12px 15px;
-    border: 2px solid #ddd;
-    border-radius: 8px;
+    border: 1px solid #ddd;
+    border-radius: 30px;
     font-size: 15px;
     transition: all 0.3s;
     background-color: white;
@@ -463,22 +469,16 @@ textarea {
     align-items: center;
     gap: 10px;
     padding: 12px;
-    background-color: #fff5e6;
     border-radius: 8px;
     cursor: pointer;
     transition: all 0.3s;
     border: 2px solid transparent;
 }
 
-.checkbox-label:hover {
-    background-color: #ffebcd;
-    border-color: #deb887;
-}
-
 .checkbox-label input[type="checkbox"] {
     width: 20px;
     height: 20px;
-    accent-color: #deb887;
+    accent-color: #ffffff;
 }
 
 .task-comment textarea {
@@ -513,26 +513,19 @@ textarea {
 }
 
 .add-task-btn {
-    background: linear-gradient(135deg, #4CAF50, #45a049);
+    background: #AF6425;
     color: white;
     border: none;
     padding: 15px 30px;
-    border-radius: 10px;
+    border-radius: 50px;
     cursor: pointer;
     font-size: 16px;
-    font-weight: bold;
     margin-top: 10px;
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 10px;
-    transition: all 0.3s;
-    width: 100%;
-}
-
-.add-task-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 5px 15px rgba(76, 175, 80, 0.3);
+    width: 40%;
 }
 
 .form-buttons {
@@ -544,32 +537,21 @@ textarea {
 .form-buttons button {
     flex: 1;
     padding: 18px 30px;
-    border: none;
     border-radius: 10px;
     cursor: pointer;
     font-size: 18px;
-    font-weight: bold;
     transition: all 0.3s;
 }
 
 .publish-btn {
-    background: linear-gradient(135deg, #deb887, #cd853f);
-    color: white;
+    background: #FFF7E6;
+    color: #985D3C;
+    border: 1px solid #AF6425;
 }
-
-.publish-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(222, 184, 135, 0.4);
-}
-
 .cancel-btn {
-    background: linear-gradient(135deg, #6c757d, #5a6268);
+    background: #868686;
     color: white;
-}
-
-.cancel-btn:hover {
-    transform: translateY(-3px);
-    box-shadow: 0 6px 20px rgba(108, 117, 125, 0.4);
+    border: none;
 }
 
 .footer {
@@ -615,11 +597,6 @@ textarea {
         padding: 20px;
     }
     
-    .form-row {
-        grid-template-columns: 1fr;
-        gap: 15px;
-    }
-    
     .total-time-inputs {
         grid-template-columns: 1fr;
     }
@@ -638,3 +615,101 @@ textarea {
         font-size: 16px;
         padding: 8px 10px;
     }
+}
+
+/* Стили для расписания в задаче */
+.task-schedule {
+    margin-top: 15px;
+    padding: 15px;
+    background-color: #f9f5f0;
+    border-radius: 10px;
+    border: 1px solid #f0e6d6;
+}
+
+.task-schedule h4 {
+    margin: 0 0 15px 0;
+    color: #985D3C;
+    font-size: 16px;
+    font-weight: 600;
+}
+
+.task-schedule .form-row {
+    display: flex;
+    gap: 20px;
+    align-items: flex-start;
+}
+
+.task-schedule .form-group {
+    flex: 1;
+    margin-bottom: 0;
+}
+
+.task-schedule .form-group label {
+    display: block;
+    font-size: 13px;
+    color: #666;
+    margin-bottom: 5px;
+    font-weight: 500;
+}
+
+.task-schedule .form-group input[type="date"],
+.task-schedule .form-group input[type="time"] {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    background-color: white;
+    transition: all 0.3s;
+}
+
+.task-schedule .form-group input[type="date"]:focus,
+.task-schedule .form-group input[type="time"]:focus {
+    border-color: #deb887;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(222, 184, 135, 0.2);
+}
+
+/* Улучшение для формы в целом */
+.form-group {
+    margin-bottom: 25px;
+}
+
+.task-item .form-group {
+    margin-bottom: 20px;
+}
+
+.task-item input[type="text"],
+.task-item textarea {
+    width: 100%;
+    padding: 12px 15px;
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 14px;
+    background-color: white;
+    transition: all 0.3s;
+}
+
+.task-item input[type="text"]:focus,
+.task-item textarea:focus {
+    border-color: #deb887;
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(222, 184, 135, 0.2);
+}
+
+.task-item textarea {
+    min-height: 80px;
+    resize: vertical;
+}
+
+/* Адаптивность для расписания */
+@media (max-width: 768px) {
+    .task-schedule .form-row {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .task-schedule .form-group {
+        width: 100%;
+    }
+}

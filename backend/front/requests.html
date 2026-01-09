@@ -51,69 +51,50 @@
 
     <div id="formPage" class="form-page">
         <section class="form-section">
-            <h2>Создание чек-листа</h2>
-
-            <h3>Выберите пожилого человека</h3>
-            <select id="elderSelect" required>
-                <option value="">Выберите...</option>
-            </select>
-
-            <h3>Название задачи</h3>
-            <input type="text" id="taskName" placeholder="Введите название задачи" required>
-
-            <h3>Задачи <small>(можно добавить несколько)</small></h3>
-            <div id="tasksContainer">
+        <div style="display: flex; align-items: center; gap: 20px; margin-bottom: 20px;">
+            <div style="min-width: 180px;">
+                <h3 style="margin: 0;">Кого касается помощь?</h3>
             </div>
-            <button type="button" class="add-task-btn" id="addTaskBtn">+ Добавить задачу</button>
-
-            <h3>Частота проведения</h3>
-            <div style="margin-bottom: 10px; font-size: 14px; color: #666;">
-                (если единоразово, то не нужно выбирать)
+            <div style="flex: 1;">
+                <select id="elderSelect" required style="width: 100%;">
+                    <option value="">Выберите...</option>
+                </select>
             </div>
-            <div class="frequency-options">
-                <div class="frequency-option">
-                    <input type="radio" id="frequency_every_few_hours" name="frequency" value="every_few_hours" data-checked="false">
-                    <label for="frequency_every_few_hours">Раз в несколько часов</label>
-                </div>
-                <div class="frequency-option">
-                    <input type="radio" id="frequency_daily" name="frequency" value="daily" data-checked="false">
-                    <label for="frequency_daily">Ежедневно</label>
-                </div>
-                <div class="frequency-option">
-                    <input type="radio" id="frequency_weekly" name="frequency" value="weekly" data-checked="false">
-                    <label for="frequency_weekly">Еженедельно</label>
-                </div>
-                <div class="frequency-option">
-                    <input type="radio" id="frequency_monthly" name="frequency" value="monthly" data-checked="false">
-                    <label for="frequency_monthly">Ежемесячно</label>
-                </div>
-            </div>
-
-            <h3>Дата выполнения</h3>
-            <input type="date" id="scheduledDate">
-
-            <h3>Время выполнения</h3>
-            <input type="time" id="scheduledTime">
-
-            <h3>Сколько займет по времени</h3>
-            <div class="total-time-inputs">
-                <div class="time-input-group">
-                    <input type="number" id="durationValue" min="0" placeholder="Количество" value="0">
-                    <select id="durationUnit">
-                        <option value="hours">Часы</option>
-                        <option value="days">Дни</option>
-                        <option value="months">Месяцы</option>
-                    </select>
-                </div>
-            </div>
-
-            <h3>Комментарий</h3>
-            <textarea id="comment" placeholder="Введите комментарий..."></textarea>
+        </div>
 
             <div class="form-group">
-                <label>
+                <input type="text" id="taskName" placeholder="Название чек листа" required>
+            </div>
+
+            <div class="form-group">
+                <div id="tasksContainer">
+                </div>
+                <button type="button" class="add-task-btn" id="addTaskBtn">
+                    Добавить пункт
+                </button>
+            </div>
+
+            <div class="form-group">
+                <h3>Сколько времени займет оказание помощи?</h3>
+                <div class="duration-inputs">
+                    <div class="duration-value">
+                        <input type="number" id="durationValue" min="0" placeholder="Количество" value="0" class="form-input">
+                    </div>
+                    <div class="duration-unit">
+                        <select id="durationUnit" class="form-select">
+                            <option value="hours">Часы</option>
+                            <option value="days">Дни</option>
+                            <option value="months">Месяцы</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+
+            <div class="form-group checkbox-group">
+                <label class="checkbox-label">
                     <input type="checkbox" id="isShoppingChecklist">
-                    Чеклист с покупкой?
+                    <span class="checkbox-custom"></span>
+                    Чек-лист с покупкой
                 </label>
             </div>
 

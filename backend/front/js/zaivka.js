@@ -498,35 +498,54 @@ function addTaskInput(taskData = null) {
     
     taskItem.innerHTML = `
         <div class="task-header">
-            <h4>Задача</h4>
             <button type="button" class="remove-task-btn" onclick="removeTask('${taskId}')">×</button>
         </div>
         <div class="task-content">
             <div class="form-group">
-                <label>Описание задачи:</label>
-                <input type="text" class="task-input" placeholder="Введите описание задачи" 
+                <input type="text" class="task-input" placeholder="Задача" 
                     value="${taskData ? escapeHtml(taskData.description) : ''}">
             </div>
+            
+            <div class="task-comment">
+                <label>Комментарий</label>
+                <textarea class="task-comment-input" placeholder="Введите комментарий...">${taskData ? escapeHtml(taskData.taskComment) : ''}</textarea>
+            </div>
+            
+            <div class="task-frequency">
+                <h4>Как часто повторять эту помощь?</h4>
+                <p>(если единоразово, то не нужно выбирать)</p>
+                <div class="task-frequency-options">
+                    <div class="task-frequency-option">
+                        <input type="radio" id="${taskId}_every_few_hours" name="${taskId}_frequency" value="every_few_hours" ${taskData && taskData.frequency === 'every_few_hours' ? 'checked' : ''}>
+                        <label for="${taskId}_every_few_hours">Раз в несколько часов</label>
+                    </div>
+                    <div class="task-frequency-option">
+                        <input type="radio" id="${taskId}_daily" name="${taskId}_frequency" value="daily" ${taskData && taskData.frequency === 'daily' ? 'checked' : ''}>
+                        <label for="${taskId}_daily">Ежедневно</label>
+                    </div>
+                    <div class="task-frequency-option">
+                        <input type="radio" id="${taskId}_weekly" name="${taskId}_frequency" value="weekly" ${taskData && taskData.frequency === 'weekly' ? 'checked' : ''}>
+                        <label for="${taskId}_weekly">Еженедельно</label>
+                    </div>
+                    <div class="task-frequency-option">
+                        <input type="radio" id="${taskId}_monthly" name="${taskId}_frequency" value="monthly" ${taskData && taskData.frequency === 'monthly' ? 'checked' : ''}>
+                        <label for="${taskId}_monthly">Ежемесячно</label>
+                    </div>
+                </div>
+            </div>
+
             <div class="form-row">
+                <h4>Расписание помощи</h4>
                 <div class="form-group">
-                    <label>Дата выполнения (необязательно):</label>
+                    <label>Выбор даты: </label>
                     <input type="date" class="task-date" 
                         value="${taskData ? taskData.date : ''}">
                 </div>
                 <div class="form-group">
-                    <label>Время начала (необязательно):</label>
+                    <label>Выбор времени: :</label>
                     <input type="time" class="task-start-time" 
                         value="${taskData ? taskData.startTime : ''}">
                 </div>
-                <div class="form-group">
-                    <label>Время окончания (необязательно):</label>
-                    <input type="time" class="task-end-time" 
-                        value="${taskData ? taskData.endTime : ''}">
-                </div>
-            </div>
-            <div class="task-comment">
-                <label>Комментарий к задаче (необязательно):</label>
-                <textarea class="task-comment-input" placeholder="Введите комментарий...">${taskData ? escapeHtml(taskData.taskComment) : ''}</textarea>
             </div>
         </div>
     `;
@@ -661,22 +680,12 @@ function renderCards(requests) {
     
     container.innerHTML = '';
     
-    if (!requests || requests.length === 0) {
-        container.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Нет созданных заявок</p>';
-        return;
-    }
-    
     const uniqueRequests = requests.filter((request, index, self) =>
         index === self.findIndex(r => r.id === request.id)
     );
     
     const openRequests = uniqueRequests.filter(r => r.status !== 'done');
     const doneRequests = uniqueRequests.filter(r => r.status === 'done');
-    
-    if (openRequests.length === 0 && doneRequests.length === 0) {
-        container.innerHTML = '<p style="text-align: center; padding: 40px; color: #666;">Нет созданных заявок</p>';
-        return;
-    }
     
     if (openRequests.length > 0) {
         openRequests.forEach(request => {

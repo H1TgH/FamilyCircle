@@ -150,7 +150,7 @@
 }
 
 .task-item {
-    font-weight: 500;
+    font-weight: 400;
 }
 
 .sub-text {
@@ -163,6 +163,19 @@
 
 .task-frequency, .task-time {
     text-align: left;
+}
+
+.task-frequency-option {
+    display: flex;
+    padding: 10px;
+    align-items: center;
+    vertical-align: middle;
+}
+
+.task-frequency-option label {
+    vertical-align: middle;
+    margin-left: 5px;
+    padding-top: 10px;
 }
 
 /* Статус оплаты */
@@ -811,4 +824,22 @@
 .request-card.done .card-actions-gear:hover {
     background: #f0f0f0;
     color: #888;
+}
+
+.duration-inputs {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.duration-value {
+    flex: 1;
+}
+
+.duration-unit {
+    min-width: 120px;
+}
+
+.task-frequency h4 {
+    font-weight: 400;
 }
