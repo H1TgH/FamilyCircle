@@ -6,7 +6,6 @@
     <title>Family Circle - Уход за семьёй</title>
     <link rel="stylesheet" href="./css/style_index.css">
     <style>
-        /* Дополнительные стили для кнопок авторизации */
         .auth-container {
             display: flex;
             gap: 10px;
@@ -54,7 +53,6 @@
             background-color: #0b7dda;
         }
         
-        /* Адаптация существующих кнопок */
         .buttom-input {
             background: none;
             border: none;
@@ -62,7 +60,6 @@
             padding: 0;
         }
         
-        /* Для мобильных устройств */
         @media (max-width: 768px) {
             .auth-container {
                 flex-direction: column;
@@ -83,7 +80,7 @@
             <div class="logo"><img class="logo-img" src="img/logo.png" alt="logo"></div>
             <nav class="nav">
                 <ul>
-                    <li><a href="./index.html">Главная</a></li>
+                    <li><a href="./index">Главная</a></li>
                     <li><a href="#">Вопросы</a></li>
                     <!-- Дополнительные пункты меню для авторизованных пользователей -->
                     <li id="relativeNav" style="display: none;"><a href="./relative_profile">Профиль</a></li>
@@ -94,7 +91,7 @@
                 <!-- Кнопки будут вставлены через JavaScript -->
                 <div class="auth-container" id="authButtons">
                     <!-- По умолчанию показываем кнопку входа -->
-                    <button class="auth-btn login-btn" onclick="window.location.href='./input'">
+                    <button class="auth-btn login-btn" onclick="window.location.href='./login'">
                         Войти <img src="./img/input.png" style="height: 20px; width: 20px;">
                     </button>
                 </div>
@@ -164,14 +161,12 @@
         </div>
     </section>
 
-    <!-- Призыв к действию -->
     <section class="cta">
         <div class="container">
             <div class="cta-content">
                 <h2>Станьте частью "Family Circle" !</h2>
                 <div style="display: flex; justify-content: space-evenly; flex-wrap: wrap; gap: 20px;">
-                    <!-- Ссылки меняются в зависимости от роли пользователя -->
-                    <a href="./zaivka.html" id="findSupportBtn"> 
+                    <a href="./requests" id="findSupportBtn"> 
                         <button class="cta-button">Найти поддержку</button>
                     </a>
                     <a href="./regis_V.html" id="becomeVolunteerBtn">
@@ -241,7 +236,7 @@
             } else {
                 // Кнопки для неавторизованных пользователей
                 authButtons.innerHTML = `
-                    <button class="auth-btn login-btn" onclick="window.location.href='./input'">
+                    <button class="auth-btn login-btn" onclick="window.location.href='./login'">
                         Войти <img src="./img/input.png" style="height: 20px; width: 20px;">
                     </button>
                 `;
@@ -328,7 +323,7 @@
 
         function goToProfile() {
             if (isRelative()) {
-                window.location.href = './relative_profile';
+                window.location.href = './profile';
             } else if (isVolunteer()) {
                 window.location.href = './volunteer_profile';
             }
@@ -336,7 +331,7 @@
 
         function goToRequests() {
             if (isRelative()) {
-                window.location.href = './relative_scroll';
+                window.location.href = 'feed';
             } else if (isVolunteer()) {
                 window.location.href = './volunteer_assignments';
             }

@@ -407,7 +407,7 @@ function getUserRole() {
 // Инициализация страницы с проверкой авторизации
 function initPage() {
     const path = window.location.pathname;
-    const protectedPages = ['/relative_profile', '/zaivka', '/relative_scroll'];
+    const protectedPages = ['/profile', '/requests', '/feed'];
     
     // Если страница защищенная и пользователь не авторизован
     if (protectedPages.some(page => path.startsWith(page)) && !isAuthenticated()) {
@@ -422,7 +422,7 @@ function initPage() {
     }
     
     // Проверка роли для определенных страниц
-    if (path.startsWith('/relative_profile') || path.startsWith('/zaivka')) {
+    if (path.startsWith('/profile') || path.startsWith('/requests')) {
         if (!isRelative()) {
             alert('Эта страница доступна только родственникам');
             window.location.href = '/';
