@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Комментарии</title>
+    <link rel="stylesheet" href="./static/styles/style_comments.css">
+    <link rel="stylesheet" href="./static/styles/style_main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/awesome/css/all.css" />
+</head>
+
+<body>
+    <header class="header-bar">
+        <div class="logo">
+            <img src="./static/images/logo.png" alt="Family Circle Logo" />
+        </div>
+        <div class="header-icons">
+            <i class="fas fa-bell"></i>
+            <div class="profile-icon">
+                <img src="./static/images/profile.png" alt="Профиль" />
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav-bar">
+        <div class="nav-links-wrapper">
+            <a href="./volunteer_scroll.html" class="nav-item active">
+                <img src="./static/images/lenta.png" alt="Лента иконка" />
+                <span>Лента</span>
+            </a>
+            <a href="./zaivka_volunteer.html" class="nav-item">
+                <img src="./static/images/list.png" alt="Заявки иконка" />
+                <span>Заявки</span>
+            </a>
+            <a href="./rating_volunteer.html" class="nav-item ">
+                <img src="./static/images/thanks.png" alt="Поблагодарить иконка" />
+                <span>Поблагодарить</span>
+            </a>
+        </div>
+    </nav>
+
+     <main class="container_list">
+        <!-- Блок самого поста (копируем ваш стиль) -->
+        <section class="post-card main-post">
+            <div class="post-header">
+                <div class="post-user">
+                    <img src="static/images/avatar.png" class="post-avatar" alt="Аватар">
+                    <div class="post-user-info">
+                        <h3 class="post-name">Иванова Анна Алексеевна</h3>
+                        <p class="post-task">Задание: Покупка фруктов</p>
+                    </div>
+                </div>
+                <a href="./volunteer_scroll.html" class="back-link">Назад</a>
+            </div>
+            <p class="post-text">Я была безмерно рада помочь Ивановой Нине Алексеевне...</p>
+        </section>
+
+        <!-- СЕКЦИЯ КОММЕНТАРИЕВ -->
+        <section class="comments-section">
+            <h2 class="comments-title">Комментарии (<span id="comment-count">0</span>)</h2>
+            
+            <div class="comments-list" id="comments-list">
+
+            </div>
+
+            <!-- Форма добавления комментария -->
+            <div class="comment-form">
+                <textarea id="comment-input" placeholder="Напишите комментарий..."></textarea>
+                <button id="send-comment-btn" class="btn-send">Отправить</button>
+            </div>
+        </section>
+    </main>
+    <script src="./static/js/comments.js"></script>
+</body>
+
+</html>

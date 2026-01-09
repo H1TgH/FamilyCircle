@@ -346,3 +346,27 @@ modal.addEventListener("click", (event) => {
         modal.style.display = "none";
     }
 });
+
+
+// Код для файла ленты
+document.addEventListener('DOMContentLoaded', () => {
+    const commentButtons = document.querySelectorAll('a[href="./comments_volunteer.html"]');
+
+    commentButtons.forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            // Находим карточку поста, в которой находится кнопка
+            const postCard = this.closest('.post-card');
+            
+            // Собираем данные из этого конкретного поста
+            const postData = {
+                name: postCard.querySelector('.post-name').textContent,
+                task: postCard.querySelector('.post-task')?.textContent || "",
+                text: postCard.querySelector('.post-text').textContent,
+                avatar: postCard.querySelector('.post-avatar').src
+            };
+
+            // Сохраняем в память браузера
+            localStorage.setItem('selectedPost', JSON.stringify(postData));
+        });
+    });
+});
