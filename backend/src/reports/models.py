@@ -22,15 +22,15 @@ class ReportModel(Base):
         index=True
     )
 
-    request_id: Mapped[UUID] = mapped_column(
+    request_id: Mapped[UUID | None] = mapped_column(
         ForeignKey('requests.id', ondelete='CASCADE'),
-        nullable=False,
+        nullable=True,
         index=True
     )
 
-    volunteer_id: Mapped[UUID] = mapped_column(
-        ForeignKey('users.id', ondelete='SET NULL'),
-        nullable=True,
+    author_id: Mapped[UUID] = mapped_column(
+        ForeignKey('users.id', ondelete='CASCADE'),
+        nullable=False,
         index=True
     )
 
@@ -52,8 +52,8 @@ class ReportModel(Base):
         onupdate=func.now()
     )
 
-    request: Mapped[RequestModel] = relationship('RequestModel')
-    volunteer: Mapped[UserModel] = relationship('UserModel')
+    request: Mapped[RequestModel | None] = relationship('RequestModel')
+    author: Mapped[UserModel] = relationship('UserModel')
     images: Mapped[list['ReportImageModel']] = relationship(
         'ReportImageModel',
         back_populates='report',

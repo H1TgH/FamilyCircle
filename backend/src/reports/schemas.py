@@ -9,7 +9,7 @@ class ReportBaseSchema(BaseModel):
 
 
 class ReportCreateSchema(ReportBaseSchema):
-    request_id: UUID
+    request_id: UUID | None = None
 
 
 class ReportImageSchema(BaseModel):
@@ -24,8 +24,8 @@ class ReportImageSchema(BaseModel):
 
 class ReportResponseSchema(ReportBaseSchema):
     id: UUID
-    request_id: UUID
-    volunteer_id: UUID | None
+    request_id: UUID | None
+    author_id: UUID
     images: list[ReportImageSchema] = []
 
     class Config:
@@ -37,6 +37,7 @@ class ReportFeedSchema(BaseModel):
     description: str
     created_at: datetime
     images: list[ReportImageSchema] = []
-    volunteer_name: str
-    volunteer_surname: str
-    request_category: str
+    author_name: str
+    author_surname: str
+    request_task_name: str | None = None
+    request_status: str | None = None

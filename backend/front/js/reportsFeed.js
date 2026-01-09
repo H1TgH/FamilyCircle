@@ -59,6 +59,15 @@ function renderReportsFeed(reports) {
     });
 }
 
+function getRequestStatusText(status) {
+    const statusMap = {
+        'open': 'Не в работе',
+        'in_progress': 'В работе',
+        'done': 'Закрыто'
+    };
+    return statusMap[status] || status;
+}
+
 function createReportCard(report) {
     const card = document.createElement('section');
     card.className = 'post-card';
@@ -71,33 +80,57 @@ function createReportCard(report) {
     if (report.images && report.images.length > 0) {
         imagesHTML = `
             <div class="post-image-wrapper">
-                <img src="${report.images[0].presigned_url}" class="post-image" alt="Фото отчета">
+                <img src="${report.images[0].presigned_url}" class="post-image" alt="Фото отчета" onerror="this.src='./img/default-image.png'">
             </div>
+        `;
+    }
+    
+    const currentUserId = getUserId();
+    const isOwner = report.author_id === currentUserId;
+    
+    let taskInfo = '';
+    if (report.request_task_name) {
+        const statusText = getRequestStatusText(report.request_status);
+        taskInfo = `
+            <p class="post-task">Задание: ${escapeHtml(report.request_task_name)}</p>
+            <p class="post-status">Статус заявки: ${statusText}</p>
         `;
     }
     
     card.innerHTML = `
         <div class="post-header">
             <div class="post-user">
-                <img src="/img/avatar.png" class="post-avatar" alt="Аватар">
+                <img src="./img/avatar.png" class="post-avatar" alt="Аватар">
                 <div class="post-user-info">
-                    <h3 class="post-name">${escapeHtml(report.volunteer_surname)} ${escapeHtml(report.volunteer_name)}</h3>
-                    <p class="post-task">Категория: ${getCategoryText(report.request_category)}</p>
-                    <p class="post-status">Статус: выполнено</p>
+                    <h3 class="post-name">${escapeHtml(report.author_name)} ${escapeHtml(report.author_surname)}</h3>
+                    ${taskInfo}
                 </div>
             </div>
-            ${getReportMenuHTML(report)}
+            ${isOwner ? getReportMenuHTML(report) : ''}
         </div>
         <p class="post-text">${escapeHtml(report.description)}</p>
         ${imagesHTML}
         <div class="post-actions">
-            <img src="/img/heart.svg" class="post-icon" alt="Лайк" onclick="handleLike('${report.id}')">
-            <img src="/img/chat.svg" class="post-icon" alt="Комментарий" onclick="showComments('${report.id}')">
+            <img src="./img/heart.svg" class="post-icon" alt="Лайк" onclick="handleLike('${report.id}')">
+            <img src="./img/chat.svg" class="post-icon" alt="Комментарий" onclick="showComments('${report.id}')">
         </div>
         <p class="post-time">${timeAgo}</p>
     `;
     
     return card;
+}
+
+function getUserId() {
+    const userData = localStorage.getItem('userData');
+    if (userData) {
+        try {
+            const user = JSON.parse(userData);
+            return user.id;
+        } catch (e) {
+            return null;
+        }
+    }
+    return null;
 }
 
 function getReportMenuHTML(report) {
@@ -155,11 +188,6 @@ function setupCreatePostButton() {
     
     createPostBtn.addEventListener('click', async function() {
         const requests = await loadUserRequests();
-        if (requests.length === 0) {
-            showNotification('У вас нет завершенных заявок для создания отчета', 'error');
-            return;
-        }
-        
         showCreatePostModal(requests);
     });
     
@@ -182,7 +210,7 @@ function setupCreatePostButton() {
 
 async function loadUserRequests() {
     try {
-        const response = await fetchWithAuth('/api/v1/requests/me?limit=50');
+        const response = await fetchWithAuth('/api/v1/requests/me?limit=30');
         if (response.ok) {
             const requests = await response.json();
             return requests.filter(req => req.status === 'done' || req.status === 'in_progress');
@@ -204,12 +232,12 @@ function showCreatePostModal(requests) {
     const formHTML = `
         <div class="report-form">
             <div class="form-group">
-                <label for="requestSelect">Выберите заявку:*</label>
-                <select id="requestSelect" required>
-                    <option value="">Выберите заявку</option>
+                <label for="requestSelect">Выберите заявку (необязательно):</label>
+                <select id="requestSelect">
+                    <option value="">Без привязки к заявке</option>
                     ${requests.map(req => `
                         <option value="${req.id}">
-                            ${escapeHtml(req.description || req.category)} (${new Date(req.created_at).toLocaleDateString('ru-RU')})
+                            ${escapeHtml(req.task_name)} (${new Date(req.created_at).toLocaleDateString('ru-RU')})
                         </option>
                     `).join('')}
                 </select>
@@ -217,7 +245,7 @@ function showCreatePostModal(requests) {
             <div class="form-group">
                 <label for="postText">Описание:*</label>
                 <textarea id="postText" class="modal-input" rows="3" 
-                    placeholder="Опишите выполнение заявки..." required></textarea>
+                    placeholder="Делитесь своими впечатлениями, общайтесь, благодарите..." required></textarea>
             </div>
             <div class="form-group">
                 <label>Загрузите фотографии (макс. 10):</label>
@@ -286,11 +314,6 @@ async function submitReport() {
     const description = document.getElementById('postText').value.trim();
     const imageInput = document.getElementById('imageInput');
     
-    if (!requestId) {
-        showNotification('Пожалуйста, выберите заявку', 'error');
-        return;
-    }
-    
     if (!description) {
         showNotification('Пожалуйста, введите описание', 'error');
         document.getElementById('postText').focus();
@@ -298,7 +321,9 @@ async function submitReport() {
     }
     
     const formData = new FormData();
-    formData.append('request_id', requestId);
+    if (requestId) {
+        formData.append('request_id', requestId);
+    }
     formData.append('description', description);
     
     if (imageInput.files.length > 0) {
@@ -320,22 +345,23 @@ async function submitReport() {
         
         if (response.ok) {
             const report = await response.json();
-            showNotification('Отчет успешно создан!', 'success');
+            showNotification('Пост успешно создан!', 'success');
             
             document.getElementById('createPostModal').style.display = 'none';
             
             loadReportsFeed();
             
             document.getElementById('postText').value = '';
+            document.getElementById('requestSelect').value = '';
             document.getElementById('imageInput').value = '';
             document.getElementById('imagePreview').innerHTML = '';
             
         } else {
-            const error = await response.json().catch(() => ({ detail: 'Не удалось создать отчет' }));
-            showNotification('Ошибка: ' + (error.detail || 'Не удалось создать отчет'), 'error');
+            const error = await response.json().catch(() => ({ detail: 'Не удалось создать пост' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось создать пост'), 'error');
         }
     } catch (error) {
-        console.error('Ошибка создания отчета:', error);
+        console.error('Ошибка создания поста:', error);
         showNotification('Ошибка соединения с сервером. Проверьте подключение к интернету.', 'error');
     } finally {
         submitBtn.textContent = originalText;
@@ -360,17 +386,6 @@ function getTimeAgo(date) {
     return date.toLocaleDateString('ru-RU');
 }
 
-function getCategoryText(category) {
-    const categoryMap = {
-        'shopping': 'Покупки',
-        'medication': 'Лекарства',
-        'housework': 'Работа по дому',
-        'walk': 'Прогулка',
-        'other': 'Другое'
-    };
-    return categoryMap[category] || category;
-}
-
 function escapeHtml(unsafe) {
     if (!unsafe) return '';
     return unsafe
@@ -382,7 +397,6 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
-// Функция для показа уведомлений
 function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
@@ -402,7 +416,6 @@ function showNotification(message, type = 'success') {
         animation: slideIn 0.3s ease-out;
     `;
     
-    // Добавляем стили для анимации, если их еще нет
     if (!document.getElementById('notification-styles')) {
         const style = document.createElement('style');
         style.id = 'notification-styles';
@@ -453,3 +466,4 @@ window.toggleReportMenu = toggleReportMenu;
 window.deleteReport = deleteReport;
 window.handleLike = handleLike;
 window.showComments = showComments;
+window.removeImageFromPreview = removeImageFromPreview;

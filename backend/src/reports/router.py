@@ -27,7 +27,7 @@ reports_router = APIRouter()
 )
 async def create_report(
     session: SessionDep,
-    request_id: UUID = Form(...),
+    request_id: UUID | None = Form(None),
     description: str = Form(...),
     images: list[UploadFile] = File([]),
     user: UserModel = Depends(get_current_user)
@@ -38,27 +38,29 @@ async def create_report(
             detail='Maximum 10 images allowed'
         )
 
-    result = await session.execute(
-        select(RequestModel)
-        .where(RequestModel.id == request_id)
-    )
-    request = result.scalar_one_or_none()
-
-    if request is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='Request not found.'
+    request = None
+    if request_id:
+        result = await session.execute(
+            select(RequestModel)
+            .where(RequestModel.id == request_id)
         )
+        request = result.scalar_one_or_none()
 
-    if request.volunteer_id != user.id:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail='You are not assigned to this request.'
-        )
+        if request is None:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail='Request not found.'
+            )
+
+        if request.volunteer_id != user.id and request.relative_id != user.id:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail='You are not assigned to this request.'
+            )
 
     report = ReportModel(
         request_id=request_id,
-        volunteer_id=user.id,
+        author_id=user.id,
         description=description,
     )
     session.add(report)
@@ -93,13 +95,13 @@ async def create_report(
                     content_type='image/webp'
                 )
 
-                report_image = ReportImageModel(
+                report_image_model = ReportImageModel(
                     report_id=report.id,
                     file_key=image_key,
                     display_order=i
                 )
-                session.add(report_image)
-                uploaded_images.append(report_image)
+                session.add(report_image_model)
+                uploaded_images.append(report_image_model)
 
             except HTTPException:
                 raise
@@ -112,7 +114,9 @@ async def create_report(
                     detail=f'Error uploading image: {e}'
                 ) from e
 
-    request.status = RequestStatusEnum.DONE
+    if request and request.volunteer_id == user.id:
+        request.status = RequestStatusEnum.DONE
+
     await session.commit()
 
     result = await session.execute(
@@ -142,18 +146,20 @@ async def get_reports_feed(
 ):
     query = (
         select(ReportModel)
-        .join(ReportModel.request)
-        .join(ReportModel.volunteer)
+        .join(ReportModel.author)
         .options(
             selectinload(ReportModel.images),
             selectinload(ReportModel.request),
-            selectinload(ReportModel.volunteer)
+            selectinload(ReportModel.author)
         )
         .order_by(desc(ReportModel.created_at))
     )
 
     if current_user.role == RoleEnum.RELATIVE:
-        query = query.where(RequestModel.relative_id == current_user.id)
+        query = query.where(
+            (ReportModel.author_id == current_user.id) |
+            (ReportModel.request.has(RequestModel.relative_id == current_user.id))
+        )
 
     if cursor:
         query = query.where(ReportModel.created_at < cursor)
@@ -170,9 +176,10 @@ async def get_reports_feed(
             description=report.description,
             created_at=report.created_at,
             images=report.images,
-            volunteer_name=report.volunteer.name,
-            volunteer_surname=report.volunteer.surname,
-            request_category=report.request.category
+            author_name=report.author.name,
+            author_surname=report.author.surname,
+            request_task_name=report.request.task_name if report.request else None,
+            request_status=report.request.status.value if report.request else None
         )
 
         for image in report_data.images:
@@ -235,7 +242,7 @@ async def delete_report(
             detail='Report not found.'
         )
 
-    if report.volunteer_id != user.id:
+    if report.author_id != user.id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail='You can delete only your own reports.'
