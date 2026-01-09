@@ -1,8 +1,19 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 from enum import StrEnum
 from uuid import UUID, uuid4
 
-from sqlalchemy import ARRAY, Date as PGDate, DateTime as PGDateTime, Enum, ForeignKey, String, func
+from sqlalchemy import (
+    ARRAY,
+    Boolean,
+    Date as PGDate,
+    DateTime as PGDateTime,
+    Enum,
+    ForeignKey,
+    Integer,
+    String,
+    Time as PGTime,
+    func,
+)
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -14,6 +25,20 @@ class RequestStatusEnum(StrEnum):
     OPEN = 'open'
     IN_PROGRESS = 'in_progress'
     DONE = 'done'
+
+
+class FrequencyEnum(StrEnum):
+    ONCE = 'once'
+    EVERY_FEW_HOURS = 'every_few_hours'
+    DAILY = 'daily'
+    WEEKLY = 'weekly'
+    MONTHLY = 'monthly'
+
+
+class DurationUnitEnum(StrEnum):
+    HOURS = 'hours'
+    DAYS = 'days'
+    MONTHS = 'months'
 
 
 class ElderModel(Base):
@@ -40,9 +65,9 @@ class ElderModel(Base):
         nullable=False
     )
 
-    avatar_url: Mapped[str] = mapped_column(
-        String,
-        nullable=True
+    is_has_avatar: Mapped[bool] = mapped_column(
+        default=False,
+        nullable=False
     )
 
     birthday: Mapped[date] = mapped_column(
@@ -123,13 +148,13 @@ class RequestModel(Base):
         nullable=True
     )
 
-    check_list: Mapped[list[str]] = mapped_column(
-        ARRAY(String),
+    task_name: Mapped[str] = mapped_column(
+        String,
         nullable=False
     )
 
-    category: Mapped[str] = mapped_column(
-        String,
+    check_list: Mapped[list[str]] = mapped_column(
+        ARRAY(String),
         nullable=False
     )
 
@@ -138,14 +163,43 @@ class RequestModel(Base):
         nullable=True
     )
 
-    address: Mapped[str] = mapped_column(
-        String,
+    frequency: Mapped[FrequencyEnum] = mapped_column(
+        Enum(
+            FrequencyEnum,
+            name='frequency_enum',
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
         nullable=True
     )
 
-    scheduled_time: Mapped[datetime] = mapped_column(
-        PGDateTime(timezone=True),
+    scheduled_date: Mapped[date] = mapped_column(
+        PGDate,
         nullable=True
+    )
+
+    scheduled_time: Mapped[time] = mapped_column(
+        PGTime,
+        nullable=True
+    )
+
+    duration_value: Mapped[int] = mapped_column(
+        Integer,
+        nullable=True
+    )
+
+    duration_unit: Mapped[DurationUnitEnum] = mapped_column(
+        Enum(
+            DurationUnitEnum,
+            name='duration_unit_enum',
+            values_callable=lambda enum: [e.value for e in enum],
+        ),
+        nullable=True
+    )
+
+    is_shopping_checklist: Mapped[bool] = mapped_column(
+        Boolean,
+        nullable=False,
+        default=False
     )
 
     status: Mapped[RequestStatusEnum] = mapped_column(

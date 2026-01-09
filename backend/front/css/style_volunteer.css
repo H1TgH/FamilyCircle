@@ -1,0 +1,578 @@
+/* MAIN */
+.volunteer-main {
+
+    max-width: 150vh;
+    margin: 30px auto;
+}
+/* ===== ЗАГОЛОВОК СТРАНИЦЫ ===== */
+.volunteer-main .title {
+    text-align: center;
+    margin-bottom: 40px;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+/* ===== КАРТОЧКА ПРОФИЛЯ (РАМКА И СТРУКТУРА) ===== */
+.profile-card {
+    border: 1px solid #F3CBA8; 
+    border-radius: 30px;       
+    padding: 30px 40px;
+    margin-bottom: 60px;
+    background: #fff;
+    
+    /* Чтобы фото и текст встали в ряд */
+    display: flex;
+    align-items: flex-start;
+    gap: 30px;
+    
+    /* Для позиционирования "Помог 1 раз" и карандаша */
+    position: relative; 
+}
+
+/* ФОТО */
+.profile-photo-wrap {
+    width: 120px;      
+    height: 120px;
+    border-radius: 50%;
+    overflow: hidden;
+    flex-shrink: 0;    
+}
+
+.profile-photo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* ЦЕНТРАЛЬНАЯ ЧАСТЬ */
+.profile-info {
+    flex: 1; /* Занимает все свободное место */
+    max-width: 600px; /* Ограничим ширину полей, чтобы не упирались в край */
+}
+
+.profile-name {
+    font-size: 20px;
+    font-weight: 500;
+    margin: 0 0 20px 0;
+}
+
+/* ПОЛЯ ВВОДА */
+.profile-edit-fields {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.field-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.field-group label {
+    font-size: 14px;
+    color: #333;
+    font-weight: 600;
+}
+
+.style-input {
+    border: 1px solid #F3CBA8; /* Оранжевая обводка */
+    border-radius: 10px;
+    padding: 10px 15px;
+    font-family: inherit;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box; /* Чтобы padding не ломал ширину */
+    outline: none;
+}
+
+.contact-info {
+    font-size: 16px;
+    color: #333;
+}
+
+/* ===== ЭЛЕМЕНТЫ ПО УГЛАМ ===== */
+
+/* "Помог 1 раз" - Справа Сверху */
+.profile-help {
+    position: absolute;
+    top: 30px;
+    right: 40px;
+    font-size: 18px;
+    font-weight: 600;
+    color: #C87943; 
+}
+
+.profile-help span {
+    font-size: 24px;
+    font-weight: 700;
+}
+
+/* Карандаш - Справа Снизу */
+.edit-profile {
+    position: absolute;
+    bottom: 30px;
+    right: 40px;
+    background: none;
+    border: none;
+    font-size: 18px;
+    color: #C87943; 
+    cursor: pointer;
+}
+.reports-title {
+    text-align: center;
+    margin: 40px 0;
+}
+
+/* ===== ROW ===== */
+.report-row {
+    display: flex;
+    align-items: flex-start;
+    gap: 15px;
+    margin-bottom: 50px;
+}
+
+/* NUMBER */
+.report-number {
+    font-size: 18px;
+    margin-top: 20px;
+}
+
+/* RELATIVE */
+.relative-card {
+    width: 120px;
+    border: 1px solid #f1c29b;
+    border-radius: 15px;
+    padding: 10px;
+    text-align: center;
+}
+
+.relative-card img {
+    width: 50px;
+    border-radius: 50%;
+}
+
+/* MAIN CARD */
+.report-card {
+    flex: 1;
+    border: 1px solid #f1c29b;
+    border-radius: 20px;
+    padding: 20px;
+    position: relative;
+}
+.details-link {
+    text-decoration: none; 
+    color: #888;          
+    font-size: 12px;
+    margin-top: 8px;
+    display: inline-block;
+    border-bottom: 1px solid transparent; /* Чтобы не прыгало при наведении */
+    transition: color 0.3s;
+}
+
+.report-date {
+    position: absolute;
+    right: 20px;
+    top: 15px;
+    font-size: 13px;
+    color: #888;
+}
+
+.report-title {
+    margin-bottom: 20px;
+}
+
+/* BODY */
+.report-body {
+    display: flex;
+    gap: 20px;
+}
+
+/* ===== КАРТОЧКА ПОДОПЕЧНОГО (БАБУШКИ) ===== */
+.elder-card {
+    width: 140px;
+    border: 1px solid #f1c29b;
+    border-radius: 15px;
+    padding: 15px 10px; 
+    text-align: center;
+    flex-shrink: 0;    
+    
+    margin-right: 30px; 
+}
+
+.elder-card img {
+    width: 70px;
+    height: 70px;       
+    object-fit: cover;
+    border-radius: 50%;
+    margin-bottom: 10px;
+}
+
+/* Таблица заданий */
+.task-table {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 10px;
+}
+.task-header {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 0.8fr; 
+    column-gap: 25px;
+    margin-bottom: 10px; 
+    font-weight: bold;   
+    font-size: 14px;
+    color: #333;        
+}
+
+/* Одна строка */
+.task-row {
+    display: grid;
+    grid-template-columns: 1.5fr 1fr 0.8fr;
+    align-items: start;
+    column-gap: 25px;
+}
+
+/* Название фрукта */
+.task-item {
+    font-size: 15px;
+    line-height: 1;
+}
+
+.task-item span {
+    display: block;
+    font-size: 12px;
+    color: #999;
+    margin-top: 3px;
+}
+
+/* Частота */
+.task-frequency {
+    font-size: 14px;
+}
+
+/* Время */
+.task-time {
+    font-size: 14px;
+}
+
+
+/* Статус "Оплачен" */
+.status {
+    margin-top: 25px !important;
+    padding-top: 10px;
+    border-top: 1px dashed #eee; 
+}
+
+/* ACTION */
+.report-action {
+    margin-top: 30px;
+}
+
+.add-report-btn {
+    border: 1px solid #f1c29b;
+    background: #fff;
+    color: #c66a2e;
+    border-radius: 12px;
+    padding: 10px;
+    cursor: pointer;
+}
+
+/* ===== COMPLETED ===== */
+.report-row.completed {
+    opacity: 0.4;
+}
+
+.report-row.completed .add-report-btn {
+    display: none;
+}
+
+.report-row.completed .report-action::after {
+    content: "Задание выполнено";
+    display: block;
+    margin-top: 10px;
+    color: #777;
+}
+/* МОДАЛЬНОЕ ОКНО*/
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.4); 
+    overflow: auto;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.modal-content {
+    background-color: #fff;
+    margin: 5% auto;
+    width: 90%;
+    max-width: 600px; 
+    border-radius: 25px; 
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    border: none;
+    position: relative;
+    padding: 20px 10px;
+}
+
+/* Хедер - белый фон, без градиента */
+.modal-header {
+    background: transparent;
+    color: #333;
+    padding: 20px 30px 10px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border: none;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: #333; /* Основной цвет текста черный */
+}
+
+
+.modal-header h2 .highlight {
+    color: #C87943; 
+}
+
+.close-btn {
+    font-size: 32px;
+    color: #ccc; 
+    font-weight: 300;
+    cursor: pointer;
+    line-height: 20px;
+    transition: color 0.2s;
+}
+
+.close-btn:hover {
+    color: #888;
+    transform: none;
+}
+
+.modal-body {
+    padding: 10px 30px 30px;
+}
+
+.form-group {
+    margin-bottom: 30px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 15px;
+    font-weight: 600;
+    font-size: 1rem;
+    color: #333;
+}
+
+/* Текстовое поле - только подчеркивание */
+#reportText {
+    width: 100%;
+    padding: 10px 0;
+    border: none;
+    border-bottom: 1px solid #ddd; 
+    border-radius: 0;
+    font-size: 1rem;
+    resize: none; 
+    transition: border-color 0.3s;
+    color: #555;
+}
+
+#reportText:focus {
+    outline: none;
+    border-color: #ff9f43;
+}
+
+#reportText::placeholder {
+    color: #aaa;
+    font-style: italic;
+}
+
+/* Область загрузки - большая белая рамка */
+.upload-area {
+    border: 1px solid #e0e0e0; 
+    border-radius: 20px;
+    padding: 60px 20px;
+    text-align: center;
+    background-color: #fff;
+    cursor: pointer;
+    transition: all 0.3s;
+    position: relative;
+    height: 180px; /* Фиксированная высота для объема */
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+}
+
+.upload-area:hover {
+    background-color: #fafafa;
+    border-color: #ff9f43;
+}
+
+.upload-area i {
+    display: none; 
+}
+
+
+.upload-area p {
+    color: #aaa;
+    font-size: 1.1rem;
+    margin: 0;
+}
+
+#photoUpload {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    top: 0;
+    left: 0;
+    opacity: 0;
+    cursor: pointer;
+}
+
+/* Список файлов */
+.file-list {
+    margin-top: 15px;
+}
+.file-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid #eee;
+}
+.file-item i { color: #ff9f43; }
+
+/* Футер */
+.modal-footer {
+    display: flex;
+    flex-direction: row; /* В ряд */
+    justify-content: flex-end; /* Кнопку вправо */
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 0;
+    border-top: none;
+    gap: 15px;
+}
+
+/* Кнопка "Опубликовать"*/
+.submit-btn {
+    background: #a05e3f; 
+    color: white;
+    padding: 15px 40px;
+    border: none;
+    border-radius: 50px; 
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.3s;
+    box-shadow: none;
+}
+
+.submit-btn:hover {
+    background: #8a4d32;
+    transform: translateY(-1px);
+}
+
+/* Кнопка отмены - делаем невидимой или просто текстом, как на макете её нет */
+.cancel-btn {
+    background: transparent;
+    color: #999;
+    border: none;
+    padding: 10px 20px;
+}
+
+.cancel-btn:hover {
+    background: transparent;
+    color: #666;
+    border: none;
+}
+
+.footer-note {
+    width: 100%;
+    text-align: left;
+    font-size: 0.8rem;
+    color: #ccc;
+    margin-top: 10px;
+    padding-left: 30px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .modal-content {
+        margin: 10% auto;
+        width: 95%;
+    }
+    .submit-btn {
+        width: 100%;
+    }
+    .modal-footer {
+        flex-direction: column-reverse;
+    } 
+}
+
+/* затемнение фона */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 9999;
+}
+
+/* карточка */
+.modal-card {
+    background: #fff;
+    border-radius: 22px;
+    padding: 32px 36px;
+    width: 560px;
+    position: relative;
+
+    border: 2px solid #f1c29b; /* оранжевая рамка */
+}
+
+/* кнопка закрытия */
+.modal-close {
+    position: absolute;
+    top: 18px;
+    right: 20px;
+    cursor: pointer;
+    font-size: 22px;
+    color: #f1c29b;
+}
+
+.modal-card h3 {
+    margin: 0 0 14px;
+    font-size: 20px;
+}
+
+.modal-card p {
+    margin: 10px 0;          
+    line-height: 1.5;       
+    font-size: 15px;
+}
+
+/* аватар */
+.modal-card img {
+    width: 90px;
+    height: 90px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+/* выравнивание */
+.modal-card > div {
+    display: flex;
+    gap: 24px;
+}

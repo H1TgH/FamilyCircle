@@ -26,17 +26,17 @@
 
     <nav class="nav-bar">
         <div class="nav-links-wrapper">
-            <a href="relative_scroll" class="nav-item active">
+            <a href="volunteer_scroll.html" class="nav-item active">
                 <img src="img/lenta.png" alt="Лента иконка" />
                 <span>Лента</span>
             </a>
-            <a href="zaivka" class="nav-item">
+            <a href="./zaivka_volunteer.html" class="nav-item">
                 <img src="img/list.png" alt="Заявки иконка" />
                 <span>Заявки</span>
             </a>
-            <a href="#" class="nav-item">
+            <a href="./rating_volunteer.html" class="nav-item">
                 <img src="img/thanks.png" alt="Поблагодарить иконка" />
-                <span>Поблагодарить</span>
+                <span>Рейтинг</span>
             </a>
         </div>
     </nav>
@@ -44,18 +44,28 @@
     <main class="container_list">
         <div class="post-list">
 
-            <!-- ПОСТ 1 (Волонтер) - БЕЗ МЕНЮ -->
             <section class="post-card">
+
                 <div class="post-header">
+
                     <div class="post-user">
                         <img src="img/avatar.png" class="post-avatar" alt="Аватар">
+
                         <div class="post-user-info">
                             <h3 class="post-name">Иванова Анна Алексеевна</h3>
                             <p class="post-task">Задание: Покупка фруктов</p>
                             <p class="post-status">Статус: выполнено</p>
                         </div>
                     </div>
-                    <!-- Меню здесь УДАЛЕНО -->
+
+                    <div class="post-menu-wrapper">
+                        <button class="post-menu-btn">⋮</button>
+
+                        <div class="post-menu">
+                            <button class="menu-item">Изменить</button>
+                            <button class="menu-item">Удалить</button>
+                        </div>
+                    </div>
                 </div>
 
                 <p class="post-text">
@@ -71,21 +81,32 @@
                     <img src="img/heart.svg" class="post-icon" alt="Лайк">
                     <img src="img/chat.svg" class="post-icon" alt="Комментарий">
                 </div>
-                <p class="post-time">1 м назад</p>
-            </section>
 
-            <!-- ПОСТ 2 (Волонтер) - БЕЗ МЕНЮ -->
+                <p class="post-time">1 м назад</p>
+
+            </section>
             <section class="post-card">
+
                 <div class="post-header">
+
                     <div class="post-user">
                         <img src="img/avatar.png" class="post-avatar" alt="Аватар">
+
                         <div class="post-user-info">
                             <h3 class="post-name">Иванова Анна Алексеевна</h3>
                             <p class="post-task">Задание: Покупка фруктов</p>
                             <p class="post-status">Статус: в работе</p>
                         </div>
                     </div>
-                    <!-- Меню здесь УДАЛЕНО -->
+
+                    <div class="post-menu-wrapper">
+                        <button class="post-menu-btn">⋮</button>
+
+                        <div class="post-menu">
+                            <button class="menu-item">Изменить</button>
+                            <button class="menu-item">Удалить</button>
+                        </div>
+                    </div>
                 </div>
 
                 <p class="post-text">
@@ -100,22 +121,23 @@
                     <img src="img/heart.svg" class="post-icon" alt="Лайк">
                     <img src="img/chat.svg" class="post-icon" alt="Комментарий">
                 </div>
-                <p class="post-time">1 н назад</p>
-            </section>
 
-            <!-- ПОСТ 3 (Родственник) - С МЕНЮ -->
+                <p class="post-time">1 н назад</p>
+
+
+            </section>
             <section class="post-card">
                 <div class="post-header">
-
-                    <!-- Меню ТОЛЬКО ЗДЕСЬ -->
-                    <div class="post-menu-wrapper">
-                        <button class="post-menu-btn">⋮</button>
-
-                        <div class="post-menu">
-                            <button class="menu-item">Изменить</button>
-                            <button class="menu-item">Удалить</button>
+                    <div class="post-user">
+                        <!-- Другая аватарка или имя -->
+                        <img src="img/relative.png" class="post-avatar" alt="Аватар">
+                        <div class="post-user-info">
+                            <h3 class="post-name">Иванова Анна Николаевна</h3>
+                            <!-- Нет статуса и задания, так как это поздравление -->
                         </div>
                     </div>
+
+                    <!-- ЗДЕСЬ НЕТ БЛОКА <div class="post-menu-wrapper"> -->
                 </div>
 
                 <p class="post-text">
@@ -124,15 +146,15 @@
                     семьи!
                 </p>
 
-                <!-- В этом посте нет картинки по скриншоту, но есть лайки -->
+                <!-- Фото нет, только текст -->
 
                 <div class="post-actions">
                     <img src="img/heart.svg" class="post-icon" alt="Лайк">
                     <img src="img/chat.svg" class="post-icon" alt="Комментарий">
                 </div>
-
                 <p class="post-time">1 м назад</p>
             </section>
+
 
         </div>
         <div class="create-post-wrapper">
@@ -160,7 +182,7 @@
         </div>
     </div>
 
-    <script src="./js/reportsFeed.js"></script>
+    <script src="js/modal_relative.js"></script>
 </body>
 
 </html>

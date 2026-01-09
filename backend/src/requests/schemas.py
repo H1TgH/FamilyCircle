@@ -1,18 +1,23 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 from uuid import UUID
 
+from fastapi import Form
 from pydantic import BaseModel
 
-from src.requests.models import RequestStatusEnum
+from src.requests.models import DurationUnitEnum, FrequencyEnum, RequestStatusEnum
 
 
 class RequestCreationSchema(BaseModel):
     elder_id: UUID
+    task_name: str
     check_list: list[str]
-    category: str
-    description: str
-    address: str
-    scheduled_time: datetime
+    description: str | None = None
+    frequency: FrequencyEnum | None = None
+    scheduled_date: date | None = None
+    scheduled_time: time | None = None
+    duration_value: int | None = None
+    duration_unit: DurationUnitEnum | None = None
+    is_shopping_checklist: bool = False
 
 
 class RequestCreationResponseSchema(BaseModel):
@@ -24,21 +29,31 @@ class RequestResponseSchema(BaseModel):
     relative_id: UUID
     elder_id: UUID
     volunteer_id: UUID | None
+    task_name: str
     check_list: list[str]
-    category: str
-    description: str
-    address: str
-    scheduled_time: datetime
+    description: str | None
+    frequency: FrequencyEnum | None
+    scheduled_date: date | None
+    scheduled_time: time | None
+    duration_value: int | None
+    duration_unit: DurationUnitEnum | None
+    is_shopping_checklist: bool
     status: RequestStatusEnum
     created_at: datetime
 
 
 class RequestUpdateSchema(BaseModel):
+    task_name: str | None = None
     check_list: list[str] | None = None
     description: str | None = None
-    address: str | None = None
-    scheduled_time: datetime | None = None
+    frequency: FrequencyEnum | None = None
+    scheduled_date: date | None = None
+    scheduled_time: time | None = None
+    duration_value: int | None = None
+    duration_unit: DurationUnitEnum | None = None
+    is_shopping_checklist: bool | None = None
     status: RequestStatusEnum | None = None
+    volunteer_id: UUID | None = None
 
 
 class ElderCreationSchema(BaseModel):
@@ -51,7 +66,31 @@ class ElderCreationSchema(BaseModel):
     features: str
     hobbies: str
     comments: str
-    avatar_url: str | None = None
+
+    @classmethod
+    def as_form(
+        cls,
+        full_name: str = Form(...),
+        birthday: date = Form(...),
+        health_status: str = Form(...),
+        physical_limitations: str = Form(...),
+        disease: str = Form(...),
+        address: str = Form(...),
+        features: str = Form(...),
+        hobbies: str = Form(...),
+        comments: str = Form(...)
+    ):
+        return cls(
+            full_name=full_name,
+            birthday=birthday,
+            health_status=health_status,
+            physical_limitations=physical_limitations,
+            disease=disease,
+            address=address,
+            features=features,
+            hobbies=hobbies,
+            comments=comments
+        )
 
 
 class ElderUpdateSchema(BaseModel):
@@ -64,7 +103,31 @@ class ElderUpdateSchema(BaseModel):
     features: str | None = None
     hobbies: str | None = None
     comments: str | None = None
-    avatar_url: str | None = None
+
+    @classmethod
+    def as_form(
+        cls,
+        full_name: str | None = Form(None),
+        birthday: date | None = Form(None),
+        health_status: str | None = Form(None),
+        physical_limitations: str | None = Form(None),
+        disease: str | None = Form(None),
+        address: str | None = Form(None),
+        features: str | None = Form(None),
+        hobbies: str | None = Form(None),
+        comments: str | None = Form(None)
+    ):
+        return cls(
+            full_name=full_name,
+            birthday=birthday,
+            health_status=health_status,
+            physical_limitations=physical_limitations,
+            disease=disease,
+            address=address,
+            features=features,
+            hobbies=hobbies,
+            comments=comments
+        )
 
 
 class ElderResponseSchema(BaseModel):
@@ -79,6 +142,6 @@ class ElderResponseSchema(BaseModel):
     features: str
     hobbies: str
     comments: str
-    avatar_url: str | None
+    avatar_presigned_url: str | None
     created_at: datetime
     updated_at: datetime

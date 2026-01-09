@@ -5,27 +5,79 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Вход в аккаунт</title>
     <link rel="stylesheet" href="/css/style.css">
+    <style>
+        .auth-buttons {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin-top: 20px;
+        }
+        
+        .auth-btn {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 5px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+        
+        .account-btn {
+            background-color: #4CAF50;
+            color: white;
+        }
+        
+        .account-btn:hover {
+            background-color: #45a049;
+        }
+        
+        .logout-btn {
+            background-color: #f44336;
+            color: white;
+        }
+        
+        .logout-btn:hover {
+            background-color: #da190b;
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <form class="registration-form" id="loginForm">
-            <h1>Вход</h1>
-            
-            <div class="input-group">
-                <label for="login">Логин</label>
-                <input type="text" id="login" name="login_or_email" required>
-            </div>
+        <div id="loginSection">
+            <form class="registration-form" id="loginForm">
+                <h1>Вход</h1>
+                
+                <div class="input-group">
+                    <label for="login">Логин или Email</label>
+                    <input type="text" id="login" name="login_or_email" required>
+                </div>
 
-            <div class="input-group">
-                <label for="password">Пароль</label>
-                <input type="password" id="password" name="password" required>
+                <div class="input-group">
+                    <label for="password">Пароль</label>
+                    <input type="password" id="password" name="password" required>
+                </div>
+                
+                <div style="display: flex; justify-content:center;">
+                    <button type="button" id="loginBtn">Войти</button>
+                </div>
+                <div id="errorMessage" style="color: red; text-align: center; margin-top: 10px; display: none;"></div>
+            </form>
+        </div>
+
+        <div id="loggedInSection" style="display: none;">
+            <div class="registration-form">
+                <h1>Вы уже вошли в систему</h1>
+                <p style="text-align: center; margin-bottom: 30px;">
+                    Добро пожаловать! Вы можете перейти в свой аккаунт или выйти из системы.
+                </p>
+                
+                <div class="auth-buttons">
+                    <button type="button" id="accountBtn" class="auth-btn account-btn">Мой аккаунт</button>
+                    <button type="button" id="logoutBtn" class="auth-btn logout-btn">Выйти</button>
+                </div>
             </div>
-            
-            <div style="display: flex; justify-content:center;">
-                <button type="button" id="loginBtn">Войти</button>
-            </div>
-            <div id="errorMessage" style="color: red; text-align: center; margin-top: 10px; display: none;"></div>
-        </form>
+        </div>
     </div>
     
     <footer class="footer">

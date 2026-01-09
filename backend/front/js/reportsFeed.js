@@ -4,14 +4,33 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 async function loadReportsFeed() {
+    const postList = document.querySelector('.post-list');
+    if (postList) {
+        postList.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="loading-spinner"></div><p>Загрузка отчетов...</p></div>';
+    }
+    
     try {
         const response = await fetchWithAuth('/api/v1/reports/feed');
         if (response.ok) {
             const reports = await response.json();
-            renderReportsFeed(reports);
+            // Убираем дубликаты по ID
+            const uniqueReports = reports.filter((report, index, self) =>
+                index === self.findIndex(r => r.id === report.id)
+            );
+            renderReportsFeed(uniqueReports);
+        } else {
+            const error = await response.json().catch(() => ({ detail: 'Не удалось загрузить отчеты' }));
+            showNotification('Ошибка загрузки отчетов: ' + (error.detail || 'Попробуйте обновить страницу'), 'error');
+            if (postList) {
+                postList.innerHTML = '<p style="text-align: center; padding: 40px; color: #f44336;">Ошибка загрузки отчетов</p>';
+            }
         }
     } catch (error) {
         console.error('Ошибка загрузки ленты:', error);
+        showNotification('Ошибка соединения с сервером. Проверьте подключение к интернету.', 'error');
+        if (postList) {
+            postList.innerHTML = '<p style="text-align: center; padding: 40px; color: #f44336;">Ошибка соединения</p>';
+        }
     }
 }
 
@@ -25,11 +44,16 @@ function renderReportsFeed(reports) {
     postList.innerHTML = '';
     
     if (!reports || reports.length === 0) {
-        postList.innerHTML = '<p class="no-reports">Нет отчетов</p>';
+        postList.innerHTML = '<p class="no-reports" style="text-align: center; padding: 40px; color: #666;">Нет отчетов</p>';
         return;
     }
     
-    reports.forEach(report => {
+    // Убираем дубликаты по ID перед рендерингом
+    const uniqueReports = reports.filter((report, index, self) =>
+        index === self.findIndex(r => r.id === report.id)
+    );
+    
+    uniqueReports.forEach(report => {
         const reportCard = createReportCard(report);
         postList.appendChild(reportCard);
     });
@@ -43,7 +67,6 @@ function createReportCard(report) {
     const reportDate = new Date(report.created_at);
     const timeAgo = getTimeAgo(reportDate);
     
-    // Создаем HTML для изображений
     let imagesHTML = '';
     if (report.images && report.images.length > 0) {
         imagesHTML = `
@@ -78,7 +101,6 @@ function createReportCard(report) {
 }
 
 function getReportMenuHTML(report) {
-    // Показываем меню только если пользователь - автор отчета
     return `
         <div class="post-menu-wrapper">
             <button class="post-menu-btn" onclick="toggleReportMenu('${report.id}')">⋮</button>
@@ -111,33 +133,30 @@ async function deleteReport(reportId) {
         });
         
         if (response.status === 204) {
-            alert('Отчет удален');
+            showNotification('Отчет успешно удален', 'success');
             loadReportsFeed();
         } else {
-            const error = await response.json();
-            alert('Ошибка: ' + (error.detail || 'Не удалось удалить отчет'));
+            const error = await response.json().catch(() => ({ detail: 'Не удалось удалить отчет' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось удалить отчет'), 'error');
         }
     } catch (error) {
         console.error('Ошибка удаления:', error);
-        alert('Ошибка соединения с сервером');
+        showNotification('Ошибка соединения с сервером. Проверьте подключение к интернету.', 'error');
     }
 }
 
-// Обработка создания поста (отчета)
 function setupCreatePostButton() {
     const createPostBtn = document.querySelector('.create-post-btn');
     const modal = document.getElementById('createPostModal');
     const closeModalBtn = document.getElementById('closeModal');
     const modalSubmitBtn = document.querySelector('.modal-submit');
-    const imageInput = document.getElementById('imageInput');
     
     if (!createPostBtn) return;
     
     createPostBtn.addEventListener('click', async function() {
-        // Сначала загружаем доступные заявки пользователя
         const requests = await loadUserRequests();
         if (requests.length === 0) {
-            alert('У вас нет завершенных заявок для создания отчета');
+            showNotification('У вас нет завершенных заявок для создания отчета', 'error');
             return;
         }
         
@@ -166,8 +185,7 @@ async function loadUserRequests() {
         const response = await fetchWithAuth('/api/v1/requests/me?limit=50');
         if (response.ok) {
             const requests = await response.json();
-            // Фильтруем только завершенные заявки
-            return requests.filter(req => req.status === 'completed' || req.status === 'done');
+            return requests.filter(req => req.status === 'done' || req.status === 'in_progress');
         }
         return [];
     } catch (error) {
@@ -180,11 +198,9 @@ function showCreatePostModal(requests) {
     const modal = document.getElementById('createPostModal');
     const modalContent = modal.querySelector('.modal-content');
     
-    // Очищаем старую форму
     const oldForm = modalContent.querySelector('.report-form');
     if (oldForm) oldForm.remove();
     
-    // Создаем форму
     const formHTML = `
         <div class="report-form">
             <div class="form-group">
@@ -193,7 +209,7 @@ function showCreatePostModal(requests) {
                     <option value="">Выберите заявку</option>
                     ${requests.map(req => `
                         <option value="${req.id}">
-                            ${escapeHtml(req.description || 'Заявка')} (${new Date(req.created_at).toLocaleDateString('ru-RU')})
+                            ${escapeHtml(req.description || req.category)} (${new Date(req.created_at).toLocaleDateString('ru-RU')})
                         </option>
                     `).join('')}
                 </select>
@@ -208,17 +224,15 @@ function showCreatePostModal(requests) {
                 <div class="modal-upload-area">
                     <p>Перетащите файлы сюда или нажмите для выбора</p>
                     <input type="file" id="imageInput" multiple accept="image/*">
-                    <div id="imagePreview"></div>
+                    <div id="imagePreview" style="margin-top: 10px;"></div>
                 </div>
             </div>
         </div>
     `;
     
-    // Находим кнопку и вставляем форму перед ней
     const submitBtn = modalContent.querySelector('.modal-submit');
     submitBtn.insertAdjacentHTML('beforebegin', formHTML);
     
-    // Настройка предпросмотра изображений
     const imageInput = document.getElementById('imageInput');
     const imagePreview = document.getElementById('imagePreview');
     
@@ -233,13 +247,13 @@ function showCreatePostModal(requests) {
                     reader.onload = function(e) {
                         const preview = document.createElement('div');
                         preview.className = 'image-preview-item';
+                        preview.style.cssText = 'display: inline-block; position: relative; margin: 5px;';
                         preview.innerHTML = `
-                            <img src="${e.target.result}" alt="Предпросмотр">
-                            <button type="button" class="remove-image" data-index="${index}">×</button>
+                            <img src="${e.target.result}" alt="Предпросмотр" style="width: 100px; height: 100px; object-fit: cover; border-radius: 5px;">
+                            <button type="button" class="remove-image" data-index="${index}" style="position: absolute; top: 0; right: 0; background: red; color: white; border: none; border-radius: 50%; width: 20px; height: 20px; cursor: pointer;">×</button>
                         `;
                         imagePreview.appendChild(preview);
                         
-                        // Обработчик удаления изображения
                         preview.querySelector('.remove-image').addEventListener('click', function() {
                             removeImageFromPreview(index);
                         });
@@ -258,14 +272,11 @@ function removeImageFromPreview(index) {
     const dt = new DataTransfer();
     const files = Array.from(imageInput.files);
     
-    // Удаляем файл по индексу
     files.splice(index, 1);
     
-    // Обновляем input
     files.forEach(file => dt.items.add(file));
     imageInput.files = dt.files;
     
-    // Обновляем превью
     const event = new Event('change');
     imageInput.dispatchEvent(event);
 }
@@ -275,14 +286,13 @@ async function submitReport() {
     const description = document.getElementById('postText').value.trim();
     const imageInput = document.getElementById('imageInput');
     
-    // Валидация
     if (!requestId) {
-        alert('Пожалуйста, выберите заявку');
+        showNotification('Пожалуйста, выберите заявку', 'error');
         return;
     }
     
     if (!description) {
-        alert('Пожалуйста, введите описание');
+        showNotification('Пожалуйста, введите описание', 'error');
         document.getElementById('postText').focus();
         return;
     }
@@ -291,7 +301,6 @@ async function submitReport() {
     formData.append('request_id', requestId);
     formData.append('description', description);
     
-    // Добавляем изображения
     if (imageInput.files.length > 0) {
         Array.from(imageInput.files).forEach(file => {
             formData.append('images', file);
@@ -311,33 +320,29 @@ async function submitReport() {
         
         if (response.ok) {
             const report = await response.json();
-            alert('Отчет успешно создан!');
+            showNotification('Отчет успешно создан!', 'success');
             
-            // Закрываем модальное окно
             document.getElementById('createPostModal').style.display = 'none';
             
-            // Обновляем ленту
             loadReportsFeed();
             
-            // Очищаем форму
             document.getElementById('postText').value = '';
             document.getElementById('imageInput').value = '';
             document.getElementById('imagePreview').innerHTML = '';
             
         } else {
-            const error = await response.json();
-            alert('Ошибка: ' + (error.detail || 'Не удалось создать отчет'));
+            const error = await response.json().catch(() => ({ detail: 'Не удалось создать отчет' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось создать отчет'), 'error');
         }
     } catch (error) {
         console.error('Ошибка создания отчета:', error);
-        alert('Ошибка соединения с сервером');
+        showNotification('Ошибка соединения с сервером. Проверьте подключение к интернету.', 'error');
     } finally {
         submitBtn.textContent = originalText;
         submitBtn.disabled = false;
     }
 }
 
-// Вспомогательные функции
 function getTimeAgo(date) {
     const now = new Date();
     const diffMs = now - date;
@@ -377,6 +382,65 @@ function escapeHtml(unsafe) {
         .replace(/'/g, "&#039;");
 }
 
+// Функция для показа уведомлений
+function showNotification(message, type = 'success') {
+    const notification = document.createElement('div');
+    notification.className = `notification ${type}`;
+    notification.textContent = message;
+    notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 25px;
+        background: ${type === 'success' ? '#4CAF50' : '#f44336'};
+        color: white;
+        border-radius: 8px;
+        z-index: 10000;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        font-size: 14px;
+        max-width: 400px;
+        animation: slideIn 0.3s ease-out;
+    `;
+    
+    // Добавляем стили для анимации, если их еще нет
+    if (!document.getElementById('notification-styles')) {
+        const style = document.createElement('style');
+        style.id = 'notification-styles';
+        style.textContent = `
+            @keyframes slideIn {
+                from {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+                to {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+            }
+            @keyframes slideOut {
+                from {
+                    transform: translateX(0);
+                    opacity: 1;
+                }
+                to {
+                    transform: translateX(100%);
+                    opacity: 0;
+                }
+            }
+        `;
+        document.head.appendChild(style);
+    }
+    
+    document.body.appendChild(notification);
+    
+    setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => {
+            notification.remove();
+        }, 300);
+    }, 4000);
+}
+
 function handleLike(reportId) {
     console.log('Лайк для отчета:', reportId);
 }
@@ -384,3 +448,8 @@ function handleLike(reportId) {
 function showComments(reportId) {
     console.log('Комментарии для отчета:', reportId);
 }
+
+window.toggleReportMenu = toggleReportMenu;
+window.deleteReport = deleteReport;
+window.handleLike = handleLike;
+window.showComments = showComments;

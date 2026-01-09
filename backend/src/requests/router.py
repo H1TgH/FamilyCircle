@@ -1,10 +1,11 @@
 from datetime import datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy import delete, select
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
+from sqlalchemy import delete, select, update
 from sqlalchemy.orm import selectinload
 
+from src.config import config
 from src.database import SessionDep
 from src.notifications.tasks import send_completion_email
 from src.requests.models import ElderModel, RequestModel, RequestStatusEnum
@@ -17,8 +18,11 @@ from src.requests.schemas import (
     RequestResponseSchema,
     RequestUpdateSchema,
 )
+from src.s3_storage.client import MinioClient
+from src.s3_storage.utils import convert_to_webp, get_elder_avatar_presigned_url
 from src.users.dependencies import get_current_user
 from src.users.models import RoleEnum, UserModel
+from src.requests.models import FrequencyEnum, DurationUnitEnum
 
 
 request_router = APIRouter()
@@ -53,18 +57,26 @@ async def create_requests(
             detail='You can create a request only for your elderly'
         )
 
+    frequency_str = request_data.frequency
+    duration_unit_str = request_data.duration_unit
+
     new_request = RequestModel(
         relative_id=user.id,
         elder_id=request_data.elder_id,
+        task_name=request_data.task_name,
         check_list=request_data.check_list,
-        category=request_data.category,
         description=request_data.description,
-        address=request_data.address,
+        frequency=frequency_str,
+        scheduled_date=request_data.scheduled_date,
         scheduled_time=request_data.scheduled_time,
+        duration_value=request_data.duration_value,
+        duration_unit=duration_unit_str,
+        is_shopping_checklist=request_data.is_shopping_checklist,
         status=RequestStatusEnum.OPEN
     )
 
     session.add(new_request)
+
     await session.commit()
     await session.refresh(new_request)
 
@@ -107,14 +119,10 @@ async def get_requests_list(
 async def get_available_requests(
     session: SessionDep,
     user: UserModel = Depends(get_current_user),
-    category: str | None = Query(None),
     limit: int = Query(30, ge=1, le=60),
     cursor: datetime | None = Query(None)
 ):
     query = select(RequestModel).where(RequestModel.status == RequestStatusEnum.OPEN)
-
-    if category:
-        query = query.where(RequestModel.category == category)
 
     if cursor:
         query = query.where(RequestModel.created_at < cursor)
@@ -169,7 +177,6 @@ async def update_request(
         .where(RequestModel.id == request_id)
     )
     request = result.scalar_one_or_none()
-    old_status = request.status
 
     if request is None:
         raise HTTPException(
@@ -177,13 +184,29 @@ async def update_request(
             detail='Request not found'
         )
 
-    if user.id != request.relative_id and user.id != request.volunteer_id:
+    old_status = request.status
+
+    if request_data.volunteer_id is not None and user.role == RoleEnum.VOLUNTEER:
+        if request.volunteer_id is not None:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Request already has a volunteer assigned'
+            )
+        if request.status != RequestStatusEnum.OPEN:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Can only respond to open requests'
+            )
+        request.volunteer_id = user.id
+        if request_data.status is None:
+            request.status = RequestStatusEnum.IN_PROGRESS
+    elif user.id != request.relative_id and user.id != request.volunteer_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail='You do not have permission to update this request'
         )
 
-    update_data = request_data.model_dump(exclude_unset=True)
+    update_data = request_data.model_dump(exclude_unset=True, exclude={'volunteer_id'})
     for key, value in update_data.items():
         setattr(request, key, value)
 
@@ -244,9 +267,10 @@ async def delete_request(
     tags=['elders']
 )
 async def create_elder(
-    elder_data: ElderCreationSchema,
     session: SessionDep,
-    user: UserModel = Depends(get_current_user)
+    elder_data: ElderCreationSchema = Depends(ElderCreationSchema.as_form),
+    user: UserModel = Depends(get_current_user),
+    avatar: UploadFile | None = File(None)
 ):
     if user.role != RoleEnum.RELATIVE:
         raise HTTPException(
@@ -267,14 +291,55 @@ async def create_elder(
         comments=elder_data.comments
     )
 
-    if elder_data.avatar_url is not None:
-        new_elder.avatar_url = elder_data.avatar_url
-
     session.add(new_elder)
     await session.commit()
     await session.refresh(new_elder)
 
-    return new_elder
+    if avatar:
+        bucket_name = config.minio.define_buckets['avatars']
+        if not bucket_name:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='Avatars bucket not configured'
+            )
+
+        minio_client = MinioClient(bucket_name=bucket_name)
+        avatar_key = f'elder_{new_elder.id}.webp'
+        data = await convert_to_webp(avatar)
+
+        await minio_client.upload_file(
+            file_name=avatar_key,
+            data=data,
+            content_type='image/webp'
+        )
+
+        await session.execute(
+            update(ElderModel)
+            .where(ElderModel.id == new_elder.id)
+            .values(is_has_avatar=True)
+        )
+        await session.commit()
+
+    avatar_url = await get_elder_avatar_presigned_url(new_elder)
+
+    elder_dict = {
+        'id': new_elder.id,
+        'relative_id': new_elder.relative_id,
+        'full_name': new_elder.full_name,
+        'birthday': new_elder.birthday,
+        'health_status': new_elder.health_status,
+        'physical_limitations': new_elder.physical_limitations,
+        'disease': new_elder.disease,
+        'address': new_elder.address,
+        'features': new_elder.features,
+        'hobbies': new_elder.hobbies,
+        'comments': new_elder.comments,
+        'avatar_presigned_url': avatar_url,
+        'created_at': new_elder.created_at,
+        'updated_at': new_elder.updated_at
+    }
+
+    return ElderResponseSchema.model_validate(elder_dict)
 
 
 @request_router.get(
@@ -292,7 +357,30 @@ async def get_my_elders(
     )
     elders = result.scalars().all()
 
-    return elders
+    elders_response = []
+    for elder in elders:
+        avatar_url = await get_elder_avatar_presigned_url(elder)
+
+        elder_dict = {
+            'id': elder.id,
+            'relative_id': elder.relative_id,
+            'full_name': elder.full_name,
+            'birthday': elder.birthday,
+            'health_status': elder.health_status,
+            'physical_limitations': elder.physical_limitations,
+            'disease': elder.disease,
+            'address': elder.address,
+            'features': elder.features,
+            'hobbies': elder.hobbies,
+            'comments': elder.comments,
+            'avatar_presigned_url': avatar_url,
+            'created_at': elder.created_at,
+            'updated_at': elder.updated_at
+        }
+
+        elders_response.append(ElderResponseSchema.model_validate(elder_dict))
+
+    return elders_response
 
 
 @request_router.get(
@@ -323,7 +411,26 @@ async def get_elder(
             detail='You do not have access to this elder'
         )
 
-    return elder
+    avatar_url = await get_elder_avatar_presigned_url(elder)
+
+    elder_dict = {
+        'id': elder.id,
+        'relative_id': elder.relative_id,
+        'full_name': elder.full_name,
+        'birthday': elder.birthday,
+        'health_status': elder.health_status,
+        'physical_limitations': elder.physical_limitations,
+        'disease': elder.disease,
+        'address': elder.address,
+        'features': elder.features,
+        'hobbies': elder.hobbies,
+        'comments': elder.comments,
+        'avatar_presigned_url': avatar_url,
+        'created_at': elder.created_at,
+        'updated_at': elder.updated_at
+    }
+
+    return ElderResponseSchema.model_validate(elder_dict)
 
 
 @request_router.patch(
@@ -333,9 +440,10 @@ async def get_elder(
 )
 async def update_elder(
     elder_id: UUID,
-    elder_data: ElderUpdateSchema,
     session: SessionDep,
-    user: UserModel = Depends(get_current_user)
+    elder_data: ElderUpdateSchema = Depends(ElderUpdateSchema.as_form),
+    user: UserModel = Depends(get_current_user),
+    avatar: UploadFile | None = File(None)
 ):
     result = await session.execute(
         select(ElderModel)
@@ -355,14 +463,66 @@ async def update_elder(
             detail='You cannot update this elder'
         )
 
-    update_data = elder_data.model_dump(exclude_unset=True)
-    for key, value in update_data.items():
-        setattr(elder, key, value)
+    if elder_data:
+        update_data = elder_data.model_dump(exclude_none=True)
+        if update_data:
+            await session.execute(
+                update(ElderModel)
+                .where(ElderModel.id == elder.id)
+                .values(**update_data)
+            )
+
+    if avatar:
+        bucket_name = config.minio.define_buckets['avatars']
+        if not bucket_name:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='Avatars bucket not configured'
+            )
+
+        minio_client = MinioClient(bucket_name=bucket_name)
+        avatar_key = f'elder_{elder.id}.webp'
+        data = await convert_to_webp(avatar)
+
+        await minio_client.upload_file(
+            file_name=avatar_key,
+            data=data,
+            content_type='image/webp'
+        )
+
+        await session.execute(
+            update(ElderModel)
+            .where(ElderModel.id == elder.id)
+            .values(is_has_avatar=True)
+        )
 
     await session.commit()
-    await session.refresh(elder)
 
-    return elder
+    result = await session.execute(
+        select(ElderModel).where(ElderModel.id == elder_id)
+    )
+    updated_elder = result.scalar_one()
+
+    avatar_url = await get_elder_avatar_presigned_url(updated_elder)
+
+    elder_dict = {
+        'id': updated_elder.id,
+        'relative_id': updated_elder.relative_id,
+        'full_name': updated_elder.full_name,
+        'birthday': updated_elder.birthday,
+        'health_status': updated_elder.health_status,
+        'physical_limitations': updated_elder.physical_limitations,
+        'disease': updated_elder.disease,
+        'address': updated_elder.address,
+        'features': updated_elder.features,
+        'hobbies': updated_elder.hobbies,
+        'comments': updated_elder.comments,
+        'avatar_presigned_url': avatar_url,
+        'created_at': updated_elder.created_at,
+        'updated_at': updated_elder.updated_at
+    }
+
+    return ElderResponseSchema.model_validate(elder_dict)
 
 
 @request_router.delete(
@@ -389,6 +549,13 @@ async def delete_elder(
             status_code=status.HTTP_403_FORBIDDEN,
             detail='You cannot delete this elder'
         )
+
+    if elder.is_has_avatar:
+        bucket_name = config.minio.define_buckets['avatars']
+        if bucket_name:
+            minio_client = MinioClient(bucket_name=bucket_name)
+            avatar_key = f'elder_{elder.id}.webp'
+            await minio_client.delete_file(avatar_key)
 
     await session.execute(delete(ElderModel).where(ElderModel.id == elder_id))
     await session.commit()

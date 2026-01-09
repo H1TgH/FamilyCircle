@@ -4,8 +4,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
-    <link rel="stylesheet" href="/css/style_relatives.css">
+    <title>Личный кабинет - Родственник</title>
+    <link rel="stylesheet" href="./css/style_relatives.css">
+    <link rel="stylesheet" href="./css/style_main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="/css/awesome/css/all.css" />
 </head>
@@ -13,12 +14,12 @@
 <body>
     <header class="header-bar">
         <div class="logo">
-            <img src="/img/logo.png" alt="Family Circle Logo" />
+            <img src="./img/logo.png" alt="Family Circle Logo" />
         </div>
         <div class="header-icons">
             <i class="fas fa-bell"></i>
             <div class="profile-icon">
-                <img src="/img/profile.png" alt="Профиль" />
+                <img src="./img/profile.png" alt="Профиль" />
             </div>
         </div>
     </header>
@@ -26,15 +27,15 @@
     <nav class="nav-bar">
         <div class="nav-links-wrapper">
             <a href="./relative_scroll" class="nav-item">
-                <img src="/img/lenta.png" alt="Лента иконка" />
+                <img src="./img/lenta.png" alt="Лента иконка" />
                 <span>Лента</span>
             </a>
-            <a href="./zaivka" class="nav-item">
-                <img src="/img/list.png" alt="Заявки иконка" />
+            <a href="zaivka" class="nav-item">
+                <img src="./img/list.png" alt="Заявки иконка" />
                 <span>Заявки</span>
             </a>
             <a href="#" class="nav-item">
-                <img src="/img/thanks.png" alt="Поблагодарить иконка" />
+                <img src="./img/thanks.png" alt="Поблагодарить иконка" />
                 <span>Поблагодарить</span>
             </a>
         </div>
@@ -45,37 +46,28 @@
 
         <section class="profile-section">
             <div class="avatar_photo">
-                <label for="avatar-upload" style="cursor: pointer; position: relative;">
-                    <img class="avatar"
-                        style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2px solid #ddd;" />
-                    <div style="position: absolute; bottom: 0; right: 0; background: #FFD3A4; color: white; width: 30px; height: 30px; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                        <i class="fas fa-camera"></i>
-                    </div>
+                <label for="avatar-upload">
+                    <img class="avatar" src="avatar.jpg" alt="Фото пользователя" id="userAvatar" />
                 </label>
-                <input id="avatar-upload" type="file" accept="image/*" class="avatar-input" 
-                    style="display: none;" />
+                <input id="avatar-upload" type="file" accept="image/*" class="avatar-input" />
             </div>
             <div class="info">
-                <h3 class="name">Фамилия Имя Отчество</h3>
-                <p class="label">О себе:</p>
-                <p class="label">Контактные данные:</p>
+                <h3 class="name" id="userName">Фамилия Имя Отчество</h3>
+                <p class="label" id="userAbout">О себе:</p>
+                <p class="label" id="userContacts">Контактные данные:</p>
             </div>
         </section>
 
         <div class="divider"></div>
 
-        <div class="button-wrapper">
-            <button class="add-btn" id="showFormBtn">+ Добавить родственника</button>
-        </div>
-        <!-- ФОРМА ДОБАВЛЕНИЯ РОДСТВЕННИКА (изначально скрыта) -->
         <div id="relativeFormContainer" class="form-container" style="display: none;">
             <form id="relativeForm" class="relative-form">
                 <div class="relative-card-content">
-                    <div class="avatar_photo">
-                        <label for="avatar-upload">
-                            <img class="avatar" src="avatar.jpg" alt="Фото пользователя" />
+                    <div class="avatar_photo small">
+                        <label for="elder-avatar-upload">
+                            <img class="avatar" src="./img/default-elder.png" alt="Фото родственника" id="elderAvatarPreview" />
                         </label>
-                        <input id="avatar-upload" type="file" accept="image/*" class="avatar-input" />
+                        <input id="elder-avatar-upload" type="file" accept="image/*" class="avatar-input" />
                     </div>
                     <div class="form-fields-wrapper">
                         <div class="form-group">
@@ -85,7 +77,7 @@
 
                         <div class="form-row">
                             <div class="form-group">
-                                <label for="birthYear">Год рождения:*</label>
+                                <label for="birthYear">Дата рождения:*</label>
                                 <input type="text" id="birthYear" name="birthYear" required placeholder="16.11.1960">
                             </div>
 
@@ -141,18 +133,34 @@
             </form>
         </div>
 
-        <!-- Здесь будет отображаться список добавленных родственников -->
-        <div id="relativesList" class="relatives-list">
-            <!-- Добавленные родственники будут здесь -->
+        <div id="relativesList" class="relatives-grid">
         </div>
     </main>
 
+    <div class="button-wrapper">
+        <button class="add-btn" id="showFormBtn">+ Добавить родственника</button>
+    </div>
+
+    <div id="confirmModal" class="modal" style="display: none;">
+        <div class="modal-content small">
+            <button class="modal-close" id="closeConfirmModal">&times;</button>
+            <h3 class="modal-title">Удаление родственника</h3>
+            <p>Вы уверены, что хотите удалить этого родственника?</p>
+            <p class="modal-warning">Это действие нельзя отменить.</p>
+            <div class="modal-actions">
+                <button class="cancel-btn" id="cancelDeleteBtn">Отмена</button>
+                <button class="delete-confirm-btn" id="confirmDeleteBtn">Удалить</button>
+            </div>
+        </div>
+    </div>
+
     <footer class="footer">
-        <img src="/img/logo.png" alt="Logo" class="footer-logo" />
+        <img src="./img/logo.png" alt="Logo" class="footer-logo" />
     </footer>
 
-    <script src="/js/auth.js"></script>
-    <script src="/js/relativeProfile.js"></script>
+    <script src="./js/auth.js"></script>
+    <script src="./js/relativeProfile.js"></script>
+    <script src="./js/modal_relative.js"></script>
 </body>
 
 </html>
