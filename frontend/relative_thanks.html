@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <link rel="stylesheet" href="./static/styles/style_thanks.css">
+    <link rel="stylesheet" href="./static/styles/style_main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/awesome/css/all.css" />
+</head>
+
+<body>
+    <header class="header-bar">
+        <div class="logo">
+            <img src="static/images/logo.png" alt="Family Circle Logo" />
+        </div>
+        <div class="header-icons">
+            <i class="fas fa-bell"></i>
+            <div class="profile-icon">
+                <img src="static/images/profile.png" alt="Профиль" />
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav-bar">
+        <div class="nav-links-wrapper">
+            <a href="relative_scroll.html" class="nav-item">
+                <img src="static/images/lenta.png" alt="Лента иконка" />
+                <span>Лента</span>
+            </a>
+            <a href="../front/zaivka.html" class="nav-item">
+                <img src="static/images/list.png" alt="Заявки иконка" />
+                <span>Заявки</span>
+            </a>
+            <a href="#" class="nav-item active">
+                <img src="static/images/thanks.png" alt="Поблагодарить иконка" />
+                <span>Поблагодарить</span>
+            </a>
+        </div>
+    </nav>
+
+    <main class="main-content">
+        <div class="container">
+            <h1 class="page-title">
+                <span class="accent">Волонтеры,</span><br>
+                с которыми вы взаимодействовали
+            </h1>
+
+            <div class="volunteer-card">
+                <div class="card-inner">
+                    <div class="avatar-block">
+                        <!-- Замените путь на ваше изображение -->
+                        <img src="./static/images/avatar.png" alt="Иванова Анна Алексеевна" class="volunteer-avatar">
+                    </div>
+
+                    <div class="info-block">
+                        <div class="info-header">
+                            <h2 class="volunteer-name">Иванова Анна Алексеевна</h2>
+                            <span class="help-stats">Помог <span id="help-count" class="count">1</span> раз</span>
+                        </div>
+
+
+                        <div class="details">
+                            <p><strong>Город:</strong></p>
+                            <p><strong>О себе:</strong></p>
+                        </div>
+
+                        <p class="contact-info"><strong>Контактные данные:</strong> +7 999 999 99 99</p>
+                    </div>
+                </div>
+
+                <button id="thanks-btn" class="btn-thanks">Поблагодарить</button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <img src="static/images/logo.png" alt="Logo" class="footer-logo" />
+    </footer>
+
+    <script src="./static/js/thanks_relative.js"></script>
+</body>
+
+</html>
