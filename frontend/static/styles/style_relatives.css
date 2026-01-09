@@ -429,18 +429,34 @@
     border-radius: 6px;
 }
 
-/* ===== Иконки ===== */
 .post-actions {
     display: flex;
-    align-items: center;
-    gap: 18px;
+    gap: 15px;
     margin-top: 15px;
+    align-items: center;
+}
+
+/* Сбрасываем стандартные стили кнопок и ссылок внутри действий */
+.action-btn {
+    background: none;
+    border: none;
+    padding: 0;
+    cursor: pointer;
+    text-decoration: none; /* Убирает подчеркивание, если это ссылка */
+    transition: transform 0.2s ease;
+    display: flex;
+    align-items: center;
+}
+
+/* Эффект при наведении — иконка чуть увеличивается */
+.action-btn:hover {
+    transform: scale(1.1);
 }
 
 .post-icon {
-    width: 25px;
-    cursor: pointer;
-    opacity: 0.85;
+    width: 24px; /* Отрегулируйте размер под ваши иконки */
+    height: 24px;
+    display: block;
 }
 .post-icon:hover {
     opacity: 1;

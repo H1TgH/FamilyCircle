@@ -1,0 +1,133 @@
+.container {
+    width: 700px; 
+    margin: 0 auto; 
+    padding: 0 20px;
+    min-height: 60vh;
+}
+.main-content {
+    margin-top: 50px;
+    padding-bottom: 20px;  
+}
+.page-title {
+    font-size: 24px;
+    line-height: 1.2;
+    margin-bottom: 40px;
+    color: #333;
+    text-align: left; 
+}
+
+.page-title .accent {
+    color: #A66B3B;
+}
+
+.volunteer-card {
+    position: relative;
+    border: 1px solid #F1CBA8;
+    border-radius: 40px;
+    padding: 30px 40px;
+    max-width: 950px; 
+    background-color: #fff;
+}
+
+.card-inner {
+    display: flex;
+    gap: 25px;
+}
+
+.volunteer-avatar{
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    flex-shrink: 0;
+}
+
+.info-block {
+    flex-grow: 1;
+}
+
+.info-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+}
+
+.volunteer-name {
+    font-size: 18px;
+    margin: 0;
+    font-weight: 600;
+}
+
+.help-stats {
+    font-size: 18px;
+    color: #A66B3B;
+    font-weight: 500;
+}
+
+.help-stats .count {
+    font-size: 24px;
+    font-weight: bold;
+}
+
+.details p {
+    margin: 5px 0;
+    font-size: 16px;
+}
+
+.contact-info {
+    margin-top: 20px;
+    font-size: 16px;
+}
+
+.btn-thanks {
+    position: absolute;
+    bottom: -20px;
+    right: 40px;
+    background-color: #985D3C;
+    color: white;
+    border: none;
+    padding: 15px 60px;
+    font-size: 18px;
+    font-weight: bold;
+    border-radius: 15px;
+    cursor: pointer;
+    margin-top: -25px; 
+    margin-right: 20px;
+    z-index: 10;
+    transition: transform 0.2s, background 0.3s;
+    
+}
+
+.btn-thanks:hover {
+    background-color: #8a5830;
+    transform: translateY(-2px);
+}
+
+.btn-thanks.disabled {
+    background-color: #ce8e68; 
+    color: #FFFFFF;
+    cursor: default;
+    box-shadow: none;
+    pointer-events: none; /
+}
+
+@media (max-width: 768px) {
+    .card-inner {
+        flex-direction: column;
+        align-items: center;
+        text-align: center;
+    }
+    
+    .info-header {
+        flex-direction: column;
+        align-items: center;
+        gap: 10px;
+    }
+    
+    .btn-thanks {
+        position: static;
+        display: block;
+        margin: 20px auto 0;
+    }
+}
