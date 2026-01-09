@@ -461,8 +461,8 @@ function addElderToList(elderData) {
     elderCard.dataset.id = displayData.id;
     
     const avatarHtml = displayData.avatarUrl 
-        ? `<img class="elder-avatar" src="${escapeHtml(displayData.avatarUrl)}" alt="Аватар" onerror="this.src='./img/default-elder.png'">`
-        : `<img class="elder-avatar" src="./img/default-elder.png" alt="Аватар">`;
+        ? `<img class="elder-avatar" src="${escapeHtml(displayData.avatarUrl)}" alt="Аватар" onerror="this.src='./img/profile.png'">`
+        : `<img class="elder-avatar" src="./img/profile.png" alt="Аватар">`;
     
     elderCard.innerHTML = `
         <div class="elder-card-content">
@@ -473,10 +473,10 @@ function addElderToList(elderData) {
                 </div>
                 <div class="elder-actions">
                     <button class="edit-btn" data-id="${displayData.id}">
-                        <i class="fas fa-edit"></i>
+                        <img class="elder-card-edit" src="./img/edit.svg" alt="Редактировать" id="edit-avatar-preview">
                     </button>
                     <button class="delete-btn" data-id="${displayData.id}">
-                        <i class="fas fa-trash"></i>
+                        <img class="elder-card-delete" src="./img/trash.svg" alt="Удалить" id="edit-avatar-preview">
                     </button>
                 </div>
             </div>
@@ -594,8 +594,8 @@ async function editElder(elderId) {
         elderCard.classList.add('editing');
         
         const avatarHtml = currentData.avatarUrl 
-            ? `<img class="elder-avatar-edit" src="${escapeHtml(currentData.avatarUrl)}" alt="Аватар" id="edit-avatar-preview" onerror="this.src='./img/default-elder.png'">`
-            : `<img class="elder-avatar-edit" src="./img/default-elder.png" alt="Аватар" id="edit-avatar-preview">`;
+            ? `<img class="elder-avatar-edit" src="${escapeHtml(currentData.avatarUrl)}" alt="Аватар" id="edit-avatar-preview" onerror="this.src='./img/profile.png'">`
+            : `<img class="elder-avatar-edit" src="./img/profile.png" alt="Аватар" id="edit-avatar-preview">`;
         
         elderCard.innerHTML = `
             <div class="elder-card-content">
