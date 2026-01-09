@@ -37,7 +37,9 @@ class ReportFeedSchema(BaseModel):
     description: str
     created_at: datetime
     images: list[ReportImageSchema] = []
+    author_id: UUID
     author_name: str
     author_surname: str
+    author_avatar_url: str | None = None
     request_task_name: str | None = None
     request_status: str | None = None

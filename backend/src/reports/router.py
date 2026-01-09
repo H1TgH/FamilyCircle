@@ -11,7 +11,7 @@ from src.reports.models import ReportImageModel, ReportModel
 from src.reports.schemas import ReportFeedSchema, ReportResponseSchema
 from src.requests.models import RequestModel, RequestStatusEnum
 from src.s3_storage.client import MinioClient
-from src.s3_storage.utils import convert_to_webp, get_report_image_url
+from src.s3_storage.utils import convert_to_webp, get_avatar_presigned_url, get_report_image_url
 from src.users.dependencies import get_current_user
 from src.users.models import RoleEnum, UserModel
 
@@ -171,13 +171,17 @@ async def get_reports_feed(
 
     feed_reports = []
     for report in reports:
+        author_avatar_url = await get_avatar_presigned_url(report.author)
+
         report_data = ReportFeedSchema(
             id=report.id,
             description=report.description,
             created_at=report.created_at,
             images=report.images,
+            author_id=report.author_id,
             author_name=report.author.name,
             author_surname=report.author.surname,
+            author_avatar_url=author_avatar_url,
             request_task_name=report.request.task_name if report.request else None,
             request_status=report.request.status.value if report.request else None
         )

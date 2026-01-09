@@ -22,7 +22,6 @@ from src.s3_storage.client import MinioClient
 from src.s3_storage.utils import convert_to_webp, get_elder_avatar_presigned_url
 from src.users.dependencies import get_current_user
 from src.users.models import RoleEnum, UserModel
-from src.requests.models import FrequencyEnum, DurationUnitEnum
 
 
 request_router = APIRouter()

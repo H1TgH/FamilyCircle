@@ -1,3 +1,5 @@
+console.log('Reports feed script loaded');
+
 document.addEventListener('DOMContentLoaded', function() {
     loadReportsFeed();
     setupCreatePostButton();
@@ -13,11 +15,10 @@ async function loadReportsFeed() {
         const response = await fetchWithAuth('/api/v1/reports/feed');
         if (response.ok) {
             const reports = await response.json();
-            // Убираем дубликаты по ID
             const uniqueReports = reports.filter((report, index, self) =>
                 index === self.findIndex(r => r.id === report.id)
             );
-            renderReportsFeed(uniqueReports);
+            await renderReportsFeed(uniqueReports);
         } else {
             const error = await response.json().catch(() => ({ detail: 'Не удалось загрузить отчеты' }));
             showNotification('Ошибка загрузки отчетов: ' + (error.detail || 'Попробуйте обновить страницу'), 'error');
@@ -34,7 +35,7 @@ async function loadReportsFeed() {
     }
 }
 
-function renderReportsFeed(reports) {
+async function renderReportsFeed(reports) {
     const postList = document.querySelector('.post-list');
     if (!postList) {
         console.error('Контейнер постов не найден');
@@ -48,15 +49,14 @@ function renderReportsFeed(reports) {
         return;
     }
     
-    // Убираем дубликаты по ID перед рендерингом
     const uniqueReports = reports.filter((report, index, self) =>
         index === self.findIndex(r => r.id === report.id)
     );
     
-    uniqueReports.forEach(report => {
-        const reportCard = createReportCard(report);
+    for (const report of uniqueReports) {
+        const reportCard = await createReportCard(report);
         postList.appendChild(reportCard);
-    });
+    }
 }
 
 function getRequestStatusText(status) {
@@ -68,7 +68,59 @@ function getRequestStatusText(status) {
     return statusMap[status] || status;
 }
 
-function createReportCard(report) {
+async function createReportCard(report) {
+    console.log('=== СОЗДАНИЕ КАРТОЧКИ ПОСТА ===');
+    
+    const currentUserId = getUserId();
+    console.log('Текущий ID пользователя:', currentUserId);
+    console.log('Имя автора:', report.author_name, report.author_surname);
+    
+    let isOwner = false;
+    let avatarUrl = './img/avatar.png'; // По умолчанию
+    let reportAuthorId = report.author_id;
+    
+    // Если в отчете нет author_id, пытаемся получить данные пользователя для сравнения
+    if (!reportAuthorId) {
+        try {
+            console.log('author_id не найден, пытаемся получить данные текущего пользователя');
+            const userResponse = await fetchWithAuth('/api/v1/users/me');
+            if (userResponse.ok) {
+                const userData = await userResponse.json();
+                console.log('Данные текущего пользователя:', userData);
+                
+                // Сравниваем имя и фамилию
+                const sameName = userData.name === report.author_name;
+                const sameSurname = userData.surname === report.author_surname;
+                isOwner = sameName && sameSurname;
+                
+                console.log('Сравнение по имени:', sameName);
+                console.log('Сравнение по фамилии:', sameSurname);
+                console.log('Это владелец?', isOwner);
+                
+                // Если владелец, добавляем author_id для будущего использования
+                if (isOwner && !reportAuthorId) {
+                    reportAuthorId = userData.id;
+                }
+                
+                // Получаем аватар текущего пользователя
+                avatarUrl = await getAuthorAvatarUrl(userData.id);
+            }
+        } catch (error) {
+            console.error('Ошибка получения данных пользователя:', error);
+        }
+    } else {
+        // Если author_id есть, сравниваем напрямую
+        isOwner = currentUserId && reportAuthorId && 
+                  String(currentUserId) === String(reportAuthorId);
+        console.log('Сравнение по author_id:', isOwner);
+        
+        // Получаем аватар автора
+        avatarUrl = await getAuthorAvatarUrl(reportAuthorId);
+    }
+    
+    console.log('Аватар URL:', avatarUrl);
+    console.log('=============================');
+    
     const card = document.createElement('section');
     card.className = 'post-card';
     card.dataset.id = report.id;
@@ -85,9 +137,6 @@ function createReportCard(report) {
         `;
     }
     
-    const currentUserId = getUserId();
-    const isOwner = report.author_id === currentUserId;
-    
     let taskInfo = '';
     if (report.request_task_name) {
         const statusText = getRequestStatusText(report.request_status);
@@ -95,18 +144,19 @@ function createReportCard(report) {
             <p class="post-task">Задание: ${escapeHtml(report.request_task_name)}</p>
             <p class="post-status">Статус заявки: ${statusText}</p>
         `;
+    } else {
+        taskInfo = '<p class="post-status">Статус: опубликовано</p>';
     }
     
     card.innerHTML = `
         <div class="post-header">
             <div class="post-user">
-                <img src="./img/avatar.png" class="post-avatar" alt="Аватар">
+                <img src="${avatarUrl}" class="post-avatar" alt="Аватар" onerror="this.onerror=null; this.src='./img/avatar.png'">
                 <div class="post-user-info">
                     <h3 class="post-name">${escapeHtml(report.author_name)} ${escapeHtml(report.author_surname)}</h3>
                     ${taskInfo}
                 </div>
             </div>
-            ${isOwner ? getReportMenuHTML(report) : ''}
         </div>
         <p class="post-text">${escapeHtml(report.description)}</p>
         ${imagesHTML}
@@ -117,48 +167,393 @@ function createReportCard(report) {
         <p class="post-time">${timeAgo}</p>
     `;
     
+    if (isOwner) {
+        console.log('✅ Добавляю шестеренку для поста', report.id);
+        
+        const gearButton = document.createElement('button');
+        gearButton.className = 'post-actions-gear';
+        gearButton.innerHTML = '<i class="fas fa-cog"></i>';
+        gearButton.onclick = function(e) {
+            e.stopPropagation();
+            console.log('Клик по шестеренке для поста', report.id);
+            togglePostActionMenu(this, report.id);
+        };
+        card.appendChild(gearButton);
+        
+        const actionMenu = document.createElement('div');
+        actionMenu.className = 'post-action-menu';
+        actionMenu.innerHTML = `
+            <button class="post-action-item" onclick="editReport('${report.id}')">Изменить</button>
+            <button class="post-action-item delete" onclick="deleteReport('${report.id}')">Удалить</button>
+        `;
+        card.appendChild(actionMenu);
+    } else {
+        console.log('❌ Это не мой пост, шестеренку не добавляю');
+    }
+    
     return card;
 }
 
 function getUserId() {
-    const userData = localStorage.getItem('userData');
-    if (userData) {
-        try {
-            const user = JSON.parse(userData);
-            return user.id;
-        } catch (e) {
-            return null;
-        }
+    const accessToken = localStorage.getItem('access_token');
+    console.log('Access token:', accessToken ? 'есть' : 'нет');
+    
+    if (!accessToken) {
+        console.log('Токен не найден');
+        return null;
     }
-    return null;
+    
+    try {
+        const payload = JSON.parse(atob(accessToken.split('.')[1]));
+        console.log('Payload из токена:', payload);
+        console.log('ID пользователя (sub):', payload.sub);
+        console.log('Роль пользователя:', payload.role);
+        return payload.sub;
+    } catch (e) {
+        console.error('Ошибка при разборе токена:', e);
+        return null;
+    }
 }
 
-function getReportMenuHTML(report) {
-    return `
-        <div class="post-menu-wrapper">
-            <button class="post-menu-btn" onclick="toggleReportMenu('${report.id}')">⋮</button>
-            <div class="post-menu" id="menu-${report.id}" style="display: none;">
-                <button class="menu-item" onclick="deleteReport('${report.id}')">Удалить</button>
-            </div>
-        </div>
-    `;
-}
-
-function toggleReportMenu(reportId) {
-    const menu = document.getElementById(`menu-${reportId}`);
-    const allMenus = document.querySelectorAll('.post-menu');
+function togglePostActionMenu(button, reportId) {
+    const menu = button.nextElementSibling;
+    const allMenus = document.querySelectorAll('.post-action-menu');
     
     allMenus.forEach(m => {
-        if (m.id !== `menu-${reportId}`) {
-            m.style.display = 'none';
+        if (m !== menu) {
+            m.classList.remove('active');
         }
     });
     
-    menu.style.display = menu.style.display === 'block' ? 'none' : 'block';
+    menu.classList.toggle('active');
+    
+    document.addEventListener('click', function closeMenu(e) {
+        if (!menu.contains(e.target) && !button.contains(e.target)) {
+            menu.classList.remove('active');
+            document.removeEventListener('click', closeMenu);
+        }
+    });
+}
+
+async function editReport(reportId) {
+    try {
+        const response = await fetchWithAuth(`/api/v1/reports/${reportId}`);
+        if (response.ok) {
+            const report = await response.json();
+            showEditPostModal(report);
+        } else {
+            const error = await response.json().catch(() => ({ detail: 'Не удалось загрузить пост' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось загрузить пост'), 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки поста:', error);
+        showNotification('Ошибка соединения с сервером', 'error');
+    }
+}
+
+function showEditPostModal(report) {
+    editingReportId = report.id;
+    imagesToDelete = [];
+    
+    const overlay = document.createElement('div');
+    overlay.className = 'edit-post-overlay active';
+    overlay.id = 'editPostOverlay';
+    
+    const modal = document.createElement('div');
+    modal.className = 'edit-post-modal active';
+    modal.id = 'editPostModal';
+    
+    modal.innerHTML = `
+        <div class="edit-post-header">
+            <h3>Редактировать пост</h3>
+            <button class="edit-post-close">&times;</button>
+        </div>
+        
+        <div class="edit-post-content">
+            <form class="edit-post-form" id="editPostForm">
+                <div class="form-group">
+                    <label>Описание</label>
+                    <textarea id="editPostDescription" placeholder="Что у вас нового?" required>${escapeHtml(report.description || '')}</textarea>
+                </div>
+                
+                <div class="form-group">
+                    <label>Существующие фотографии</label>
+                    <div class="existing-images" id="existingImages">
+                        ${report.images && report.images.length > 0 ? 
+                            report.images.map(img => `
+                                <div class="existing-image-item">
+                                    <img src="${img.presigned_url}" alt="Фото" onerror="this.src='./img/default-image.png'">
+                                    <button type="button" class="remove-existing-image" data-id="${img.id}">&times;</button>
+                                </div>
+                            `).join('') : 
+                            '<p style="color: #888; font-size: 14px;">Нет фотографий</p>'
+                        }
+                    </div>
+                </div>
+                
+                <div class="form-group">
+                    <label>Добавить новые фотографии</label>
+                    <div class="image-upload-area">
+                        <label class="image-upload-label">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                            <span>Нажмите или перетащите файлы</span>
+                            <span style="font-size: 12px; color: #888;">(до 10 файлов)</span>
+                            <input type="file" id="newImages" multiple accept="image/*">
+                        </label>
+                    </div>
+                    <div class="image-preview-container" id="imagePreview"></div>
+                </div>
+            </form>
+        </div>
+        
+        <div class="edit-post-actions">
+            <button type="button" class="save-post-btn" id="savePostBtn">Сохранить</button>
+            <button type="button" class="delete-post-btn" id="deletePostBtn">Удалить пост</button>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    document.body.appendChild(modal);
+    
+    initEditPostModal(report);
+}
+
+async function getAuthorAvatarUrl(userId) {
+    try {
+        const response = await fetchWithAuth(`/api/v1/users/${userId}`);
+        if (response.ok) {
+            const userData = await response.json();
+
+            if (userData.avatar_url) {
+                return userData.avatar_url;
+            } else if (userData.avatar_presigned_url) {
+                return userData.avatar_presigned_url;
+            } else if (userData.avatar_key) {
+                return `http://localhost:9000/avatars/${userData.avatar_key}`;
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка получения аватара пользователя:', error);
+    }
+    
+    return './img/avatar.png';
+}
+
+
+function initEditPostModal(report) {
+    setTimeout(() => {
+        const overlay = document.getElementById('editPostOverlay');
+        const modal = document.getElementById('editPostModal');
+        
+        if (!overlay || !modal) {
+            console.error('Модальное окно не найдено');
+            return;
+        }
+        
+        const closeBtn = modal.querySelector('.edit-post-close');
+        const saveBtn = modal.querySelector('#savePostBtn');
+        const deleteBtn = modal.querySelector('#deletePostBtn');
+        const newImagesInput = modal.querySelector('#newImages');
+        const imagePreview = modal.querySelector('#imagePreview');
+        
+        if (!closeBtn || !saveBtn || !deleteBtn) {
+            console.error('Не все элементы модального окна найдены');
+            return;
+        }
+        
+        function closeModal() {
+            modal.classList.remove('active');
+            overlay.classList.remove('active');
+            setTimeout(() => {
+                modal.remove();
+                overlay.remove();
+            }, 300);
+        }
+        
+        closeBtn.addEventListener('click', closeModal);
+        overlay.addEventListener('click', closeModal);
+        
+        modal.querySelectorAll('.remove-existing-image').forEach(btn => {
+            btn.addEventListener('click', function() {
+                const imageId = this.dataset.id;
+                imagesToDelete.push(imageId);
+                this.parentElement.remove();
+                
+                const existingImages = modal.querySelector('#existingImages');
+                if (existingImages.children.length === 0) {
+                    existingImages.innerHTML = '<p style="color: #888; font-size: 14px;">Нет фотографий</p>';
+                }
+            });
+        });
+        
+        if (newImagesInput) {
+            newImagesInput.addEventListener('change', function() {
+                if (imagePreview) {
+                    imagePreview.innerHTML = '';
+                }
+                const files = Array.from(this.files).slice(0, 10);
+                
+                files.forEach((file, index) => {
+                    if (file.type.startsWith('image/')) {
+                        const reader = new FileReader();
+                        reader.onload = function(e) {
+                            const preview = document.createElement('div');
+                            preview.className = 'image-preview-item';
+                            preview.innerHTML = `
+                                <img src="${e.target.result}" alt="Предпросмотр">
+                                <button type="button" class="remove-preview-image" data-index="${index}">&times;</button>
+                            `;
+                            if (imagePreview) {
+                                imagePreview.appendChild(preview);
+                            }
+                            
+                            preview.querySelector('.remove-preview-image').addEventListener('click', function() {
+                                removeImageFromPreview(index);
+                            });
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+            });
+        }
+        
+        function removeImageFromPreview(index) {
+            if (!newImagesInput) return;
+            
+            const dt = new DataTransfer();
+            const files = Array.from(newImagesInput.files);
+            files.splice(index, 1);
+            files.forEach(file => dt.items.add(file));
+            newImagesInput.files = dt.files;
+            
+            const event = new Event('change');
+            newImagesInput.dispatchEvent(event);
+        }
+        
+        saveBtn.addEventListener('click', async function() {
+            await updatePost();
+        });
+        
+        deleteBtn.addEventListener('click', function() {
+            if (confirm('Вы уверены, что хотите удалить этот пост?')) {
+                deletePost();
+            }
+        });
+        
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeModal();
+            }
+        });
+    }, 50);
+}
+
+let editingReportId = null;
+let imagesToDelete = [];
+
+async function updatePost() {
+    if (!editingReportId) return;
+    
+    const description = document.getElementById('editPostDescription').value.trim();
+    if (!description) {
+        showNotification('Введите описание поста', 'error');
+        return;
+    }
+    
+    const saveBtn = document.querySelector('#savePostBtn');
+    const originalText = saveBtn.textContent;
+    saveBtn.textContent = 'Сохранение...';
+    saveBtn.disabled = true;
+    
+    try {
+        const formData = new FormData();
+        formData.append('description', description);
+        
+        imagesToDelete.forEach(id => {
+            formData.append('delete_images', id);
+        });
+        
+        const newImagesInput = document.getElementById('newImages');
+        if (newImagesInput.files.length > 0) {
+            Array.from(newImagesInput.files).forEach(file => {
+                formData.append('images', file);
+            });
+        }
+        
+        const response = await fetchWithAuth(`/api/v1/reports/${editingReportId}`, {
+            method: 'PUT',
+            body: formData
+        });
+        
+        if (response.ok) {
+            showNotification('Пост успешно обновлен!', 'success');
+            closeEditModal();
+            loadReportsFeed();
+        } else {
+            const error = await response.json().catch(() => ({ detail: 'Не удалось обновить пост' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось обновить пост'), 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка обновления поста:', error);
+        showNotification('Ошибка соединения с сервером', 'error');
+    } finally {
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
+    }
+}
+
+async function deletePost() {
+    if (!editingReportId) return;
+    
+    const deleteBtn = document.querySelector('#deletePostBtn');
+    const originalText = deleteBtn.textContent;
+    deleteBtn.textContent = 'Удаление...';
+    deleteBtn.disabled = true;
+    
+    try {
+        const response = await fetchWithAuth(`/api/v1/reports/${editingReportId}`, {
+            method: 'DELETE'
+        });
+        
+        if (response.status === 204) {
+            showNotification('Пост успешно удален', 'success');
+            closeEditModal();
+            loadReportsFeed();
+        } else {
+            const error = await response.json().catch(() => ({ detail: 'Не удалось удалить пост' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось удалить пост'), 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка удаления поста:', error);
+        showNotification('Ошибка соединения с сервером', 'error');
+    } finally {
+        deleteBtn.textContent = originalText;
+        deleteBtn.disabled = false;
+    }
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('editPostModal');
+    const overlay = document.getElementById('editPostOverlay');
+    
+    if (modal) {
+        modal.classList.remove('active');
+    }
+    if (overlay) {
+        overlay.classList.remove('active');
+    }
+    
+    setTimeout(() => {
+        if (modal) modal.remove();
+        if (overlay) overlay.remove();
+    }, 300);
+    
+    editingReportId = null;
+    imagesToDelete = [];
 }
 
 async function deleteReport(reportId) {
-    if (!confirm('Вы уверены, что хотите удалить этот отчет?')) return;
+    if (!confirm('Вы уверены, что хотите удалить этот пост?')) return;
     
     try {
         const response = await fetchWithAuth(`/api/v1/reports/${reportId}`, {
@@ -166,15 +561,15 @@ async function deleteReport(reportId) {
         });
         
         if (response.status === 204) {
-            showNotification('Отчет успешно удален', 'success');
+            showNotification('Пост успешно удален', 'success');
             loadReportsFeed();
         } else {
-            const error = await response.json().catch(() => ({ detail: 'Не удалось удалить отчет' }));
-            showNotification('Ошибка: ' + (error.detail || 'Не удалось удалить отчет'), 'error');
+            const error = await response.json().catch(() => ({ detail: 'Не удалось удалить пост' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось удалить пост'), 'error');
         }
     } catch (error) {
-        console.error('Ошибка удаления:', error);
-        showNotification('Ошибка соединения с сервером. Проверьте подключение к интернету.', 'error');
+        console.error('Ошибка удаления поста:', error);
+        showNotification('Ошибка соединения с сервером', 'error');
     }
 }
 
@@ -462,7 +857,8 @@ function showComments(reportId) {
     console.log('Комментарии для отчета:', reportId);
 }
 
-window.toggleReportMenu = toggleReportMenu;
+window.togglePostActionMenu = togglePostActionMenu;
+window.editReport = editReport;
 window.deleteReport = deleteReport;
 window.handleLike = handleLike;
 window.showComments = showComments;
