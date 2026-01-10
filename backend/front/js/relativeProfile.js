@@ -320,12 +320,70 @@ async function loadUserProfile() {
             
             if (user.role === 'volunteer') {
                 setupVolunteerProfile();
+                await loadThanksCount(user.id);
             } else {
                 setupRelativeProfile();
             }
         }
     } catch (error) {
         console.error('Ошибка загрузки профиля:', error);
+    }
+}
+
+async function loadThanksCount(userId) {
+    try {
+        const response = await fetchWithAuth(`/api/v1/thanks/user/${userId}/count`);
+        if (response.ok) {
+            const thanksData = await response.json();
+            displayThanksCount(thanksData.thanks_count);
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки счетчика благодарностей:', error);
+    }
+}
+
+function displayThanksCount(count) {
+    const profileSection = document.querySelector('.profile-section');
+    if (!profileSection) return;
+    
+    // Ищем существующий элемент счетчика
+    let thanksCounter = profileSection.querySelector('.thanks-counter');
+    
+    if (!thanksCounter) {
+        // Создаем элемент счетчика
+        thanksCounter = document.createElement('div');
+        thanksCounter.className = 'thanks-counter';
+        thanksCounter.style.cssText = `
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #FFE5B4;
+            border: 2px solid #AF6425;
+            border-radius: 10px;
+            padding: 8px 16px;
+            font-weight: bold;
+            color: #5A3C1E;
+            font-size: 16px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+        `;
+        
+        const infoElement = profileSection.querySelector('.info');
+        if (infoElement) {
+            infoElement.style.position = 'relative';
+            infoElement.appendChild(thanksCounter);
+        }
+    }
+    
+    thanksCounter.textContent = `Помог ${count} ${getThanksWordForm(count)}`;
+}
+
+function getThanksWordForm(count) {
+    if (count % 10 === 1 && count % 100 !== 11) {
+        return 'раз';
+    } else if (count % 10 >= 2 && count % 10 <= 4 && (count % 100 < 10 || count % 100 >= 20)) {
+        return 'раза';
+    } else {
+        return 'раз';
     }
 }
 
