@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Личный кабинет волонтера</title>
+    <link rel="stylesheet" href="./css/style_rating.css">
+    <link rel="stylesheet" href="./css/style_main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="/css/awesome/css/all.css" />
+</head>
+
+<body>
+    <header class="header-bar">
+        <div class="logo">
+            <img src="./img/logo.png" alt="Family Circle Logo" />
+        </div>
+        <div class="header-icons">
+            <i class="fas fa-bell"></i>
+            <div class="profile-icon">
+                <img src="./img/profile.png" alt="Профиль" />
+            </div>
+        </div>
+    </header>
+
+    <nav class="nav-bar">
+        <div class="nav-links-wrapper">
+            <a href="feed" class="nav-item">
+                <img src="./img/lenta.png" alt="Лента иконка" />
+                <span>Лента</span>
+            </a>
+            <a href="./requests" class="nav-item">
+                <img src="./img/list.png" alt="Заявки иконка" />
+                <span>Заявки</span>
+            </a>
+            <a href="./rating_volunteer.html" class="nav-item active">
+                <img src="./img/thanks.png" alt="Поблагодарить иконка" />
+                <span>Рейтинг</span>
+            </a>
+        </div>
+    </nav>
+
+    <main class="container volunteer-main-rating">
+        <div class="rating-container">
+            <div class="rating-header">
+                <div class="col-rank">Место</div>
+                <div class="col-volunteer">Волонтер</div>
+                <div class="col-thanks">Благодарности</div>
+            </div>
+            <div class="rating-body">
+                <div style="text-align: center; padding: 40px;">
+                    <div class="loading-spinner"></div>
+                    <p>Загрузка рейтинга...</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <footer class="footer">
+        <img src="./img/logo.png" alt="Logo" class="footer-logo" />
+    </footer>
+
+    <script src="./js/auth.js"></script>
+    <script src="./js/rating.js"></script>
+</body>
+
+</html>

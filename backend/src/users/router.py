@@ -1,8 +1,8 @@
 from datetime import UTC, datetime
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from sqlalchemy import delete, or_, select, update
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status, Query
+from sqlalchemy import delete, or_, select, update, func
 
 from src.config import config
 from src.database import SessionDep
@@ -26,6 +26,7 @@ from src.users.utils import (
     get_password_hash,
     verify_password,
 )
+from src.requests.models import ThanksModel
 
 
 users_router = APIRouter()
@@ -394,3 +395,42 @@ async def update_user(
         **updated_user.__dict__,
         'avatar_presigned_url': presigned_url
     })
+
+
+@users_router.get(
+    '/api/v1/rating/volunteers',
+    response_model=list[dict],
+    tags=['rating']
+)
+async def get_volunteers_rating(
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user),
+    limit: int = Query(10, ge=1, le=100)
+):
+    volunteers_result = await session.execute(
+        select(UserModel).where(UserModel.role == RoleEnum.VOLUNTEER)
+    )
+    volunteers = volunteers_result.scalars().all()
+
+    volunteers_with_thanks = []
+    for volunteer in volunteers:
+        thanks_count_result = await session.execute(
+            select(func.count(ThanksModel.id))
+            .where(ThanksModel.to_user_id == volunteer.id)
+        )
+        thanks_count = thanks_count_result.scalar() or 0
+
+        avatar_url = await get_avatar_presigned_url(volunteer)
+
+        volunteers_with_thanks.append({
+            'id': volunteer.id,
+            'surname': volunteer.surname,
+            'name': volunteer.name,
+            'patronymic': volunteer.patronymic,
+            'avatar_presigned_url': avatar_url,
+            'thanks_count': thanks_count
+        })
+
+    volunteers_with_thanks.sort(key=lambda x: x['thanks_count'], reverse=True)
+
+    return volunteers_with_thanks[:limit]

@@ -152,3 +152,24 @@
         font-size: 14px;
     }
 }
+
+.rating-row.current-user {
+    border: 2px solid #FF8C00;
+    border-radius: 10px;
+    margin: 2px 0;
+}
+
+.avatar {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #B3804D;
+}
+
+@media (max-width: 768px) {
+    .avatar {
+        width: 45px;
+        height: 45px;
+    }
+}

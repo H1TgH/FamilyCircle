@@ -1,33 +1,25 @@
-// ================= ГЛОБАЛЬНЫЕ ПЕРЕМЕННЫЕ =================
 window.authHeader = null;
 
-// ================= ОСНОВНАЯ ИНИЦИАЛИЗАЦИЯ =================
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('auth.js загружен');
-    
-    // Проверка авторизации
     if (isAuthenticated()) {
         console.log('Пользователь авторизован');
         showLoggedInSection();
         setupLoggedInButtons();
-        
-        // Если на странице входа - показываем блок с кнопками
+ 
         if (window.location.pathname === '/input') {
             console.log('На странице входа, показываем кнопки выхода');
         } else {
-            // Если на другой странице и пользователь авторизован, остаемся там
+  
             console.log('Пользователь на другой странице:', window.location.pathname);
         }
     } else {
         console.log('Пользователь не авторизован');
         showLoginSection();
-        
-        // Настройка формы входа только если не авторизован
+           
         setupLoginForm();
     }
 });
 
-// ================= ОБРАБОТЧИК ФОРМЫ ВХОДА =================
 function setupLoginForm() {
     const loginBtn = document.getElementById('loginBtn');
     const loginForm = document.getElementById('loginForm');
@@ -38,21 +30,18 @@ function setupLoginForm() {
     } else {
         console.log('Кнопка входа не найдена');
     }
-    
-    // Обработка отправки формы по Enter
+      
     if (loginForm) {
         loginForm.addEventListener('submit', function(event) {
             event.preventDefault();
             if (loginBtn) loginBtn.click();
         });
-        
-        // Фокус на поле логина при загрузке
+            
         const loginInput = document.getElementById('login');
         if (loginInput) loginInput.focus();
     }
 }
 
-// ================= ОТОБРАЖЕНИЕ РАЗНЫХ СЕКЦИЙ =================
 function showLoggedInSection() {
     const loginSection = document.getElementById('loginSection');
     const loggedInSection = document.getElementById('loggedInSection');
@@ -80,29 +69,22 @@ function showLoginSection() {
     }
 }
 
-// ================= НАСТРОЙКА КНОПОК ДЛЯ АВТОРИЗОВАННЫХ =================
+
 function setupLoggedInButtons() {
     const accountBtn = document.getElementById('accountBtn');
     const logoutBtn = document.getElementById('logoutBtn');
     
-    console.log('Настройка кнопок для авторизованных');
-    console.log('accountBtn:', accountBtn);
-    console.log('logoutBtn:', logoutBtn);
-    
     if (accountBtn) {
         accountBtn.addEventListener('click', function() {
-            console.log('Нажата кнопка "Мой аккаунт"');
-            // Проверяем роль пользователя и перенаправляем на соответствующую страницу
             if (isRelative()) {
                 console.log('Родственник, перенаправляем на relative_profile');
                 window.location.href = '/relative_profile';
             } else if (isVolunteer()) {
-                console.log('Волонтер, перенаправляем на volunteer_profile');
-                // Если есть страница для волонтеров
+                console.log('Волонтер, перенаправляем на volunteer_profile');  
                 window.location.href = '/volunteer_profile';
             } else {
                 console.log('Неизвестная роль, перенаправляем на профиль');
-                window.location.href = '/profile'; // Общая страница профиля
+                window.location.href = '/profile'; 
             }
         });
     }
@@ -110,7 +92,7 @@ function setupLoggedInButtons() {
     if (logoutBtn) {
         logoutBtn.addEventListener('click', function() {
             console.log('Нажата кнопка "Выйти"');
-            // Показываем подтверждение
+            
             if (confirm('Вы действительно хотите выйти?')) {
                 logout();
             }
@@ -118,7 +100,7 @@ function setupLoggedInButtons() {
     }
 }
 
-// ================= ОБНОВЛЕННАЯ ФУНКЦИЯ ВХОДА =================
+
 async function handleLogin() {
     console.log('Обработка входа...');
     
@@ -143,7 +125,7 @@ async function handleLogin() {
         return;
     }
     
-    // Блокируем кнопку во время запроса
+    
     const loginBtn = document.getElementById('loginBtn');
     const originalText = loginBtn.textContent;
     loginBtn.textContent = 'Вход...';
@@ -169,12 +151,12 @@ async function handleLogin() {
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('refresh_token', data.refresh_token);
             
-            // После успешного входа перезагружаем страницу, чтобы показать кнопки
+            
             if (window.location.pathname === '/input') {
                 console.log('Перезагружаем страницу для отображения кнопок');
                 window.location.reload();
             } else {
-                // Перенаправление на главную или профиль
+                
                 if (isRelative()) {
                     window.location.href = '/relative_profile';
                 } else {
@@ -198,7 +180,7 @@ async function handleLogin() {
     }
 }
 
-// ================= ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ =================
+
 function showError(message) {
     const errorMessage = document.getElementById('errorMessage');
     if (errorMessage) {
@@ -219,7 +201,7 @@ function setAuthHeader(token) {
     };
 }
 
-// ================= API ФУНКЦИИ =================
+
 async function fetchWithAuth(url, options = {}) {
     const accessToken = localStorage.getItem('access_token');
     
@@ -287,7 +269,7 @@ function isAuthenticated() {
     return !!token;
 }
 
-// ================= ОБНОВЛЕННАЯ ФУНКЦИЯ ВЫХОДА =================
+
 function logout() {
     console.log('Выход из системы');
     const refreshToken = localStorage.getItem('refresh_token');
@@ -307,7 +289,7 @@ function logout() {
             console.error('Ошибка при выходе:', error);
         })
         .finally(() => {
-            // Всегда очищаем локальное хранилище и перенаправляем
+            
             clearAuthData();
         });
     } else {
@@ -320,24 +302,24 @@ function clearAuthData() {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
     
-    // Если мы на странице входа, показываем форму входа
+    
     if (window.location.pathname === '/input') {
         console.log('На странице входа, показываем форму');
         showLoginSection();
     } else {
-        // Иначе перенаправляем на страницу входа
+        
         console.log('Перенаправляем на страницу входа');
         window.location.href = '/input';
     }
 }
 
-// ================= ДОПОЛНИТЕЛЬНЫЕ ФУНКЦИИ =================
+
 function getAuthHeader() {
     const token = localStorage.getItem('access_token');
     return token ? { 'Authorization': `Bearer ${token}` } : {};
 }
 
-// Проверка роли пользователя
+
 function isRelative() {
     const accessToken = localStorage.getItem('access_token');
     if (!accessToken) return false;
@@ -376,7 +358,7 @@ function getUserId() {
     }
 }
 
-// ================= ФУНКЦИЯ ПОЛУЧЕНИЯ ИМЕНИ ПОЛЬЗОВАТЕЛЯ =================
+
 async function getUserInfo() {
     try {
         const response = await fetchWithAuth('/api/v1/users/me');
@@ -391,7 +373,7 @@ async function getUserInfo() {
     }
 }
 
-// ================= УЛУЧШЕННАЯ ПРОВЕРКА РОЛИ =================
+
 function getUserRole() {
     const accessToken = localStorage.getItem('access_token');
     if (!accessToken) return null;
@@ -404,24 +386,23 @@ function getUserRole() {
     }
 }
 
-// Инициализация страницы с проверкой авторизации
+
 function initPage() {
     const path = window.location.pathname;
     const protectedPages = ['/profile', '/requests', '/feed'];
     
-    // Если страница защищенная и пользователь не авторизован
+    
     if (protectedPages.some(page => path.startsWith(page)) && !isAuthenticated()) {
         window.location.href = '/input';
         return false;
     }
     
-    // Если пользователь авторизован и пытается зайти на страницу входа
+    
     if (isAuthenticated() && (path === '/input' || path === '/input.html')) {
         window.location.href = '/';
         return false;
     }
-    
-    // Проверка роли для определенных страниц
+
     if (path.startsWith('/profile') || path.startsWith('/requests')) {
         if (!isRelative()) {
             alert('Эта страница доступна только родственникам');
@@ -433,21 +414,15 @@ function initPage() {
     return true;
 }
 
-// Добавьте эти функции в auth.js
-
-// ================= ФУНКЦИИ ДЛЯ ГЛАВНОЙ СТРАНИЦЫ =================
-
 function setupIndexPage() {
     console.log('Настройка главной страницы');
     
-    // Проверяем, главная ли это страница
     const isIndexPage = window.location.pathname === '/' || 
                         window.location.pathname === '/index' || 
                         window.location.pathname === '/index.html';
     
     if (!isIndexPage) return;
     
-    // Вызываем функции из скрипта на странице
     if (typeof window.updateNavigation === 'function') {
         window.updateNavigation();
     }
@@ -455,14 +430,9 @@ function setupIndexPage() {
     if (typeof window.updatePageContent === 'function') {
         window.updatePageContent();
     }
-    
-    // Логи для отладки
-    console.log('Токен в localStorage:', localStorage.getItem('access_token'));
-    console.log('Авторизован:', isAuthenticated());
-    console.log('Роль:', getUserRole());
+
 }
 
-// ================= ОБНОВЛЕННАЯ ИНИЦИАЛИЗАЦИЯ =================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('auth.js загружен, текущая страница:', window.location.pathname);
     
@@ -489,14 +459,12 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     else {
         console.log('Другая страница');
-        // Для других страниц просто проверяем авторизацию
         if (isAuthenticated()) {
             console.log('Авторизован на другой странице');
         }
     }
 });
 
-// ================= ОБНОВЛЕННАЯ ФУНКЦИЯ ВХОДА =================
 async function handleLogin() {
     console.log('Обработка входа...');
     
@@ -521,7 +489,6 @@ async function handleLogin() {
         return;
     }
     
-    // Блокируем кнопку во время запроса
     const loginBtn = document.getElementById('loginBtn');
     const originalText = loginBtn.textContent;
     loginBtn.textContent = 'Вход...';
@@ -547,7 +514,6 @@ async function handleLogin() {
             localStorage.setItem('access_token', data.access_token);
             localStorage.setItem('refresh_token', data.refresh_token);
             
-            // После успешного входа перенаправляем на главную
             console.log('Перенаправление на главную страницу');
             window.location.href = '/';
             
@@ -567,7 +533,6 @@ async function handleLogin() {
     }
 }
 
-// Добавьте эту функцию для получения информации о пользователе
 async function getUserInfo() {
     try {
         const response = await fetchWithAuth('/api/v1/users/me');
@@ -583,9 +548,6 @@ async function getUserInfo() {
     }
 }
 
-// Добавьте в auth.js функцию для проверки авторизации на странице профиля
-
-// ================= ФУНКЦИЯ ДЛЯ ПРОВЕРКИ ПРОФИЛЯ =================
 function checkProfileAuth() {
     const path = window.location.pathname;
     
@@ -604,14 +566,9 @@ function checkProfileAuth() {
     return true;
 }
 
-// Обновите DOMContentLoaded:
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('auth.js загружен, текущая страница:', window.location.pathname);
-    
-    // Проверяем авторизацию для страниц профиля
     if (!checkProfileAuth()) {
         return;
     }
     
-    // Остальной код...
 });
