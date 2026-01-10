@@ -38,6 +38,7 @@
     object-fit: cover;
     border: 1px solid #AF6425;
     transition: transform 0.3s ease;
+    background-color: #FFF7E6;
 }
 
 .avatar:hover {

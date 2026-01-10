@@ -342,14 +342,27 @@ function hideForm() {
 }
 
 function clearForm() {
-    document.getElementById('taskName').value = '';
-    document.getElementById('comment').value = '';
-    document.getElementById('editCardId').value = '';
-    document.getElementById('scheduledDate').value = '';
-    document.getElementById('scheduledTime').value = '';
-    document.getElementById('durationValue').value = '0';
-    document.getElementById('durationUnit').value = 'hours';
-    document.getElementById('isShoppingChecklist').checked = false;
+    const formFields = [
+        'taskName',
+        'comment',
+        'editCardId',
+        'scheduledDate',
+        'scheduledTime',
+        'durationValue',
+        'durationUnit',
+        'isShoppingChecklist'
+    ];
+    
+    formFields.forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            if (element.type === 'checkbox') {
+                element.checked = false;
+            } else {
+                element.value = '';
+            }
+        }
+    });
     
     const elderSelect = document.getElementById('elderSelect');
     if (elderSelect) {
@@ -357,19 +370,20 @@ function clearForm() {
     }
     
     const radioButtons = document.querySelectorAll('input[name="frequency"]');
-    radioButtons.forEach(radio => {
-        radio.checked = false;
-        radio.setAttribute('data-checked', 'false');
-    });
-    
+    if (radioButtons.length > 0) {
+        radioButtons.forEach(radio => {
+            radio.checked = false;
+            radio.setAttribute('data-checked', 'false');
+        });
+    }
+
     const tasksContainer = document.getElementById('tasksContainer');
-    tasksContainer.innerHTML = '';
+    if (tasksContainer) {
+        tasksContainer.innerHTML = '';
+    }
 }
 
 function createCard(request, container, isDoneSection) {
-    // request.tasks теперь содержит массив объектов с полями:
-    // task_name, description, frequency, scheduled_date, scheduled_time, order_index
-    
     const card = document.createElement('div');
     card.className = 'request-card';
     if (request.status === 'done' || isDoneSection) {
@@ -396,7 +410,7 @@ function createCard(request, container, isDoneSection) {
     
     // ФОРМИРУЕМ ВЕРХНЮЮ СТРОКУ: название слева, время справа
     const durationText = request.duration_value ? 
-        `⏱️ ${request.duration_value} ${getDurationUnitText(request.duration_unit)}` : 
+        `~ ${request.duration_value} ${getDurationUnitText(request.duration_unit)}` : 
         '';
     
     // Формируем таблицу задач
@@ -470,7 +484,7 @@ function createCard(request, container, isDoneSection) {
             <div class="card-bottom-info">
                 ${request.is_shopping_checklist ? `
                     <div class="card-comment shopping-badge">
-                        <strong>🛒 Чеклист с покупкой</strong>
+                        <strong>Чеклист с покупкой</strong>
                     </div>
                 ` : ''}
             </div>

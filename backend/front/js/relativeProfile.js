@@ -97,12 +97,232 @@ async function refreshAccessToken() {
     }
 }
 
+function setupVolunteerProfile() {
+    // Скрываем элементы, специфичные для родственников
+    const addButton = document.getElementById('showFormBtn');
+    const relativesList = document.getElementById('relativesList');
+    const formContainer = document.getElementById('relativeFormContainer');
+    
+    if (addButton) addButton.style.display = 'none';
+    if (relativesList) relativesList.style.display = 'none';
+    if (formContainer) formContainer.style.display = 'none';
+    
+    // Добавляем кнопку редактирования в секцию профиля
+    const profileSection = document.querySelector('.profile-section');
+    if (profileSection) {
+        const editButton = document.createElement('button');
+        editButton.className = 'edit-profile-btn';
+        editButton.innerHTML = '<img src="./img/edit.svg" alt="Редактировать" style="width:20px;height:20px;">';
+        editButton.style.cssText = `
+            position: absolute;
+            right: 20px;
+            bottom: 20px;
+            background: #FFF7E6;
+            border: 1px solid #AF6425;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+        `;
+        
+        editButton.addEventListener('click', showEditProfileForm);
+        profileSection.style.position = 'relative';
+        profileSection.appendChild(editButton);
+    }
+    
+    // Обновляем отображение дополнительных полей волонтера
+    updateVolunteerProfileUI();
+}
+
+function setupRelativeProfile() {
+    // Все как было для родственников
+    const addButton = document.getElementById('showFormBtn');
+    if (addButton) addButton.style.display = 'block';
+    
+    loadElders();
+}
+
+function updateVolunteerProfileUI() {
+    // Поля для отображения города, адреса и информации о себе
+    // (это уже частично реализовано в updateProfileUI)
+}
+
+function showEditProfileForm() {
+    const modal = document.createElement('div');
+    modal.className = 'modal';
+    modal.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 2000;
+    `;
+    
+    modal.innerHTML = `
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 10px; width: 400px; max-width: 90%;">
+            <h3 style="margin-top: 0;">Редактировать профиль</h3>
+            <form id="editProfileForm">
+                <div class="form-group">
+                    <label>Фамилия:</label>
+                    <input type="text" id="edit-surname" required>
+                </div>
+                <div class="form-group">
+                    <label>Имя:</label>
+                    <input type="text" id="edit-name" required>
+                </div>
+                <div class="form-group">
+                    <label>Отчество:</label>
+                    <input type="text" id="edit-patronymic">
+                </div>
+                <div class="form-group">
+                    <label>Телефон:</label>
+                    <input type="tel" id="edit-phone" required>
+                </div>
+                <div class="form-group">
+                    <label>Email:</label>
+                    <input type="email" id="edit-email" required>
+                </div>
+                <div class="form-group">
+                    <label>Дата рождения:</label>
+                    <input type="date" id="edit-birthday">
+                </div>
+                <div class="form-group">
+                    <label>Город:</label>
+                    <input type="text" id="edit-city">
+                </div>
+                <div class="form-group">
+                    <label>Адрес:</label>
+                    <input type="text" id="edit-address">
+                </div>
+                <div class="form-group">
+                    <label>О себе:</label>
+                    <textarea id="edit-about" rows="3"></textarea>
+                </div>
+                <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                    <button type="button" class="cancel-btn" id="cancelEditBtn">Отмена</button>
+                    <button type="submit" class="save-btn">Сохранить</button>
+                </div>
+            </form>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    // Заполняем форму текущими данными
+    fetchUserDataForEdit();
+    
+    // Обработчики событий
+    document.getElementById('cancelEditBtn').addEventListener('click', () => {
+        modal.remove();
+    });
+    
+    document.getElementById('editProfileForm').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        await updateUserProfile();
+        modal.remove();
+    });
+    
+    // Закрытие по клику вне модального окна
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+}
+
+async function fetchUserDataForEdit() {
+    try {
+        const response = await fetchWithAuth('/api/v1/users/me');
+        if (response.ok) {
+            const user = await response.json();
+            
+            document.getElementById('edit-surname').value = user.surname || '';
+            document.getElementById('edit-name').value = user.name || '';
+            document.getElementById('edit-patronymic').value = user.patronymic || '';
+            document.getElementById('edit-phone').value = user.phone_number || '';
+            document.getElementById('edit-email').value = user.email || '';
+            document.getElementById('edit-city').value = user.city || '';
+            document.getElementById('edit-address').value = user.address || '';
+            document.getElementById('edit-about').value = user.about || '';
+            
+            if (user.birthday) {
+                const date = new Date(user.birthday);
+                const formattedDate = date.toISOString().split('T')[0];
+                document.getElementById('edit-birthday').value = formattedDate;
+            }
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки данных для редактирования:', error);
+        showNotification('Ошибка загрузки данных', 'error');
+    }
+}
+
+async function updateUserProfile() {
+    const formData = new FormData();
+    
+    const data = {
+        surname: document.getElementById('edit-surname').value.trim(),
+        name: document.getElementById('edit-name').value.trim(),
+        patronymic: document.getElementById('edit-patronymic').value.trim(),
+        phone_number: document.getElementById('edit-phone').value.trim(),
+        email: document.getElementById('edit-email').value.trim(),
+        city: document.getElementById('edit-city').value.trim(),
+        address: document.getElementById('edit-address').value.trim(),
+        about: document.getElementById('edit-about').value.trim()
+    };
+    
+    const birthday = document.getElementById('edit-birthday').value;
+    if (birthday) {
+        data.birthday = birthday;
+    }
+    
+    // Добавляем данные в formData
+    for (const [key, value] of Object.entries(data)) {
+        if (value) {
+            formData.append(key, value);
+        }
+    }
+    
+    try {
+        const response = await fetchWithAuth('/api/v1/users/me', {
+            method: 'PATCH',
+            body: formData
+        });
+        
+        if (response.ok) {
+            const updatedUser = await response.json();
+            updateProfileUI(updatedUser);
+            showNotification('Профиль обновлен!', 'success');
+        } else {
+            const error = await response.json();
+            showNotification(error.detail || 'Ошибка обновления профиля', 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка обновления профиля:', error);
+        showNotification('Ошибка соединения', 'error');
+    }
+}
+
 async function loadUserProfile() {
     try {
         const response = await fetchWithAuth('/api/v1/users/me');
         if (response.ok) {
             const user = await response.json();
             updateProfileUI(user);
+            
+            if (user.role === 'volunteer') {
+                setupVolunteerProfile();
+            } else {
+                setupRelativeProfile();
+            }
         }
     } catch (error) {
         console.error('Ошибка загрузки профиля:', error);
@@ -160,23 +380,17 @@ function updateProfileUI(user) {
         
         contactsElement.innerHTML = contactsHTML;
     }
-    
-    // Обновляем поле "О себе" если есть данные
+
     const aboutElement = document.getElementById('userAbout');
     if (aboutElement && (user.birthday || user.address || user.about)) {
         let aboutHTML = 'О себе:';
         
-        if (user.birthday) {
-            const birthday = convertDateToDisplayFormat(user.birthday);
-            aboutHTML += `<br><strong>Дата рождения:</strong> ${birthday}`;
-        }
-        
         if (user.address) {
-            aboutHTML += `<br><strong>Адрес:</strong> ${user.address}`;
+            aboutHTML += `<br>Адрес: ${user.address}`;
         }
         
         if (user.about) {
-            aboutHTML += `<br><strong>Информация:</strong> ${user.about}`;
+            aboutHTML += `<br>О себе: ${user.about}`;
         }
         
         aboutElement.innerHTML = aboutHTML;

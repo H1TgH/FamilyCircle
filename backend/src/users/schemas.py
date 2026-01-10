@@ -17,11 +17,16 @@ class UserRegistrationSchema(BaseModel):
 
 
 class RelativeRegistrationSchema(UserRegistrationSchema):
-    pass
+    address: str | None = None
+    city: str | None = None
+    about: str | None = None
 
 
 class VolunteerRegistrationSchema(UserRegistrationSchema):
     birthday: PastDate
+    address: str | None = None
+    city: str | None = None
+    about: str | None = None
 
 
 class TokenResponseSchema(BaseModel):
@@ -49,6 +54,9 @@ class UserSchema(BaseModel):
     birthday: PastDate | None
     role: RoleEnum
     is_has_avatar: bool
+    address: str | None = None
+    city: str | None = None
+    about: str | None = None
     avatar_presigned_url: str | None = None
 
     class Config:
@@ -63,6 +71,9 @@ class UserUpdateSchema(BaseModel):
     patronymic: str | None = None
     phone_number: str | None = None
     birthday: PastDate | None = None
+    address: str | None = None
+    city: str | None = None
+    about: str | None = None
 
     @classmethod
     def as_form(
@@ -73,7 +84,10 @@ class UserUpdateSchema(BaseModel):
         name: str | None = Form(None),
         patronymic: str | None = Form(None),
         phone_number: str | None = Form(None),
-        birthday: PastDate | None = Form(None)
+        birthday: PastDate | None = Form(None),
+        address: str | None = Form(None),
+        city: str | None = Form(None),
+        about: str | None = Form(None)
     ):
         return cls(
             login=login,
@@ -82,5 +96,8 @@ class UserUpdateSchema(BaseModel):
             name=name,
             patronymic=patronymic,
             phone_number=phone_number,
-            birthday=birthday
+            birthday=birthday,
+            address=address,
+            city=city,
+            about=about
         )

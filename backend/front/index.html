@@ -84,7 +84,7 @@
                     <li><a href="#">Вопросы</a></li>
                     <!-- Дополнительные пункты меню для авторизованных пользователей -->
                     <li id="relativeNav" style="display: none;"><a href="./relative_profile">Профиль</a></li>
-                    <li id="volunteerNav" style="display: none;"><a href="./volunteer_profile">Профиль</a></li>
+                    <li id="volunteerNav" style="display: none;"><a href="./profile">Профиль</a></li>
                 </ul>
             </nav>
             <div class="button-cont" id="authButtonsContainer">
@@ -169,7 +169,7 @@
                     <a href="./requests" id="findSupportBtn"> 
                         <button class="cta-button">Найти поддержку</button>
                     </a>
-                    <a href="./regis_V.html" id="becomeVolunteerBtn">
+                    <a href="register-volunteer" id="becomeVolunteerBtn">
                         <button class="cta-button">Стать волонтером</button>
                     </a>
                     
@@ -325,7 +325,7 @@
             if (isRelative()) {
                 window.location.href = './profile';
             } else if (isVolunteer()) {
-                window.location.href = './volunteer_profile';
+                window.location.href = './profile';
             }
         }
 

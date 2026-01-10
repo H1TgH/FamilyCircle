@@ -82,6 +82,21 @@ class UserModel(Base):
         default=False
     )
 
+    address: Mapped[str] = mapped_column(
+        String,
+        nullable=True
+    )
+
+    city: Mapped[str] = mapped_column(
+        String,
+        nullable=True
+    )
+
+    about: Mapped[str] = mapped_column(
+        String,
+        nullable=True
+    )
+
     created_at: Mapped[datetime] = mapped_column(
         PGDateTime(timezone=True),
         nullable=False,

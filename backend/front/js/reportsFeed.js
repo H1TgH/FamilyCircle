@@ -44,11 +44,6 @@ async function renderReportsFeed(reports) {
     
     postList.innerHTML = '';
     
-    if (!reports || reports.length === 0) {
-        postList.innerHTML = '<p class="no-reports" style="text-align: center; padding: 40px; color: #666;">Нет отчетов</p>';
-        return;
-    }
-    
     const uniqueReports = reports.filter((report, index, self) =>
         index === self.findIndex(r => r.id === report.id)
     );
