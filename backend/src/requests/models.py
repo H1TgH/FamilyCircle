@@ -199,3 +199,40 @@ class RequestModel(Base):
     relative: Mapped[UserModel] = relationship('UserModel', foreign_keys=[relative_id])
     volunteer: Mapped[UserModel] = relationship('UserModel', foreign_keys=[volunteer_id])
     elder: Mapped[ElderModel] = relationship('ElderModel', foreign_keys=[elder_id])
+
+
+class ResponseModel(Base):
+    __tablename__ = 'responses'
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID,
+        primary_key=True,
+        default=uuid4
+    )
+
+    request_id: Mapped[UUID] = mapped_column(
+        ForeignKey('requests.id', ondelete='CASCADE'),
+        nullable=False,
+        index=True
+    )
+
+    volunteer_id: Mapped[UUID] = mapped_column(
+        ForeignKey('users.id'),
+        nullable=False
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        PGDateTime(timezone=True),
+        nullable=False,
+        server_default=func.now()
+    )
+
+    updated_at: Mapped[datetime] = mapped_column(
+        PGDateTime(timezone=True),
+        nullable=False,
+        server_default=func.now(),
+        onupdate=func.now()
+    )
+
+    request: Mapped[RequestModel] = relationship('RequestModel', foreign_keys=[request_id])
+    volunteer: Mapped[UserModel] = relationship('UserModel', foreign_keys=[volunteer_id])

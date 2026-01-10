@@ -8,7 +8,7 @@ from sqlalchemy.orm import selectinload
 from src.config import config
 from src.database import SessionDep
 from src.notifications.tasks import send_completion_email
-from src.requests.models import ElderModel, RequestModel, RequestStatusEnum
+from src.requests.models import ElderModel, RequestModel, RequestStatusEnum, ResponseModel
 from src.requests.schemas import (
     ElderCreationSchema,
     ElderResponseSchema,
@@ -17,7 +17,11 @@ from src.requests.schemas import (
     RequestCreationSchema,
     RequestResponseSchema,
     RequestUpdateSchema,
+    ResponseWithDetailsSchema,
+    ResponseSchema,
+    ResponseCreationSchema,
 )
+from src.requests.utils import get_elder_short_schema, get_user_short_schema
 from src.s3_storage.client import MinioClient
 from src.s3_storage.utils import convert_to_webp, get_elder_avatar_presigned_url
 from src.users.dependencies import get_current_user
@@ -77,6 +81,12 @@ async def create_requests(
         'request_id': new_request.id
     }
 
+
+@request_router.get(
+    '/api/v1/requests/me',
+    response_model=list[RequestResponseSchema],
+    tags=['requests']
+)
 @request_router.get(
     '/api/v1/requests/me',
     response_model=list[RequestResponseSchema],
@@ -90,6 +100,10 @@ async def get_requests_list(
 ):
     query = select(RequestModel).where(
         RequestModel.relative_id == user.id
+    ).options(
+        selectinload(RequestModel.relative),
+        selectinload(RequestModel.volunteer),
+        selectinload(RequestModel.elder)
     )
 
     if cursor:
@@ -100,7 +114,37 @@ async def get_requests_list(
     result = await session.execute(query)
     requests = result.scalars().all()
 
-    return requests
+    response_requests = []
+    for request in requests:
+        request_dict = {
+            'id': request.id,
+            'relative_id': request.relative_id,
+            'elder_id': request.elder_id,
+            'volunteer_id': request.volunteer_id,
+            'checklist_name': request.checklist_name,
+            'tasks': request.tasks,
+            'duration_value': request.duration_value,
+            'duration_unit': request.duration_unit,
+            'is_shopping_checklist': request.is_shopping_checklist,
+            'status': request.status,
+            'created_at': request.created_at
+        }
+
+        if request.relative:
+            relative_data = await get_user_short_schema(request.relative)
+            request_dict['relative'] = relative_data
+
+        if request.volunteer:
+            volunteer_data = await get_user_short_schema(request.volunteer)
+            request_dict['volunteer'] = volunteer_data
+
+        if request.elder:
+            elder_data = await get_elder_short_schema(request.elder)
+            request_dict['elder'] = elder_data
+
+        response_requests.append(RequestResponseSchema.model_validate(request_dict))
+
+    return response_requests
 
 
 @request_router.get(
@@ -114,7 +158,18 @@ async def get_available_requests(
     limit: int = Query(30, ge=1, le=60),
     cursor: datetime | None = Query(None)
 ):
-    query = select(RequestModel).where(RequestModel.status == RequestStatusEnum.OPEN)
+    if user.role != RoleEnum.VOLUNTEER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Only volunteers can view available requests'
+        )
+
+    query = select(RequestModel).where(
+        RequestModel.status == RequestStatusEnum.OPEN
+    ).options(
+        selectinload(RequestModel.relative),
+        selectinload(RequestModel.elder)
+    )
 
     if cursor:
         query = query.where(RequestModel.created_at < cursor)
@@ -124,7 +179,33 @@ async def get_available_requests(
     result = await session.execute(query)
     requests = result.scalars().all()
 
-    return requests
+    response_requests = []
+    for request in requests:
+        request_dict = {
+            'id': request.id,
+            'relative_id': request.relative_id,
+            'elder_id': request.elder_id,
+            'volunteer_id': request.volunteer_id,
+            'checklist_name': request.checklist_name,
+            'tasks': request.tasks,
+            'duration_value': request.duration_value,
+            'duration_unit': request.duration_unit,
+            'is_shopping_checklist': request.is_shopping_checklist,
+            'status': request.status,
+            'created_at': request.created_at
+        }
+
+        if request.relative:
+            relative_data = await get_user_short_schema(request.relative)
+            request_dict['relative'] = relative_data
+
+        if request.elder:
+            elder_data = await get_elder_short_schema(request.elder)
+            request_dict['elder'] = elder_data
+
+        response_requests.append(RequestResponseSchema.model_validate(request_dict))
+
+    return response_requests
 
 
 @request_router.get(
@@ -550,6 +631,190 @@ async def delete_elder(
             await minio_client.delete_file(avatar_key)
 
     await session.execute(delete(ElderModel).where(ElderModel.id == elder_id))
+    await session.commit()
+
+    return None
+
+@request_router.post(
+    '/api/v1/responses',
+    response_model=ResponseSchema,
+    status_code=status.HTTP_201_CREATED,
+    tags=['responses']
+)
+async def create_response(
+    response_data: ResponseCreationSchema,
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user)
+):
+    if user.role != RoleEnum.VOLUNTEER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Only volunteers can respond to requests'
+        )
+
+    request_result = await session.execute(
+        select(RequestModel).where(RequestModel.id == response_data.request_id)
+    )
+    request = request_result.scalar_one_or_none()
+
+    if not request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Request not found'
+        )
+
+    if request.status != RequestStatusEnum.OPEN:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Can only respond to open requests'
+        )
+
+    existing_response_result = await session.execute(
+        select(ResponseModel).where(
+            ResponseModel.request_id == response_data.request_id,
+            ResponseModel.volunteer_id == user.id
+        )
+    )
+    existing_response = existing_response_result.scalar_one_or_none()
+
+    if existing_response:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='You have already responded to this request'
+        )
+
+    if request.relative_id == user.id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='You cannot respond to your own request'
+        )
+
+    new_response = ResponseModel(
+        request_id=response_data.request_id,
+        volunteer_id=user.id
+    )
+
+    session.add(new_response)
+    await session.commit()
+    await session.refresh(new_response)
+
+    return new_response
+
+
+@request_router.get(
+    '/api/v1/responses/request/{request_id}',
+    response_model=list[ResponseWithDetailsSchema],
+    tags=['responses']
+)
+async def get_responses_for_request(
+    request_id: UUID,
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user)
+):
+    request_result = await session.execute(
+        select(RequestModel).where(RequestModel.id == request_id)
+    )
+    request = request_result.scalar_one_or_none()
+
+    if not request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Request not found'
+        )
+
+    if user.id != request.relative_id and user.role != RoleEnum.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You do not have permission to view responses for this request'
+        )
+
+    responses_result = await session.execute(
+        select(ResponseModel)
+        .options(selectinload(ResponseModel.volunteer))
+        .where(ResponseModel.request_id == request_id)
+        .order_by(ResponseModel.created_at.desc())
+    )
+    responses = responses_result.scalars().all()
+
+    response_list = []
+    for response in responses:
+        response_dict = {
+            'id': response.id,
+            'request_id': response.request_id,
+            'volunteer_id': response.volunteer_id,
+            'created_at': response.created_at,
+            'updated_at': response.updated_at
+        }
+
+        if response.volunteer:
+            volunteer_data = await get_user_short_schema(response.volunteer)
+            response_dict['volunteer'] = volunteer_data
+
+        response_list.append(ResponseWithDetailsSchema.model_validate(response_dict))
+
+    return response_list
+
+
+@request_router.get(
+    '/api/v1/responses/me',
+    response_model=list[ResponseSchema],
+    tags=['responses']
+)
+async def get_my_responses(
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user),
+    limit: int = Query(20, ge=1, le=50),
+    cursor: datetime | None = Query(None)
+):
+    if user.role != RoleEnum.VOLUNTEER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Only volunteers can view their responses'
+        )
+
+    query = select(ResponseModel).where(
+        ResponseModel.volunteer_id == user.id
+    )
+
+    if cursor:
+        query = query.where(ResponseModel.created_at < cursor)
+
+    query = query.order_by(ResponseModel.created_at.desc()).limit(limit)
+
+    result = await session.execute(query)
+    responses = result.scalars().all()
+
+    return responses
+
+
+@request_router.delete(
+    '/api/v1/responses/{response_id}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    tags=['responses']
+)
+async def delete_response(
+    response_id: UUID,
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user)
+):
+    response_result = await session.execute(
+        select(ResponseModel).where(ResponseModel.id == response_id)
+    )
+    response = response_result.scalar_one_or_none()
+
+    if not response:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Response not found'
+        )
+
+    if response.volunteer_id != user.id and user.role != RoleEnum.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You cannot delete this response'
+        )
+
+    await session.delete(response)
     await session.commit()
 
     return None

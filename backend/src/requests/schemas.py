@@ -1,9 +1,8 @@
 from datetime import date, datetime, time
 from uuid import UUID
-from typing import Optional
 
 from fastapi import Form
-from pydantic import BaseModel, field_serializer
+from pydantic import BaseModel, ConfigDict, field_serializer
 
 from src.requests.models import DurationUnitEnum, FrequencyEnum, RequestStatusEnum
 
@@ -25,6 +24,18 @@ class RequestTaskSchema(BaseModel):
         if isinstance(value, time):
             return value.isoformat()
         return value
+
+
+class UserShortSchema(BaseModel):
+    id: UUID
+    full_name: str
+    avatar_presigned_url: str | None = None
+
+
+class ElderShortSchema(BaseModel):
+    id: UUID
+    full_name: str
+    avatar_presigned_url: str | None = None
 
 
 class RequestCreationSchema(BaseModel):
@@ -52,6 +63,10 @@ class RequestResponseSchema(BaseModel):
     is_shopping_checklist: bool
     status: RequestStatusEnum
     created_at: datetime
+    relative: UserShortSchema | None = None
+    volunteer: UserShortSchema | None = None
+    elder: ElderShortSchema | None = None
+    model_config = ConfigDict(from_attributes=True)
 
 
 class RequestUpdateSchema(BaseModel):
@@ -153,3 +168,28 @@ class ElderResponseSchema(BaseModel):
     avatar_presigned_url: str | None
     created_at: datetime
     updated_at: datetime
+
+
+class ResponseSchema(BaseModel):
+    id: UUID
+    request_id: UUID
+    volunteer_id: UUID
+    created_at: datetime
+    updated_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ResponseWithDetailsSchema(BaseModel):
+    id: UUID
+    request_id: UUID
+    volunteer_id: UUID
+    created_at: datetime
+    updated_at: datetime
+    volunteer: UserShortSchema
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ResponseCreationSchema(BaseModel):
+    request_id: UUID

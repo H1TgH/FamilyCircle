@@ -188,29 +188,6 @@
     font-weight: bold;
 }
 
-/* --- КНОПКА ОТКЛИКНУТЬСЯ --- */
-.respond-btn {
-    align-self: flex-end; 
-    background-color: #985D3C;
-    color: white;
-    border: none;
-    padding: 15px 60px;
-    font-size: 18px;
-    font-weight: bold;
-    border-radius: 15px;
-    cursor: pointer;
-    margin-top: -25px; /* Наложение на карточку */
-    margin-right: 20px;
-    z-index: 10;
-    transition: transform 0.2s, background 0.3s;
-}
-
-.respond-btn:hover {
-    background-color: #8e5627;
-    transform: translateY(-2px);
-}
-
-/* затемнение фона */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -566,6 +543,7 @@
     min-width: 180px;
     transition: background 0.3s;
     font-weight: 500;
+    height: 43px;
 }
 
 .responses-btn:hover {
@@ -1110,5 +1088,112 @@
         grid-template-columns: 40px 1fr 1fr;
         font-size: 12px;
         padding: 10px;
+    }
+}
+
+.volunteer-card-content {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 20px;
+    min-height: 150px;
+}
+
+.relative-info-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 120px;
+    flex-shrink: 0;
+}
+
+.relative-avatar-container {
+    margin-bottom: 10px;
+}
+
+.relative-avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #6B8E23;
+    background-color: #6B8E23;
+}
+
+.relative-text-info {
+    text-align: center;
+}
+
+.relative-name {
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 5px;
+    line-height: 1.2;
+}
+
+.relative-role {
+    font-size: 12px;
+    color: #666;
+    background-color: #f0f8ff;
+    padding: 3px 8px;
+    border-radius: 10px;
+    display: inline-block;
+}
+
+.volunteer-elder-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 120px;
+    flex-shrink: 0;
+}
+
+.volunteer-tasks-section {
+    flex: 1;
+    border: 1px solid #F1CBA8;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #FFF9F0;
+}
+
+.volunteer-right-section {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 15px;
+    min-width: 200px;
+}
+
+.respond-btn {
+    background-color: #AF6425;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    min-width: 180px;
+    font-weight: 500;
+    height: 43px;
+}
+
+@media (max-width: 768px) {
+    .volunteer-card-content {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .relative-info-section,
+    .volunteer-elder-section {
+        flex-direction: row;
+        width: 100%;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .relative-text-info,
+    .elder-text-info {
+        text-align: left;
+        flex: 1;
     }
 }
