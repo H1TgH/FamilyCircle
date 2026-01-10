@@ -56,33 +56,26 @@ async def create_requests(
             detail='You can create a request only for your elderly'
         )
 
-    frequency_str = request_data.frequency
-    duration_unit_str = request_data.duration_unit
+    tasks_data = [task.model_dump(exclude_none=True) for task in request_data.tasks]
 
     new_request = RequestModel(
         relative_id=user.id,
         elder_id=request_data.elder_id,
-        task_name=request_data.task_name,
-        check_list=request_data.check_list,
-        description=request_data.description,
-        frequency=frequency_str,
-        scheduled_date=request_data.scheduled_date,
-        scheduled_time=request_data.scheduled_time,
+        checklist_name=request_data.checklist_name,
+        tasks=tasks_data,
         duration_value=request_data.duration_value,
-        duration_unit=duration_unit_str,
+        duration_unit=request_data.duration_unit,
         is_shopping_checklist=request_data.is_shopping_checklist,
         status=RequestStatusEnum.OPEN
     )
 
     session.add(new_request)
-
     await session.commit()
     await session.refresh(new_request)
 
     return {
         'request_id': new_request.id
     }
-
 
 @request_router.get(
     '/api/v1/requests/me',

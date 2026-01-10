@@ -1,9 +1,9 @@
-from datetime import date, datetime, time
+from datetime import date, datetime
 from enum import StrEnum
 from uuid import UUID, uuid4
 
 from sqlalchemy import (
-    ARRAY,
+    JSON,
     Boolean,
     Date as PGDate,
     DateTime as PGDateTime,
@@ -11,7 +11,6 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
-    Time as PGTime,
     func,
 )
 from sqlalchemy.dialects.postgresql import UUID as PGUUID
@@ -148,38 +147,15 @@ class RequestModel(Base):
         nullable=True
     )
 
-    task_name: Mapped[str] = mapped_column(
+    checklist_name: Mapped[str] = mapped_column(
         String,
         nullable=False
     )
 
-    check_list: Mapped[list[str]] = mapped_column(
-        ARRAY(String),
-        nullable=False
-    )
-
-    description: Mapped[str] = mapped_column(
-        String,
-        nullable=True
-    )
-
-    frequency: Mapped[FrequencyEnum] = mapped_column(
-        Enum(
-            FrequencyEnum,
-            name='frequency_enum',
-            values_callable=lambda enum: [e.value for e in enum],
-        ),
-        nullable=True
-    )
-
-    scheduled_date: Mapped[date] = mapped_column(
-        PGDate,
-        nullable=True
-    )
-
-    scheduled_time: Mapped[time] = mapped_column(
-        PGTime,
-        nullable=True
+    tasks: Mapped[list[dict]] = mapped_column(
+        JSON,
+        nullable=False,
+        default=list
     )
 
     duration_value: Mapped[int] = mapped_column(

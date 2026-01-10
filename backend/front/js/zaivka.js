@@ -1,6 +1,17 @@
 let elders = [];
 let elderDetailsCache = {};
 
+function escapeHtml(unsafe) {
+    if (!unsafe) return '';
+    return unsafe
+        .toString()
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     loadElders();
     loadRequests();
@@ -123,6 +134,9 @@ async function loadElders() {
             elders = loadedElders.filter((elder, index, self) =>
                 index === self.findIndex(e => e.id === elder.id)
             );
+            
+            console.log('Загружены пожилые:', elders);
+            console.log('Первый пожилой аватар:', elders[0]?.avatar_presigned_url);
         }
     } catch (error) {
         console.error('Ошибка загрузки пожилых:', error);
@@ -182,7 +196,7 @@ async function showElderDetails(elderId) {
         return;
     }
     
-    const avatarUrl = elder.avatar_presigned_url || './img/avatar.png';
+    const avatarUrl = elder.avatar_presigned_url || './img/profile.png';
     
     let detailsHTML = '';
     
@@ -269,7 +283,7 @@ async function showElderDetails(elderId) {
         <div class="modal-content">
             <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
             <div class="elder-modal-header">
-                <img src="${avatarUrl}" alt="Аватар" class="elder-modal-avatar" onerror="this.src='./img/avatar.png'">
+                <img src="${avatarUrl}" alt="Аватар" class="elder-modal-avatar" onerror="this.src='./img/profile.png'">
                 <div class="elder-modal-info">
                     <h3>${escapeHtml(elder.full_name)}</h3>
                     <p>Пожилой человек</p>
@@ -353,14 +367,8 @@ function clearForm() {
 }
 
 function createCard(request, container, isDoneSection) {
-    const tasksList = request.check_list.map((task, index) => `
-        <li class="task-list-item">
-            <div class="task-number">${index + 1}.</div>
-            <div class="task-details">
-                <div class="task-description">${escapeHtml(task)}</div>
-            </div>
-        </li>
-    `).join('');
+    // request.tasks теперь содержит массив объектов с полями:
+    // task_name, description, frequency, scheduled_date, scheduled_time, order_index
     
     const card = document.createElement('div');
     card.className = 'request-card';
@@ -370,10 +378,9 @@ function createCard(request, container, isDoneSection) {
     card.dataset.id = request.id;
     card.dataset.status = request.status;
     
-    const frequencyText = getFrequencyText(request.frequency);
     const elder = elders.find(e => e.id === request.elder_id);
     const elderName = elder ? elder.full_name : 'Неизвестно';
-    const avatarUrl = elder && elder.avatar_presigned_url ? elder.avatar_presigned_url : './img/avatar.png';
+    const avatarUrl = elder && elder.avatar_presigned_url ? elder.avatar_presigned_url : './img/profile.png';
     
     const menuContent = request.status === 'done' 
         ? `<button class="action-item" onclick="reopenCard('${request.id}')">Открыть снова</button>`
@@ -385,40 +392,84 @@ function createCard(request, container, isDoneSection) {
         ? 'Закрыто' 
         : renderStatus(request.status, request.volunteer);
     
-    const showRightSection = true; // Всегда показываем правую секцию
+    const showRightSection = true;
+    
+    // ФОРМИРУЕМ ВЕРХНЮЮ СТРОКУ: название слева, время справа
+    const durationText = request.duration_value ? 
+        `⏱️ ${request.duration_value} ${getDurationUnitText(request.duration_unit)}` : 
+        '';
+    
+    // Формируем таблицу задач
+    const tasksTableRows = request.tasks.map((task, index) => {
+        const frequencyText = task.frequency ? getFrequencyText(task.frequency) : 'Единоразово';
+        
+        let scheduleText = '';
+        if (task.scheduled_date || task.scheduled_time) {
+            if (task.scheduled_date) {
+                scheduleText += new Date(task.scheduled_date + 'T00:00:00').toLocaleDateString('ru-RU');
+            }
+            if (task.scheduled_time) {
+                if (scheduleText) scheduleText += ' ';
+                scheduleText += task.scheduled_time;
+            }
+        } else {
+            scheduleText = '-';
+        }
+        
+        return `
+            <div class="task-table-row">
+                <div class="task-number">${index + 1}.</div>
+                <div class="task-frequency-cell">${frequencyText}</div>
+                <div class="task-schedule-cell">${scheduleText}</div>
+            </div>
+        `;
+    }).join('');
     
     card.innerHTML = `
         <div class="card-header-section">
-            <div class="card-title">
-                <h3>${escapeHtml(request.task_name)}</h3>
-                <div class="elder-info-container">
-                    <img src="${avatarUrl}" alt="Аватар пожилого" class="elder-avatar" onerror="this.src='./img/avatar.png'">
-                    <div class="elder-details">
+            <!-- ПЕРВАЯ СТРОКА: название слева, время справа -->
+            <div class="card-top-row">
+                <h3 class="card-checklist-name">${escapeHtml(request.checklist_name)}</h3>
+                ${durationText ? `
+                    <div class="card-duration-badge">
+                        ${durationText}
+                    </div>
+                ` : ''}
+            </div>
+            
+            <!-- ВТОРАЯ СТРОКА: заголовки таблицы справа -->
+            <div class="card-content-row">
+                <!-- Левая часть: аватар и информация о пожилом -->
+                <div class="elder-info-section">
+                    <div class="elder-avatar-container">
+                        <img src="${avatarUrl}" alt="Аватар пожилого" class="elder-avatar" onerror="this.src='./img/profile.png'">
+                    </div>
+                    <div class="elder-text-info">
                         <div class="elder-name">${escapeHtml(elderName)}</div>
                         <a href="#" class="view-details-link" onclick="showElderDetails('${request.elder_id}'); return false;">Подробнее</a>
                     </div>
                 </div>
-            </div>
-            <div class="card-content">
-                <div class="tasks-section">
-                    <h4>Задачи (${request.check_list.length}):</h4>
-                    <ul class="tasks-list">
-                        ${tasksList}
-                    </ul>
-                </div>
                 
-                ${request.description ? `
-                    <div class="card-comment">
-                        <strong>📝 Описание:</strong> ${escapeHtml(request.description)}
+                <!-- Правая часть: таблица задач -->
+                <div class="tasks-table-section">
+                    <!-- Заголовки таблицы -->
+                    <div class="task-table-header">
+                        <div class="task-number-header">№</div>
+                        <div class="task-frequency-header">Частота выполнения</div>
+                        <div class="task-schedule-header">Расписание</div>
                     </div>
-                ` : ''}
-                
-                <div class="card-comment">
-                    <strong>🔄 Частота:</strong> ${frequencyText}
+                    
+                    <!-- Тело таблицы -->
+                    <div class="task-table-body">
+                        ${tasksTableRows}
+                    </div>
                 </div>
-                
+            </div>
+            
+            <!-- Дополнительная информация -->
+            <div class="card-bottom-info">
                 ${request.is_shopping_checklist ? `
-                    <div class="card-comment">
+                    <div class="card-comment shopping-badge">
                         <strong>🛒 Чеклист с покупкой</strong>
                     </div>
                 ` : ''}
@@ -496,6 +547,12 @@ function addTaskInput(taskData = null) {
     taskItem.className = 'task-item';
     taskItem.id = taskId;
     
+    // Определяем значения для радио-кнопок
+    let everyFewHoursChecked = taskData && taskData.frequency === 'every_few_hours' ? 'checked' : '';
+    let dailyChecked = taskData && taskData.frequency === 'daily' ? 'checked' : '';
+    let weeklyChecked = taskData && taskData.frequency === 'weekly' ? 'checked' : '';
+    let monthlyChecked = taskData && taskData.frequency === 'monthly' ? 'checked' : '';
+    
     taskItem.innerHTML = `
         <div class="task-header">
             <button type="button" class="remove-task-btn" onclick="removeTask('${taskId}')">×</button>
@@ -508,7 +565,7 @@ function addTaskInput(taskData = null) {
             
             <div class="task-comment">
                 <label>Комментарий</label>
-                <textarea class="task-comment-input" placeholder="Введите комментарий...">${taskData ? escapeHtml(taskData.taskComment) : ''}</textarea>
+                <textarea class="task-comment-input" placeholder="Введите комментарий...">${taskData ? escapeHtml(taskData.taskComment || '') : ''}</textarea>
             </div>
             
             <div class="task-frequency">
@@ -516,19 +573,19 @@ function addTaskInput(taskData = null) {
                 <p>(если единоразово, то не нужно выбирать)</p>
                 <div class="task-frequency-options">
                     <div class="task-frequency-option">
-                        <input type="radio" id="${taskId}_every_few_hours" name="${taskId}_frequency" value="every_few_hours" ${taskData && taskData.frequency === 'every_few_hours' ? 'checked' : ''}>
+                        <input type="radio" id="${taskId}_every_few_hours" name="${taskId}_frequency" value="every_few_hours" ${everyFewHoursChecked}>
                         <label for="${taskId}_every_few_hours">Раз в несколько часов</label>
                     </div>
                     <div class="task-frequency-option">
-                        <input type="radio" id="${taskId}_daily" name="${taskId}_frequency" value="daily" ${taskData && taskData.frequency === 'daily' ? 'checked' : ''}>
+                        <input type="radio" id="${taskId}_daily" name="${taskId}_frequency" value="daily" ${dailyChecked}>
                         <label for="${taskId}_daily">Ежедневно</label>
                     </div>
                     <div class="task-frequency-option">
-                        <input type="radio" id="${taskId}_weekly" name="${taskId}_frequency" value="weekly" ${taskData && taskData.frequency === 'weekly' ? 'checked' : ''}>
+                        <input type="radio" id="${taskId}_weekly" name="${taskId}_frequency" value="weekly" ${weeklyChecked}>
                         <label for="${taskId}_weekly">Еженедельно</label>
                     </div>
                     <div class="task-frequency-option">
-                        <input type="radio" id="${taskId}_monthly" name="${taskId}_frequency" value="monthly" ${taskData && taskData.frequency === 'monthly' ? 'checked' : ''}>
+                        <input type="radio" id="${taskId}_monthly" name="${taskId}_frequency" value="monthly" ${monthlyChecked}>
                         <label for="${taskId}_monthly">Ежемесячно</label>
                     </div>
                 </div>
@@ -539,12 +596,12 @@ function addTaskInput(taskData = null) {
                 <div class="form-group">
                     <label>Выбор даты: </label>
                     <input type="date" class="task-date" 
-                        value="${taskData ? taskData.date : ''}">
+                        value="${taskData && taskData.date ? taskData.date : ''}">
                 </div>
                 <div class="form-group">
                     <label>Выбор времени: :</label>
                     <input type="time" class="task-start-time" 
-                        value="${taskData ? taskData.startTime : ''}">
+                        value="${taskData && taskData.startTime ? taskData.startTime : ''}">
                 </div>
             </div>
         </div>
@@ -571,53 +628,59 @@ function removeTask(taskId) {
 
 async function saveCard() {
     const elderId = document.getElementById('elderSelect')?.value;
-    const taskName = document.getElementById('taskName').value.trim();
-    const comment = document.getElementById('comment').value.trim();
-    const editCardId = document.getElementById('editCardId').value;
-    const scheduledDate = document.getElementById('scheduledDate').value;
-    const scheduledTime = document.getElementById('scheduledTime').value;
+    const checklistName = document.getElementById('taskName').value.trim();
     const durationValue = parseInt(document.getElementById('durationValue').value) || 0;
     const durationUnit = document.getElementById('durationUnit').value;
     const isShoppingChecklist = document.getElementById('isShoppingChecklist').checked;
-    
-    const frequencyRadio = document.querySelector('input[name="frequency"]:checked');
-    const frequency = frequencyRadio ? frequencyRadio.value : null;
+    const editCardId = document.getElementById('editCardId').value;
     
     if (!elderId) {
         showNotification('Пожалуйста, выберите пожилого человека', 'error');
         return;
     }
     
-    if (!taskName) {
-        showNotification('Пожалуйста, введите название задачи', 'error');
+    if (!checklistName) {
+        showNotification('Пожалуйста, введите название чек-листа', 'error');
         document.getElementById('taskName').focus();
         return;
     }
 
     const taskItems = document.querySelectorAll('.task-item');
-    const checkList = [];
+    const tasks = [];
     
-    taskItems.forEach(item => {
-        const description = item.querySelector('.task-input').value.trim();
+    // Собираем данные для каждой задачи
+    taskItems.forEach((item, index) => {
+        const taskName = item.querySelector('.task-input').value.trim();
+        const comment = item.querySelector('.task-comment-input')?.value.trim() || null;
         
-        if (description) {
-            checkList.push(description);
+        // Получаем выбранную частоту для задачи
+        const frequencyRadio = item.querySelector('input[name^="task_"]:checked');
+        const frequency = frequencyRadio ? frequencyRadio.value : null;
+        
+        const date = item.querySelector('.task-date')?.value || null;
+        const time = item.querySelector('.task-start-time')?.value || null;
+        
+        if (taskName) {
+            tasks.push({
+                task_name: taskName,
+                description: comment,
+                frequency: frequency,
+                scheduled_date: date,
+                scheduled_time: time,
+                order_index: index
+            });
         }
     });
     
-    if (checkList.length === 0) {
+    if (tasks.length === 0) {
         showNotification('Пожалуйста, добавьте хотя бы одну задачу', 'error');
         return;
     }
     
     const requestData = {
         elder_id: elderId,
-        task_name: taskName,
-        check_list: checkList,
-        description: comment || null,
-        frequency: frequency || null,
-        scheduled_date: scheduledDate || null,
-        scheduled_time: scheduledTime || null,
+        checklist_name: checklistName,
+        tasks: tasks,
         duration_value: durationValue > 0 ? durationValue : null,
         duration_unit: durationValue > 0 ? durationUnit : null,
         is_shopping_checklist: isShoppingChecklist
@@ -725,8 +788,10 @@ function getStatusText(status) {
 }
 
 function getFrequencyText(frequency) {
+    if (!frequency) return 'Единоразово';
+    
     const frequencyMap = {
-        'null': 'Единоразово',
+        'once': 'Единоразово',
         'every_few_hours': 'Раз в несколько часов',
         'daily': 'Ежедневно',
         'weekly': 'Еженедельно',
@@ -752,7 +817,7 @@ function renderStatus(status, volunteer) {
             if (volunteer) {
                 return `
                     <div class="volunteer-assigned">
-                        <img src="${volunteer.avatar_presigned_url || './img/avatar.png'}" alt="Аватар волонтера" class="volunteer-avatar" onerror="this.src='./img/avatar.png'">
+                        <img src="${volunteer.avatar_presigned_url || './img/profile.png'}" alt="Аватар волонтера" class="volunteer-avatar" onerror="this.src='./img/profile.png'">
                         <div class="volunteer-name">${escapeHtml(volunteer.full_name)}</div>
                     </div>
                 `;
@@ -774,27 +839,27 @@ async function editCard(requestId) {
             const request = await response.json();
             
             document.getElementById('elderSelect').value = request.elder_id;
-            document.getElementById('taskName').value = request.task_name || '';
-            document.getElementById('comment').value = request.description || '';
-            document.getElementById('scheduledDate').value = request.scheduled_date || '';
-            document.getElementById('scheduledTime').value = request.scheduled_time || '';
+            document.getElementById('taskName').value = request.checklist_name || '';
             document.getElementById('durationValue').value = request.duration_value || 0;
             document.getElementById('durationUnit').value = request.duration_unit || 'hours';
             document.getElementById('isShoppingChecklist').checked = request.is_shopping_checklist || false;
             document.getElementById('editCardId').value = request.id;
             
-            const radioButtons = document.querySelectorAll('input[name="frequency"]');
-            radioButtons.forEach(radio => {
-                radio.checked = radio.value === request.frequency;
-                radio.setAttribute('data-checked', radio.value === request.frequency ? 'true' : 'false');
-            });
-            
             const tasksContainer = document.getElementById('tasksContainer');
             tasksContainer.innerHTML = '';
             
-            request.check_list.forEach(task => {
-                addTaskInput({ description: task });
-            });
+            // Загружаем задачи из нового формата
+            if (request.tasks && Array.isArray(request.tasks)) {
+                request.tasks.forEach(task => {
+                    addTaskInput({
+                        description: task.task_name,
+                        taskComment: task.description || '',
+                        frequency: task.frequency,
+                        date: task.scheduled_date || '',
+                        startTime: task.scheduled_time || ''
+                    });
+                });
+            }
             
             showForm();
         }
@@ -832,31 +897,33 @@ async function viewDetails(requestId) {
             const request = await response.json();
             
             const details = {
-                'Название задачи': request.task_name,
+                'Название чек-листа': request.checklist_name,
                 'Статус': getStatusText(request.status),
                 'Дата создания': new Date(request.created_at).toLocaleString('ru-RU'),
-                'Задач': `${request.check_list.length} шт.`,
-                'Список задач': request.check_list.map((task, index) => `${index + 1}. ${task}`).join('\n')
+                'Количество задач': `${request.tasks.length} шт.`,
+                'Длительность': request.duration_value ? `${request.duration_value} ${getDurationUnitText(request.duration_unit)}` : 'Не указана',
+                'Чеклист с покупкой': request.is_shopping_checklist ? 'Да' : 'Нет'
             };
             
-            if (request.description) {
-                details['Описание'] = request.description;
-            }
-            if (request.frequency) {
-                details['Частота'] = getFrequencyText(request.frequency);
-            }
-            if (request.scheduled_date) {
-                details['Дата выполнения'] = new Date(request.scheduled_date + 'T00:00:00').toLocaleDateString('ru-RU');
-            }
-            if (request.scheduled_time) {
-                details['Время выполнения'] = request.scheduled_time;
-            }
-            if (request.duration_value && request.duration_unit) {
-                details['Длительность'] = `${request.duration_value} ${getDurationUnitText(request.duration_unit)}`;
-            }
-            if (request.is_shopping_checklist) {
-                details['Чеклист с покупкой'] = 'Да';
-            }
+            // Добавляем детали по задачам
+            const tasksDetails = request.tasks.map((task, index) => {
+                let taskInfo = `${index + 1}. ${task.task_name}`;
+                if (task.description) taskInfo += `\n   Комментарий: ${task.description}`;
+                if (task.frequency) taskInfo += `\n   Частота: ${getFrequencyText(task.frequency)}`;
+                if (task.scheduled_date || task.scheduled_time) {
+                    taskInfo += `\n   Расписание: `;
+                    if (task.scheduled_date) {
+                        taskInfo += new Date(task.scheduled_date + 'T00:00:00').toLocaleDateString('ru-RU');
+                    }
+                    if (task.scheduled_time) {
+                        if (task.scheduled_date) taskInfo += ' ';
+                        taskInfo += task.scheduled_time;
+                    }
+                }
+                return taskInfo;
+            }).join('\n\n');
+            
+            details['Список задач'] = tasksDetails;
             
             showDetailsModal('Детали заявки', details);
         } else {
@@ -867,17 +934,6 @@ async function viewDetails(requestId) {
         console.error('Ошибка:', error);
         showNotification('Ошибка соединения с сервером', 'error');
     }
-}
-
-function escapeHtml(unsafe) {
-    if (!unsafe) return '';
-    return unsafe
-        .toString()
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;")
-        .replace(/'/g, "&#039;");
 }
 
 // Функция для показа уведомлений

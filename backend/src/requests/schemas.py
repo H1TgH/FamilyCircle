@@ -1,23 +1,39 @@
 from datetime import date, datetime, time
 from uuid import UUID
+from typing import Optional
 
 from fastapi import Form
-from pydantic import BaseModel
+from pydantic import BaseModel, field_serializer
 
 from src.requests.models import DurationUnitEnum, FrequencyEnum, RequestStatusEnum
 
 
-class RequestCreationSchema(BaseModel):
-    elder_id: UUID
+class RequestTaskSchema(BaseModel):
     task_name: str
-    check_list: list[str]
     description: str | None = None
     frequency: FrequencyEnum | None = None
     scheduled_date: date | None = None
     scheduled_time: time | None = None
+    order_index: int | None = 0
+
+    @field_serializer('scheduled_date', 'scheduled_time')
+    def serialize_dates(self, value: date | time | None, _info):
+        if value is None:
+            return None
+        if isinstance(value, date):
+            return value.isoformat()
+        if isinstance(value, time):
+            return value.isoformat()
+        return value
+
+
+class RequestCreationSchema(BaseModel):
+    elder_id: UUID
+    checklist_name: str
+    tasks: list[RequestTaskSchema]
     duration_value: int | None = None
     duration_unit: DurationUnitEnum | None = None
-    is_shopping_checklist: bool = False
+    is_shopping_checklist: bool
 
 
 class RequestCreationResponseSchema(BaseModel):
@@ -28,27 +44,19 @@ class RequestResponseSchema(BaseModel):
     id: UUID
     relative_id: UUID
     elder_id: UUID
-    volunteer_id: UUID | None
-    task_name: str
-    check_list: list[str]
-    description: str | None
-    frequency: FrequencyEnum | None
-    scheduled_date: date | None
-    scheduled_time: time | None
-    duration_value: int | None
-    duration_unit: DurationUnitEnum | None
+    volunteer_id: UUID | None = None
+    checklist_name: str
+    tasks: list[RequestTaskSchema]
+    duration_value: int | None = None
+    duration_unit: DurationUnitEnum | None = None
     is_shopping_checklist: bool
     status: RequestStatusEnum
     created_at: datetime
 
 
 class RequestUpdateSchema(BaseModel):
-    task_name: str | None = None
-    check_list: list[str] | None = None
-    description: str | None = None
-    frequency: FrequencyEnum | None = None
-    scheduled_date: date | None = None
-    scheduled_time: time | None = None
+    checklist_name: str | None = None
+    tasks: list[RequestTaskSchema] | None = None
     duration_value: int | None = None
     duration_unit: DurationUnitEnum | None = None
     is_shopping_checklist: bool | None = None

@@ -843,3 +843,272 @@
 .task-frequency h4 {
     font-weight: 400;
 }
+
+.card-top-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 2px solid #F1CBA8;
+}
+
+.card-checklist-name {
+    margin: 0;
+    color: #B06D32;
+    font-size: 24px;
+    font-weight: 600;
+    flex: 1;
+    padding-right: 15px;
+}
+
+.card-duration-badge {
+    color: #000000;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 14px;
+    white-space: nowrap;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.card-duration-badge i {
+    font-size: 12px;
+}
+
+/* Адаптивность для верхней строки */
+@media (max-width: 768px) {
+    .card-top-row {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    .card-checklist-name {
+        padding-right: 0;
+        font-size: 20px;
+    }
+    
+    .card-duration-badge {
+        align-self: flex-start;
+    }
+}
+
+/* Убираем старые стили, если были */
+.card-title h3 {
+    display: none; /* Скрываем старый заголовок */
+}
+
+/* Обновляем структуру card-title */
+.card-title {
+    margin-bottom: 15px;
+}
+
+.elder-info-container {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.elder-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid #F1CBA8;
+}
+
+.elder-details {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.elder-name {
+    font-weight: bold;
+    font-size: 16px;
+    color: #333;
+}
+
+.view-details-link {
+    font-size: 14px;
+    color: #888;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.3s;
+}
+
+.view-details-link:hover {
+    color: #985D3C;
+    text-decoration: underline;
+}
+
+.card-content-row {
+    display: flex;
+    gap: 30px;
+    margin-bottom: 20px;
+    min-height: 150px;
+}
+
+/* Левая часть: аватар и информация о пожилом */
+.elder-info-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    width: 120px;
+    flex-shrink: 0;
+}
+
+.elder-avatar-container {
+    margin-bottom: 10px;
+}
+
+.elder-avatar {
+    width: 70px;
+    height: 70px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 3px solid #F1CBA8;
+    background-color: #F1CBA8;
+}
+
+.elder-text-info {
+    text-align: center;
+}
+
+.elder-name {
+    font-weight: bold;
+    font-size: 14px;
+    color: #333;
+    margin-bottom: 5px;
+    line-height: 1.2;
+}
+
+.view-details-link {
+    font-size: 12px;
+    color: #985D3C;
+    text-decoration: none;
+    cursor: pointer;
+    transition: color 0.3s;
+    display: inline-block;
+}
+
+.view-details-link:hover {
+    color: #B06D32;
+    text-decoration: underline;
+}
+
+/* Правая часть: таблица задач */
+.tasks-table-section {
+    flex: 1;
+    border: 1px solid #F1CBA8;
+    border-radius: 10px;
+    overflow: hidden;
+    background: #FFF9F0;
+}
+
+.task-table-header {
+    display: grid;
+    grid-template-columns: 50px 1fr 1fr;
+    background: #F1CBA8;
+    color: #985D3C;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 12px 15px;
+    border-bottom: 1px solid #E6B894;
+}
+
+.task-number-header {
+    text-align: center;
+}
+
+.task-frequency-header, .task-schedule-header {
+    padding-left: 10px;
+}
+
+.task-table-body {
+    padding: 5px;
+}
+
+.task-table-row {
+    display: grid;
+    grid-template-columns: 50px 1fr 1fr;
+    padding: 10px 15px;
+    border-bottom: 1px solid #f0e6d6;
+    align-items: center;
+    font-size: 13px;
+}
+
+.task-table-row:last-child {
+    border-bottom: none;
+}
+
+.task-number {
+    text-align: center;
+    font-weight: bold;
+    color: #985D3C;
+    font-size: 14px;
+}
+
+.task-frequency-cell, .task-schedule-cell {
+    padding-left: 10px;
+    color: #333;
+}
+
+.task-frequency-cell {
+    font-weight: 500;
+}
+
+.task-schedule-cell {
+    color: #666;
+}
+
+/* Дополнительная информация внизу */
+.card-bottom-info {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px dashed #F1CBA8;
+}
+
+.shopping-badge {
+    display: inline-block;
+    background: #FFEFD8;
+    padding: 8px 15px;
+    border-radius: 20px;
+    border: 1px solid #F1CBA8;
+    font-size: 13px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .card-content-row {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .elder-info-section {
+        flex-direction: row;
+        width: 100%;
+        align-items: center;
+        gap: 15px;
+    }
+    
+    .elder-avatar-container {
+        margin-bottom: 0;
+    }
+    
+    .elder-text-info {
+        text-align: left;
+        flex: 1;
+    }
+    
+    .task-table-header,
+    .task-table-row {
+        grid-template-columns: 40px 1fr 1fr;
+        font-size: 12px;
+        padding: 10px;
+    }
+}
