@@ -1,5 +1,37 @@
 window.authHeader = null;
 
+function isAuthenticated() {
+    const token = localStorage.getItem('access_token');
+    console.log('Проверка авторизации, токен:', token ? 'есть' : 'нет');
+    return !!token;
+}
+
+function isRelative() {
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) return false;
+    
+    try {
+        const payload = JSON.parse(atob(accessToken.split('.')[1]));
+        console.log('Роль пользователя из токена:', payload.role);
+        return payload.role === 'relative';
+    } catch (e) {
+        console.error('Ошибка при разборе токена:', e);
+        return false;
+    }
+}
+
+function isVolunteer() {
+    const accessToken = localStorage.getItem('access_token');
+    if (!accessToken) return false;
+    
+    try {
+        const payload = JSON.parse(atob(accessToken.split('.')[1]));
+        return payload.role === 'volunteer';
+    } catch (e) {
+        return false;
+    }
+}
+
 document.addEventListener('DOMContentLoaded', function() {
     if (isAuthenticated()) {
         console.log('Пользователь авторизован');
@@ -263,13 +295,6 @@ async function refreshAccessToken() {
     }
 }
 
-function isAuthenticated() {
-    const token = localStorage.getItem('access_token');
-    console.log('Проверка авторизации, токен:', token ? 'есть' : 'нет');
-    return !!token;
-}
-
-
 function logout() {
     console.log('Выход из системы');
     const refreshToken = localStorage.getItem('refresh_token');
@@ -317,33 +342,6 @@ function clearAuthData() {
 function getAuthHeader() {
     const token = localStorage.getItem('access_token');
     return token ? { 'Authorization': `Bearer ${token}` } : {};
-}
-
-
-function isRelative() {
-    const accessToken = localStorage.getItem('access_token');
-    if (!accessToken) return false;
-    
-    try {
-        const payload = JSON.parse(atob(accessToken.split('.')[1]));
-        console.log('Роль пользователя из токена:', payload.role);
-        return payload.role === 'relative';
-    } catch (e) {
-        console.error('Ошибка при разборе токена:', e);
-        return false;
-    }
-}
-
-function isVolunteer() {
-    const accessToken = localStorage.getItem('access_token');
-    if (!accessToken) return false;
-    
-    try {
-        const payload = JSON.parse(atob(accessToken.split('.')[1]));
-        return payload.role === 'volunteer';
-    } catch (e) {
-        return false;
-    }
 }
 
 function getUserId() {
@@ -413,6 +411,62 @@ function initPage() {
     
     return true;
 }
+
+function updateNavigation() {
+    const navItems = document.querySelectorAll('.nav-item');
+    if (!navItems.length) return;
+    
+    // Определяем текущую роль пользователя
+    const role = getUserRole();
+    const currentPath = window.location.pathname;
+    
+    // Проверяем, на какой странице мы находимся
+    const isRatingPage = currentPath.includes('rating_volunteer') || currentPath.includes('rating');
+    const isThanksPage = currentPath.includes('thanks') || currentPath.includes('thank');
+    
+    navItems.forEach(item => {
+        const span = item.querySelector('span');
+        const img = item.querySelector('img');
+        
+        if (span && img) {
+            // Для страниц благодарности/рейтинга
+            if (span.textContent === 'Рейтинг' || span.textContent === 'Поблагодарить') {
+                if (role === 'volunteer') {
+                    span.textContent = 'Рейтинг';
+                    img.src = './img/thanks.png'; // Иконка рейтинга
+                    img.alt = 'Рейтинг иконка';
+                    
+                    // Обновляем ссылку
+                    if (item.tagName === 'A') {
+                        item.href = 'rating';
+                    }
+                    
+                    // Подсвечиваем активную страницу
+                    if (isRatingPage) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                } else if (role === 'relative') {
+                    span.textContent = 'Поблагодарить';
+                    img.src = './img/thanks.png';
+                    img.alt = 'Поблагодарить иконка';
+                    
+                    if (item.tagName === 'A') {
+                        item.href = 'thanks';
+                    }
+                    
+                    if (isThanksPage) {
+                        item.classList.add('active');
+                    } else {
+                        item.classList.remove('active');
+                    }
+                }
+            }
+        }
+    });
+}
+
 
 function setupIndexPage() {
     console.log('Настройка главной страницы');
@@ -567,8 +621,15 @@ function checkProfileAuth() {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('auth.js загружен, текущая страница:', window.location.pathname);
+    
+    // Проверяем авторизацию для страниц профиля
     if (!checkProfileAuth()) {
         return;
+    }
+    
+    if (isAuthenticated()) {
+        updateNavigation();
     }
     
 });

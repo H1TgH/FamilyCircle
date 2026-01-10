@@ -93,7 +93,7 @@ async function reopenCard(requestId) {
     try {
         const response = await fetchWithAuth(`/api/v1/requests/${requestId}`, {
             method: 'PATCH',
-            body: JSON.stringify({ status: 'in_progress' })
+            body: JSON.stringify({ status: 'open' })
         });
         
         if (response.ok) {

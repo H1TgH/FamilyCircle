@@ -26,7 +26,7 @@ from src.requests.schemas import (
 )
 from src.requests.utils import get_elder_short_schema, get_user_short_schema
 from src.s3_storage.client import MinioClient
-from src.s3_storage.utils import convert_to_webp, get_elder_avatar_presigned_url
+from src.s3_storage.utils import convert_to_webp, get_elder_avatar_presigned_url, get_avatar_presigned_url
 from src.users.dependencies import get_current_user
 from src.users.models import RoleEnum, UserModel
 
@@ -223,6 +223,11 @@ async def get_request_by_id(
 ):
     result = await session.execute(
         select(RequestModel)
+        .options(
+            selectinload(RequestModel.relative),
+            selectinload(RequestModel.volunteer),
+            selectinload(RequestModel.elder)
+        )
         .where(RequestModel.id == request_id)
     )
     request = result.scalar_one_or_none()
@@ -233,7 +238,39 @@ async def get_request_by_id(
             detail='Request not found'
         )
 
-    return request
+    if user.id != request.relative_id and user.id != request.volunteer_id and user.role != RoleEnum.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You do not have permission to view this request'
+        )
+
+    request_dict = {
+        'id': request.id,
+        'relative_id': request.relative_id,
+        'elder_id': request.elder_id,
+        'volunteer_id': request.volunteer_id,
+        'checklist_name': request.checklist_name,
+        'tasks': request.tasks,
+        'duration_value': request.duration_value,
+        'duration_unit': request.duration_unit,
+        'is_shopping_checklist': request.is_shopping_checklist,
+        'status': request.status,
+        'created_at': request.created_at
+    }
+
+    if request.relative:
+        relative_data = await get_user_short_schema(request.relative)
+        request_dict['relative'] = relative_data
+
+    if request.volunteer:
+        volunteer_data = await get_user_short_schema(request.volunteer)
+        request_dict['volunteer'] = volunteer_data
+
+    if request.elder:
+        elder_data = await get_elder_short_schema(request.elder)
+        request_dict['elder'] = elder_data
+
+    return RequestResponseSchema.model_validate(request_dict)
 
 
 @request_router.patch(
@@ -249,7 +286,11 @@ async def update_request(
 ):
     result = await session.execute(
         select(RequestModel)
-        .options(selectinload(RequestModel.elder))
+        .options(
+            selectinload(RequestModel.elder),
+            selectinload(RequestModel.relative),
+            selectinload(RequestModel.volunteer)
+        )
         .where(RequestModel.id == request_id)
     )
     request = result.scalar_one_or_none()
@@ -262,27 +303,75 @@ async def update_request(
 
     old_status = request.status
 
-    if request_data.volunteer_id is not None and user.role == RoleEnum.VOLUNTEER:
-        if request.volunteer_id is not None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Request already has a volunteer assigned'
-            )
-        if request.status != RequestStatusEnum.OPEN:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail='Can only respond to open requests'
-            )
-        request.volunteer_id = user.id
-        if request_data.status is None:
-            request.status = RequestStatusEnum.IN_PROGRESS
-    elif user.id != request.relative_id and user.id != request.volunteer_id:
+    if user.id != request.relative_id and user.id != request.volunteer_id and user.role != RoleEnum.ADMIN:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail='You do not have permission to update this request'
         )
 
-    update_data = request_data.model_dump(exclude_unset=True, exclude={'volunteer_id'})
+    if request_data.volunteer_id is not None:
+        if user.role == RoleEnum.VOLUNTEER:
+            if request_data.volunteer_id != user.id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='Volunteers can only assign themselves'
+                )
+
+            if request.status != RequestStatusEnum.OPEN:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='Can only respond to open requests'
+                )
+
+            if request.volunteer_id is not None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail='Request already has a volunteer assigned'
+                )
+
+        elif user.role == RoleEnum.RELATIVE:
+            if user.id != request.relative_id:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail='Only the relative who created this request can assign a volunteer'
+                )
+
+        volunteer_result = await session.execute(
+            select(UserModel).where(
+                UserModel.id == request_data.volunteer_id,
+                UserModel.role == RoleEnum.VOLUNTEER
+            )
+        )
+        volunteer = volunteer_result.scalar_one_or_none()
+        if not volunteer:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Specified user is not a volunteer or does not exist'
+            )
+
+        request.volunteer_id = request_data.volunteer_id
+
+    if request_data.status is not None:
+        new_status = request_data.status
+
+        if new_status == RequestStatusEnum.IN_PROGRESS and not request.volunteer_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Cannot set status to IN_PROGRESS without a volunteer'
+            )
+
+        if new_status == RequestStatusEnum.DONE and not request.volunteer_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Cannot mark request as DONE without a volunteer'
+            )
+
+        if request_data.volunteer_id is not None and user.role == RoleEnum.VOLUNTEER:
+            request.status = RequestStatusEnum.IN_PROGRESS
+        else:
+            request.status = new_status
+
+    update_data = request_data.model_dump(exclude_unset=True, exclude={'volunteer_id', 'status'})
     for key, value in update_data.items():
         setattr(request, key, value)
 
@@ -290,17 +379,43 @@ async def update_request(
     await session.refresh(request)
 
     new_status = request.status
-
     if (
         old_status != RequestStatusEnum.DONE
         and new_status == RequestStatusEnum.DONE
+        and request.volunteer_id
     ):
         send_completion_email.delay(
-            to_email=user.email,
+            to_email=request.relative.email if request.relative else user.email,
             elder_name=request.elder.full_name,
         )
 
-    return request
+    request_dict = {
+        'id': request.id,
+        'relative_id': request.relative_id,
+        'elder_id': request.elder_id,
+        'volunteer_id': request.volunteer_id,
+        'checklist_name': request.checklist_name,
+        'tasks': request.tasks,
+        'duration_value': request.duration_value,
+        'duration_unit': request.duration_unit,
+        'is_shopping_checklist': request.is_shopping_checklist,
+        'status': request.status,
+        'created_at': request.created_at
+    }
+
+    if request.relative:
+        relative_data = await get_user_short_schema(request.relative)
+        request_dict['relative'] = relative_data
+
+    if request.volunteer:
+        volunteer_data = await get_user_short_schema(request.volunteer)
+        request_dict['volunteer'] = volunteer_data
+
+    if request.elder:
+        elder_data = await get_elder_short_schema(request.elder)
+        request_dict['elder'] = elder_data
+
+    return RequestResponseSchema.model_validate(request_dict)
 
 
 @request_router.delete(
@@ -1030,3 +1145,115 @@ async def get_thanks_for_request(
     thanks = thanks_result.scalar_one_or_none()
 
     return thanks
+
+
+@request_router.get(
+    '/api/v1/thanks/volunteers',
+    response_model=list[dict],
+    tags=['thanks']
+)
+async def get_volunteers_for_thanks(
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user)
+):
+    if user.role != RoleEnum.RELATIVE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Only relatives can view their volunteers'
+        )
+
+    requests_result = await session.execute(
+        select(RequestModel)
+        .options(selectinload(RequestModel.volunteer))
+        .where(
+            RequestModel.relative_id == user.id,
+            RequestModel.status == RequestStatusEnum.DONE,
+            RequestModel.volunteer_id.is_not(None)
+        )
+        .order_by(RequestModel.created_at.desc())
+    )
+    requests = requests_result.scalars().all()
+
+    if not requests:
+        return []
+
+    volunteers_map = {}
+
+    for request in requests:
+        volunteer_id = request.volunteer_id
+
+        thanks_check_result = await session.execute(
+            select(ThanksModel)
+            .where(
+                ThanksModel.request_id == request.id,
+                ThanksModel.from_user_id == user.id
+            )
+        )
+        is_thanked_for_this_request = thanks_check_result.scalar_one_or_none() is not None
+
+        if volunteer_id not in volunteers_map:
+            last_non_thanked_request = None
+            for req in requests:
+                if req.volunteer_id == volunteer_id:
+                    thanks_for_req_result = await session.execute(
+                        select(ThanksModel)
+                        .where(
+                            ThanksModel.request_id == req.id,
+                            ThanksModel.from_user_id == user.id
+                        )
+                    )
+                    is_thanked = thanks_for_req_result.scalar_one_or_none() is not None
+                    if not is_thanked:
+                        last_non_thanked_request = req
+                        break
+
+            volunteers_map[volunteer_id] = {
+                'volunteer': request.volunteer,
+                'request_count': 1,
+                'requests': [request],
+                'last_non_thanked_request': last_non_thanked_request,
+                'last_request_id': request.id
+            }
+        else:
+            volunteer_data = volunteers_map[volunteer_id]
+            volunteer_data['request_count'] += 1
+            volunteer_data['requests'].append(request)
+
+            if not volunteer_data['last_non_thanked_request'] and not is_thanked_for_this_request:
+                volunteer_data['last_non_thanked_request'] = request
+
+    volunteers_list = []
+    for volunteer_data in volunteers_map.values():
+        volunteer = volunteer_data['volunteer']
+
+        avatar_url = await get_avatar_presigned_url(volunteer)
+
+        full_name_parts = []
+        if volunteer.surname:
+            full_name_parts.append(volunteer.surname)
+        if volunteer.name:
+            full_name_parts.append(volunteer.name)
+        if volunteer.patronymic:
+            full_name_parts.append(volunteer.patronymic)
+
+        last_non_thanked_request = volunteer_data['last_non_thanked_request']
+        is_thanked = last_non_thanked_request is None
+
+        volunteers_list.append({
+            'id': volunteer.id,
+            'full_name': ' '.join(full_name_parts) if full_name_parts else 'Неизвестно',
+            'surname': volunteer.surname,
+            'name': volunteer.name,
+            'patronymic': volunteer.patronymic,
+            'avatar_presigned_url': avatar_url,
+            'city': volunteer.city,
+            'about': volunteer.about,
+            'phone_number': volunteer.phone_number,
+            'request_count': volunteer_data['request_count'],
+            'is_thanked': is_thanked,
+            'last_request_id': last_non_thanked_request.id if last_non_thanked_request else volunteer_data['last_request_id']
+        })
+
+    volunteers_list.sort(key=lambda x: x['request_count'], reverse=True)
+
+    return volunteers_list
