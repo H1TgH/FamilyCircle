@@ -2,13 +2,13 @@ from datetime import datetime
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile, status
-from sqlalchemy import delete, select, update
+from sqlalchemy import delete, func, select, update
 from sqlalchemy.orm import selectinload
 
 from src.config import config
 from src.database import SessionDep
 from src.notifications.tasks import send_completion_email
-from src.requests.models import ElderModel, RequestModel, RequestStatusEnum, ResponseModel
+from src.requests.models import ElderModel, RequestModel, RequestStatusEnum, ResponseModel, ThanksModel
 from src.requests.schemas import (
     ElderCreationSchema,
     ElderResponseSchema,
@@ -17,9 +17,12 @@ from src.requests.schemas import (
     RequestCreationSchema,
     RequestResponseSchema,
     RequestUpdateSchema,
-    ResponseWithDetailsSchema,
-    ResponseSchema,
     ResponseCreationSchema,
+    ResponseSchema,
+    ResponseWithDetailsSchema,
+    ThanksCountResponse,
+    ThanksCreateSchema,
+    ThanksSchema,
 )
 from src.requests.utils import get_elder_short_schema, get_user_short_schema
 from src.s3_storage.client import MinioClient
@@ -635,6 +638,7 @@ async def delete_elder(
 
     return None
 
+
 @request_router.post(
     '/api/v1/responses',
     response_model=ResponseSchema,
@@ -818,3 +822,211 @@ async def delete_response(
     await session.commit()
 
     return None
+
+
+@request_router.post(
+    '/api/v1/thanks',
+    response_model=ThanksSchema,
+    status_code=status.HTTP_201_CREATED,
+    tags=['thanks']
+)
+async def create_thanks(
+    thanks_data: ThanksCreateSchema,
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user)
+):
+    if user.role != RoleEnum.RELATIVE:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Only relatives can thank volunteers'
+        )
+
+    request_result = await session.execute(
+        select(RequestModel).where(RequestModel.id == thanks_data.request_id)
+    )
+    request = request_result.scalar_one_or_none()
+
+    if not request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Request not found'
+        )
+
+    if request.relative_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You can only thank volunteers for your own requests'
+        )
+
+    if request.status != RequestStatusEnum.DONE:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Can only thank for completed requests'
+        )
+
+    if not request.volunteer_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='No volunteer assigned to this request'
+        )
+
+    if request.volunteer_id != thanks_data.to_user_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Can only thank the volunteer who completed this request'
+        )
+
+    existing_thanks_result = await session.execute(
+        select(ThanksModel).where(
+            ThanksModel.request_id == thanks_data.request_id,
+            ThanksModel.from_user_id == user.id
+        )
+    )
+    existing_thanks = existing_thanks_result.scalar_one_or_none()
+
+    if existing_thanks:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='You have already thanked for this request'
+        )
+
+    new_thanks = ThanksModel(
+        from_user_id=user.id,
+        to_user_id=thanks_data.to_user_id,
+        request_id=thanks_data.request_id
+    )
+
+    session.add(new_thanks)
+    await session.commit()
+    await session.refresh(new_thanks)
+
+    return new_thanks
+
+
+@request_router.get(
+    '/api/v1/thanks/user/{user_id}/count',
+    response_model=ThanksCountResponse,
+    tags=['thanks']
+)
+async def get_thanks_count(
+    user_id: UUID,
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user)
+):
+    if user.role != RoleEnum.VOLUNTEER and user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Only volunteers can view their thanks count'
+        )
+
+    thanks_count_result = await session.execute(
+        select(func.count(ThanksModel.id))
+        .where(ThanksModel.to_user_id == user_id)
+    )
+    thanks_count = thanks_count_result.scalar() or 0
+
+    return ThanksCountResponse(
+        user_id=user_id,
+        thanks_count=thanks_count
+    )
+
+
+@request_router.get(
+    '/api/v1/thanks/user/{user_id}',
+    response_model=list[ThanksSchema],
+    tags=['thanks']
+)
+async def get_user_thanks(
+    user_id: UUID,
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user),
+    limit: int = Query(20, ge=1, le=50),
+    cursor: datetime | None = Query(None)
+):
+    if user.role != RoleEnum.VOLUNTEER and user.id != user_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You can only view your own thanks'
+        )
+
+    query = select(ThanksModel).where(
+        ThanksModel.to_user_id == user_id
+    )
+
+    if cursor:
+        query = query.where(ThanksModel.created_at < cursor)
+
+    query = query.order_by(ThanksModel.created_at.desc()).limit(limit)
+
+    result = await session.execute(query)
+    thanks = result.scalars().all()
+
+    return thanks
+
+
+@request_router.get(
+    '/api/v1/thanks/me',
+    response_model=list[ThanksSchema],
+    tags=['thanks']
+)
+async def get_my_thanks(
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user),
+    limit: int = Query(20, ge=1, le=50),
+    cursor: datetime | None = Query(None)
+):
+    if user.role != RoleEnum.VOLUNTEER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Only volunteers have thanks'
+        )
+
+    query = select(ThanksModel).where(
+        ThanksModel.to_user_id == user.id
+    )
+
+    if cursor:
+        query = query.where(ThanksModel.created_at < cursor)
+
+    query = query.order_by(ThanksModel.created_at.desc()).limit(limit)
+
+    result = await session.execute(query)
+    thanks = result.scalars().all()
+
+    return thanks
+
+
+@request_router.get(
+    '/api/v1/thanks/request/{request_id}',
+    response_model=ThanksSchema | None,
+    tags=['thanks']
+)
+async def get_thanks_for_request(
+    request_id: UUID,
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user)
+):
+    request_result = await session.execute(
+        select(RequestModel).where(RequestModel.id == request_id)
+    )
+    request = request_result.scalar_one_or_none()
+
+    if not request:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Request not found'
+        )
+
+    if user.id != request.relative_id and user.id != request.volunteer_id and user.role != RoleEnum.ADMIN:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You do not have permission to view thanks for this request'
+        )
+
+    thanks_result = await session.execute(
+        select(ThanksModel)
+        .where(ThanksModel.request_id == request_id)
+    )
+    thanks = thanks_result.scalar_one_or_none()
+
+    return thanks

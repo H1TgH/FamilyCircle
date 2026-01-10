@@ -236,3 +236,41 @@ class ResponseModel(Base):
 
     request: Mapped[RequestModel] = relationship('RequestModel', foreign_keys=[request_id])
     volunteer: Mapped[UserModel] = relationship('UserModel', foreign_keys=[volunteer_id])
+
+
+class ThanksModel(Base):
+    __tablename__ = 'thanks'
+
+    id: Mapped[UUID] = mapped_column(
+        PGUUID,
+        primary_key=True,
+        default=uuid4
+    )
+
+    from_user_id: Mapped[UUID] = mapped_column(
+        ForeignKey('users.id'),
+        nullable=False,
+        index=True
+    )
+
+    to_user_id: Mapped[UUID] = mapped_column(
+        ForeignKey('users.id'),
+        nullable=False,
+        index=True
+    )
+
+    request_id: Mapped[UUID] = mapped_column(
+        ForeignKey('requests.id'),
+        nullable=False,
+        index=True
+    )
+
+    created_at: Mapped[datetime] = mapped_column(
+        PGDateTime(timezone=True),
+        nullable=False,
+        server_default=func.now()
+    )
+
+    from_user: Mapped[UserModel] = relationship('UserModel', foreign_keys=[from_user_id])
+    to_user: Mapped[UserModel] = relationship('UserModel', foreign_keys=[to_user_id])
+    request: Mapped[RequestModel] = relationship('RequestModel', foreign_keys=[request_id])

@@ -193,3 +193,28 @@ class ResponseWithDetailsSchema(BaseModel):
 
 class ResponseCreationSchema(BaseModel):
     request_id: UUID
+
+
+class ThanksSchema(BaseModel):
+    id: UUID
+    from_user_id: UUID
+    to_user_id: UUID
+    request_id: UUID
+    created_at: datetime
+
+    model_config = ConfigDict(from_attributes=True)
+
+
+class ThanksCreateSchema(BaseModel):
+    to_user_id: UUID
+    request_id: UUID
+
+
+class ThanksCountResponse(BaseModel):
+    user_id: UUID
+    thanks_count: int
+
+
+class ThanksStatsResponse(BaseModel):
+    total_thanks: int
+    user_thanks: dict[UUID, int] = {}
