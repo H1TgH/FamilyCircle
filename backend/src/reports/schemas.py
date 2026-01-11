@@ -43,3 +43,11 @@ class ReportFeedSchema(BaseModel):
     author_avatar_url: str | None = None
     request_task_name: str | None = None
     request_status: str | None = None
+
+
+class ReportUpdateSchema(BaseModel):
+    description: str | None
+    delete_images: list[UUID] | None = None
+
+    class Config:
+        from_attributes = True

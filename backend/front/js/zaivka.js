@@ -249,15 +249,6 @@ async function showElderDetails(elderId) {
         `;
     }
     
-    if (elder.health_status) {
-        detailsHTML += `
-            <div class="detail-item">
-                <div class="detail-label">Состояние здоровья:</div>
-                <div class="detail-value">${escapeHtml(elder.health_status)}</div>
-            </div>
-        `;
-    }
-    
     if (elder.physical_limitations) {
         detailsHTML += `
             <div class="detail-item">

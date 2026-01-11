@@ -262,3 +262,125 @@ async def delete_report(
     await session.commit()
 
     return None
+
+
+@reports_router.patch(
+    '/api/v1/reports/{report_id}',
+    response_model=ReportResponseSchema,
+    tags=['reports']
+)
+async def update_report(
+    report_id: UUID,
+    session: SessionDep,
+    description: str | None = Form(None),
+    delete_images: list[str] | None = Form(None),
+    images: list[UploadFile] = File([]),
+    user: UserModel = Depends(get_current_user)
+):
+    result = await session.execute(
+        select(ReportModel)
+        .options(selectinload(ReportModel.images))
+        .where(ReportModel.id == report_id)
+    )
+    report = result.scalar_one_or_none()
+
+    if report is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail='Report not found.'
+        )
+
+    if report.author_id != user.id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='You can update only your own reports.'
+        )
+
+    if images and len(images) > 10:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail='Maximum 10 images allowed'
+        )
+
+    if description is not None:
+        if not description.strip():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail='Description cannot be empty'
+            )
+        report.description = description.strip()
+
+    if delete_images:
+        bucket_name = config.minio.define_buckets['reports']
+        if bucket_name:
+            minio_client = MinioClient(bucket_name=bucket_name)
+
+        images_to_delete = []
+        for image in report.images:
+            if str(image.id) in delete_images:
+                images_to_delete.append(image)
+                if bucket_name:
+                    await minio_client.delete_file(image.file_key)
+                await session.delete(image)
+
+        for image in images_to_delete:
+            report.images.remove(image)
+
+    uploaded_images = []
+    if images:
+        bucket_name = config.minio.define_buckets['reports']
+        if not bucket_name:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail='Reports bucket not configured'
+            )
+
+        minio_client = MinioClient(bucket_name=bucket_name)
+
+        next_order = max((img.display_order for img in report.images), default=-1) + 1
+
+        for i, report_image in enumerate(images):
+            try:
+                if not report_image.content_type or not report_image.content_type.startswith('image/'):
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail='File must be an image'
+                    )
+
+                webp_data = await convert_to_webp(report_image)
+
+                image_key = f'{report.id}/{uuid4()}.webp'
+
+                await minio_client.upload_file(
+                    file_name=image_key,
+                    data=webp_data,
+                    content_type='image/webp'
+                )
+
+                report_image_model = ReportImageModel(
+                    report_id=report.id,
+                    file_key=image_key,
+                    display_order=next_order + i
+                )
+                session.add(report_image_model)
+                uploaded_images.append(report_image_model)
+
+            except HTTPException:
+                raise
+            except Exception as e:
+                for img in uploaded_images:
+                    await minio_client.delete_file(img.file_key)
+                await session.rollback()
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail=f'Error uploading image: {e}'
+                ) from e
+
+    await session.commit()
+    await session.refresh(report, ['images'])
+
+    report_data = ReportResponseSchema.model_validate(report)
+    for image in report_data.images:
+        image.presigned_url = await get_report_image_url(image)
+
+    return report_data

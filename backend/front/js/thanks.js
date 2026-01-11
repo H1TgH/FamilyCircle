@@ -234,7 +234,6 @@ function showEmptyState() {
     emptyState.innerHTML = `
         <h2 class="page-title">Поблагодарить волонтеров</h2>
         <div class="empty-message">
-            <i class="fas fa-heart" style="font-size: 48px; color: #E8A75D; margin-bottom: 20px;"></i>
             <p style="font-size: 18px; color: #5A3C1E; margin-bottom: 10px;">У вас еще нет завершенных заявок</p>
             <p style="color: #8B7355;">Как только волонтеры завершат ваши заявки, они появятся здесь</p>
             <a href="requests" class="back-link" style="display: inline-block; margin-top: 20px; color: #A66B3B; text-decoration: none; font-weight: bold;">

@@ -156,11 +156,33 @@ async function createReportCard(report) {
         <p class="post-text">${escapeHtml(report.description)}</p>
         ${imagesHTML}
         <div class="post-actions">
-            <img src="./img/heart.svg" class="post-icon" alt="Лайк" onclick="handleLike('${report.id}')">
-            <img src="./img/chat.svg" class="post-icon" alt="Комментарий" onclick="showComments('${report.id}')">
+            <div class="post-icon-wrapper">
+                <img src="./img/heart.svg" class="post-icon like-icon" alt="Лайк" data-report-id="${report.id}">
+            </div>
+            <div class="post-icon-wrapper">
+                <img src="./img/chat.svg" class="post-icon comment-icon" alt="Комментарий" data-report-id="${report.id}">
+            </div>
         </div>
         <p class="post-time">${timeAgo}</p>
     `;
+    
+    // Добавляем обработчики для лайков и комментариев
+    const likeIcon = card.querySelector('.like-icon');
+    const commentIcon = card.querySelector('.comment-icon');
+    
+    if (likeIcon) {
+        likeIcon.addEventListener('click', function() {
+            const reportId = this.getAttribute('data-report-id');
+            handleLike(reportId);
+        });
+    }
+    
+    if (commentIcon) {
+        commentIcon.addEventListener('click', function() {
+            const reportId = this.getAttribute('data-report-id');
+            showComments(reportId);
+        });
+    }
     
     if (isOwner) {
         console.log('✅ Добавляю шестеренку для поста', report.id);
@@ -168,20 +190,62 @@ async function createReportCard(report) {
         const gearButton = document.createElement('button');
         gearButton.className = 'post-actions-gear';
         gearButton.innerHTML = '<i class="fas fa-cog"></i>';
-        gearButton.onclick = function(e) {
-            e.stopPropagation();
-            console.log('Клик по шестеренке для поста', report.id);
-            togglePostActionMenu(this, report.id);
-        };
         card.appendChild(gearButton);
         
         const actionMenu = document.createElement('div');
         actionMenu.className = 'post-action-menu';
         actionMenu.innerHTML = `
-            <button class="post-action-item" onclick="editReport('${report.id}')">Изменить</button>
-            <button class="post-action-item delete" onclick="deleteReport('${report.id}')">Удалить</button>
+            <button class="post-action-item" data-action="edit">Изменить</button>
+            <button class="post-action-item delete" data-action="delete">Удалить</button>
         `;
         card.appendChild(actionMenu);
+        
+        // Обработчик для шестеренки
+        gearButton.addEventListener('click', function(e) {
+            e.stopPropagation();
+            console.log('Клик по шестеренке для поста', report.id);
+            
+            // Закрываем все открытые меню
+            const allMenus = document.querySelectorAll('.post-action-menu');
+            allMenus.forEach(menu => {
+                if (menu !== actionMenu) {
+                    menu.classList.remove('active');
+                }
+            });
+            
+            // Открываем/закрываем текущее меню
+            actionMenu.classList.toggle('active');
+            
+            // Обработчик для закрытия меню при клике вне его
+            function closeMenuHandler(e) {
+                if (!actionMenu.contains(e.target) && !gearButton.contains(e.target)) {
+                    actionMenu.classList.remove('active');
+                    document.removeEventListener('click', closeMenuHandler);
+                }
+            }
+            
+            if (actionMenu.classList.contains('active')) {
+                document.addEventListener('click', closeMenuHandler);
+            }
+        });
+        
+        const editBtn = actionMenu.querySelector('[data-action="edit"]');
+        const deleteBtn = actionMenu.querySelector('[data-action="delete"]');
+        
+        editBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            console.log('Нажата кнопка Изменить для отчета', report.id);
+            editReport(report.id);
+            actionMenu.classList.remove('active');
+        });
+        
+        deleteBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            console.log('Нажата кнопка Удалить для отчета', report.id);
+            deleteReport(report.id);
+            actionMenu.classList.remove('active');
+        });
+        
     } else {
         console.log('❌ Это не мой пост, шестеренку не добавляю');
     }
@@ -251,66 +315,61 @@ function showEditPostModal(report) {
     imagesToDelete = [];
     
     const overlay = document.createElement('div');
-    overlay.className = 'edit-post-overlay active';
+    overlay.className = 'modal-overlay active';
     overlay.id = 'editPostOverlay';
     
     const modal = document.createElement('div');
-    modal.className = 'edit-post-modal active';
+    modal.className = 'modal active';
     modal.id = 'editPostModal';
     
     modal.innerHTML = `
-        <div class="edit-post-header">
-            <h3>Редактировать пост</h3>
-            <button class="edit-post-close">&times;</button>
-        </div>
-        
-        <div class="edit-post-content">
-            <form class="edit-post-form" id="editPostForm">
+        <div class="modal-content">
+            <button class="modal-close" id="closeEditModal">&times;</button>
+            <h3 class="modal-title">Редактировать пост</h3>
+            
+            <form class="report-form" id="editPostForm">
                 <div class="form-group">
-                    <label>Описание</label>
-                    <textarea id="editPostDescription" placeholder="Что у вас нового?" required>${escapeHtml(report.description || '')}</textarea>
+                    <textarea id="editPostDescription" class="modal-input" rows="3" 
+                        placeholder="Делитесь своими впечатлениями, общайтесь, благодарите..." required>${escapeHtml(report.description || '')}</textarea>
                 </div>
                 
                 <div class="form-group">
-                    <label>Существующие фотографии</label>
-                    <div class="existing-images" id="existingImages">
-                        ${report.images && report.images.length > 0 ? 
-                            report.images.map(img => `
-                                <div class="existing-image-item">
-                                    <img src="${img.presigned_url}" alt="Фото" onerror="this.src='./img/default-image.png'">
-                                    <button type="button" class="remove-existing-image" data-id="${img.id}">&times;</button>
-                                </div>
-                            `).join('') : 
-                            '<p style="color: #888; font-size: 14px;">Нет фотографий</p>'
-                        }
+                    <div class="existing-images-section">
+                        <p>Существующие фотографии:</p>
+                        <div class="existing-images" id="existingImages">
+                            ${report.images && report.images.length > 0 ? 
+                                report.images.map(img => `
+                                    <div class="image-preview-item">
+                                        <img src="${img.presigned_url}" alt="Фото" onerror="this.src='./img/default-image.png'">
+                                        <button type="button" class="remove-image" data-id="${img.id}">×</button>
+                                    </div>
+                                `).join('') : 
+                                '<p style="color: #888; font-size: 14px;">Нет фотографий</p>'
+                            }
+                        </div>
                     </div>
                 </div>
                 
                 <div class="form-group">
-                    <label>Добавить новые фотографии</label>
-                    <div class="image-upload-area">
-                        <label class="image-upload-label">
-                            <i class="fas fa-cloud-upload-alt"></i>
-                            <span>Нажмите или перетащите файлы</span>
-                            <span style="font-size: 12px; color: #888;">(до 10 файлов)</span>
-                            <input type="file" id="newImages" multiple accept="image/*">
-                        </label>
+                    <div class="modal-upload-area">
+                        <p>Добавить новые фотографии</p>
+                        <input type="file" id="newImages" multiple accept="image/*">
+                        <div id="imagePreviewEdit" class="image-preview" style="margin-top: 10px;"></div>
                     </div>
-                    <div class="image-preview-container" id="imagePreview"></div>
                 </div>
             </form>
-        </div>
-        
-        <div class="edit-post-actions">
-            <button type="button" class="save-post-btn" id="savePostBtn">Сохранить</button>
-            <button type="button" class="delete-post-btn" id="deletePostBtn">Удалить пост</button>
+            
+            <div class="modal-actions">
+                <button type="button" class="cancel-btn" id="cancelEditBtn">Отмена</button>
+                <button type="button" class="modal-submit" id="savePostBtn">Сохранить изменения</button>
+            </div>
         </div>
     `;
     
     document.body.appendChild(overlay);
     document.body.appendChild(modal);
     
-    initEditPostModal(report);
+    setTimeout(() => initEditPostModal(report), 0);
 }
 
 async function getAuthorAvatarUrl(userId) {
@@ -336,111 +395,141 @@ async function getAuthorAvatarUrl(userId) {
 
 
 function initEditPostModal(report) {
-    setTimeout(() => {
-        const overlay = document.getElementById('editPostOverlay');
-        const modal = document.getElementById('editPostModal');
+    const overlay = document.getElementById('editPostOverlay');
+    const modal = document.getElementById('editPostModal');
+    
+    if (!overlay || !modal) {
+        console.error('Модальное окно не найдено');
+        return;
+    }
+    
+    const closeBtn = modal.querySelector('#closeEditModal');
+    const cancelBtn = modal.querySelector('#cancelEditBtn');
+    const saveBtn = modal.querySelector('#savePostBtn');
+    const newImagesInput = modal.querySelector('#newImages');
+    const imagePreview = modal.querySelector('#imagePreviewEdit');
+    
+    // Функция закрытия модального окна
+    function closeModal() {
+        console.log('Закрытие модального окна');
+        modal.classList.remove('active');
+        overlay.classList.remove('active');
         
-        if (!overlay || !modal) {
-            console.error('Модальное окно не найдено');
-            return;
-        }
-        
-        const closeBtn = modal.querySelector('.edit-post-close');
-        const saveBtn = modal.querySelector('#savePostBtn');
-        const deleteBtn = modal.querySelector('#deletePostBtn');
-        const newImagesInput = modal.querySelector('#newImages');
-        const imagePreview = modal.querySelector('#imagePreview');
-        
-        if (!closeBtn || !saveBtn || !deleteBtn) {
-            console.error('Не все элементы модального окна найдены');
-            return;
-        }
-        
-        function closeModal() {
-            modal.classList.remove('active');
-            overlay.classList.remove('active');
-            setTimeout(() => {
+        setTimeout(() => {
+            if (modal && modal.parentNode) {
                 modal.remove();
-                overlay.remove();
-            }, 300);
-        }
-        
-        closeBtn.addEventListener('click', closeModal);
-        overlay.addEventListener('click', closeModal);
-        
-        modal.querySelectorAll('.remove-existing-image').forEach(btn => {
-            btn.addEventListener('click', function() {
-                const imageId = this.dataset.id;
-                imagesToDelete.push(imageId);
-                this.parentElement.remove();
-                
-                const existingImages = modal.querySelector('#existingImages');
-                if (existingImages.children.length === 0) {
-                    existingImages.innerHTML = '<p style="color: #888; font-size: 14px;">Нет фотографий</p>';
-                }
-            });
-        });
-        
-        if (newImagesInput) {
-            newImagesInput.addEventListener('change', function() {
-                if (imagePreview) {
-                    imagePreview.innerHTML = '';
-                }
-                const files = Array.from(this.files).slice(0, 10);
-                
-                files.forEach((file, index) => {
-                    if (file.type.startsWith('image/')) {
-                        const reader = new FileReader();
-                        reader.onload = function(e) {
-                            const preview = document.createElement('div');
-                            preview.className = 'image-preview-item';
-                            preview.innerHTML = `
-                                <img src="${e.target.result}" alt="Предпросмотр">
-                                <button type="button" class="remove-preview-image" data-index="${index}">&times;</button>
-                            `;
-                            if (imagePreview) {
-                                imagePreview.appendChild(preview);
-                            }
-                            
-                            preview.querySelector('.remove-preview-image').addEventListener('click', function() {
-                                removeImageFromPreview(index);
-                            });
-                        };
-                        reader.readAsDataURL(file);
-                    }
-                });
-            });
-        }
-        
-        function removeImageFromPreview(index) {
-            if (!newImagesInput) return;
-            
-            const dt = new DataTransfer();
-            const files = Array.from(newImagesInput.files);
-            files.splice(index, 1);
-            files.forEach(file => dt.items.add(file));
-            newImagesInput.files = dt.files;
-            
-            const event = new Event('change');
-            newImagesInput.dispatchEvent(event);
-        }
-        
-        saveBtn.addEventListener('click', async function() {
-            await updatePost();
-        });
-        
-        deleteBtn.addEventListener('click', function() {
-            if (confirm('Вы уверены, что хотите удалить этот пост?')) {
-                deletePost();
             }
-        });
-        
-        document.addEventListener('keydown', function(e) {
-            if (e.key === 'Escape') {
+            if (overlay && overlay.parentNode) {
+                overlay.remove();
+            }
+        }, 300);
+    }
+    
+    // Обработчик для крестика
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeModal);
+    }
+    
+    // Обработчик для оверлея (клик вне модального окна)
+    if (overlay) {
+        overlay.addEventListener('click', function(e) {
+            if (e.target === overlay) {
                 closeModal();
             }
         });
-    }, 50);
+    }
+    
+    // Обработчик для кнопки "Отмена"
+    if (cancelBtn) {
+        cancelBtn.addEventListener('click', closeModal);
+    }
+    
+    // Обработчик для кнопки "Сохранить"
+    if (saveBtn) {
+        saveBtn.addEventListener('click', async function() {
+            await updatePost();
+        });
+    }
+    
+    // Обработчик для удаления существующих изображений
+    modal.querySelectorAll('.remove-image[data-id]').forEach(btn => {
+        btn.addEventListener('click', function() {
+            const imageId = this.dataset.id;
+            imagesToDelete.push(imageId);
+            this.parentElement.remove();
+            
+            const existingImages = modal.querySelector('#existingImages');
+            if (existingImages.children.length === 0) {
+                existingImages.innerHTML = '<p style="color: #888; font-size: 14px;">Нет фотографий</p>';
+            }
+        });
+    });
+    
+    // Обработчик для новых изображений
+    if (newImagesInput && imagePreview) {
+        newImagesInput.addEventListener('change', function() {
+            imagePreview.innerHTML = '';
+            const files = Array.from(this.files).slice(0, 10);
+            
+            files.forEach((file, index) => {
+                if (file.type.startsWith('image/')) {
+                    const reader = new FileReader();
+                    reader.onload = function(e) {
+                        const preview = document.createElement('div');
+                        preview.className = 'image-preview-item';
+                        preview.innerHTML = `
+                            <img src="${e.target.result}" alt="Предпросмотр">
+                            <button type="button" class="remove-image" data-index="${index}">×</button>
+                        `;
+                        imagePreview.appendChild(preview);
+                        
+                        preview.querySelector('.remove-image').addEventListener('click', function() {
+                            removeImageFromPreview(index, newImagesInput);
+                            preview.remove();
+                        });
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+        });
+    }
+    
+    // Обработчик для клавиши ESC
+    function handleEscKey(e) {
+        if (e.key === 'Escape') {
+            console.log('Нажата клавиша ESC');
+            closeModal();
+            document.removeEventListener('keydown', handleEscKey);
+        }
+    }
+    
+    document.addEventListener('keydown', handleEscKey);
+    
+    // Удаляем обработчик ESC при закрытии
+    function cleanup() {
+        document.removeEventListener('keydown', handleEscKey);
+    }
+    
+    // Добавляем очистку при закрытии
+    const originalCloseModal = closeModal;
+    closeModal = function() {
+        cleanup();
+        originalCloseModal();
+    };
+    
+    cancelBtn.addEventListener('click', cleanup);
+    closeBtn.addEventListener('click', cleanup);
+    
+    // Вспомогательная функция для удаления изображений из предпросмотра
+    function removeImageFromPreview(index, inputElement) {
+        if (!inputElement) return;
+        
+        const dt = new DataTransfer();
+        const files = Array.from(inputElement.files);
+        files.splice(index, 1);
+        files.forEach(file => dt.items.add(file));
+        inputElement.files = dt.files;
+    }
 }
 
 let editingReportId = null;
@@ -449,13 +538,15 @@ let imagesToDelete = [];
 async function updatePost() {
     if (!editingReportId) return;
     
-    const description = document.getElementById('editPostDescription').value.trim();
+    const description = document.getElementById('editPostDescription')?.value.trim();
     if (!description) {
         showNotification('Введите описание поста', 'error');
         return;
     }
     
     const saveBtn = document.querySelector('#savePostBtn');
+    if (!saveBtn) return;
+    
     const originalText = saveBtn.textContent;
     saveBtn.textContent = 'Сохранение...';
     saveBtn.disabled = true;
@@ -469,14 +560,14 @@ async function updatePost() {
         });
         
         const newImagesInput = document.getElementById('newImages');
-        if (newImagesInput.files.length > 0) {
+        if (newImagesInput && newImagesInput.files.length > 0) {
             Array.from(newImagesInput.files).forEach(file => {
                 formData.append('images', file);
             });
         }
         
         const response = await fetchWithAuth(`/api/v1/reports/${editingReportId}`, {
-            method: 'PUT',
+            method: 'PATCH',
             body: formData
         });
         
@@ -633,14 +724,12 @@ function showCreatePostModal(requests) {
                 </select>
             </div>
             <div class="form-group">
-                <label for="postText">Описание:*</label>
                 <textarea id="postText" class="modal-input" rows="3" 
                     placeholder="Делитесь своими впечатлениями, общайтесь, благодарите..." required></textarea>
             </div>
             <div class="form-group">
-                <label>Загрузите фотографии (макс. 10):</label>
                 <div class="modal-upload-area">
-                    <p>Перетащите файлы сюда или нажмите для выбора</p>
+                    <p>Загрузите фотографии</p>
                     <input type="file" id="imageInput" multiple accept="image/*">
                     <div id="imagePreview" style="margin-top: 10px;"></div>
                 </div>
@@ -858,3 +947,6 @@ window.deleteReport = deleteReport;
 window.handleLike = handleLike;
 window.showComments = showComments;
 window.removeImageFromPreview = removeImageFromPreview;
+
+window.updatePost = updatePost;
+window.closeEditModal = closeEditModal;
