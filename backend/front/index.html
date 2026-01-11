@@ -4,77 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Family Circle - Уход за семьёй</title>
-    <link rel="stylesheet" href="./css/style_index.css">
-    <style>
-        .auth-container {
-            display: flex;
-            gap: 10px;
-            align-items: center;
-        }
-        
-        .auth-btn {
-            padding: 8px 16px;
-            border: none;
-            border-radius: 5px;
-            font-size: 14px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            font-weight: 500;
-            text-decoration: none;
-            display: inline-flex;
-            align-items: center;
-            gap: 5px;
-        }
-        
-        .account-btn {
-            background-color: #4CAF50;
-            color: white;
-        }
-        
-        .account-btn:hover {
-            background-color: #45a049;
-        }
-        
-        .logout-btn {
-            background-color: #f44336;
-            color: white;
-        }
-        
-        .logout-btn:hover {
-            background-color: #da190b;
-        }
-        
-        .login-btn {
-            background-color: #2196F3;
-            color: white;
-        }
-        
-        .login-btn:hover {
-            background-color: #0b7dda;
-        }
-        
-        .buttom-input {
-            background: none;
-            border: none;
-            cursor: pointer;
-            padding: 0;
-        }
-        
-        @media (max-width: 768px) {
-            .auth-container {
-                flex-direction: column;
-                gap: 5px;
-            }
-            
-            .auth-btn {
-                width: 100%;
-                justify-content: center;
-            }
-        }
-    </style>
+    <link rel="stylesheet" href="./css/index.css">
+    <link rel="stylesheet" href="./css/style_main.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
 </head>
 <body>
-    <!-- Шапка -->
     <header class="header">
         <div class="container">
             <div class="logo"><img class="logo-img" src="img/logo.png" alt="logo"></div>
@@ -82,15 +19,10 @@
                 <ul>
                     <li><a href="./index">Главная</a></li>
                     <li><a href="#">Вопросы</a></li>
-                    <!-- Дополнительные пункты меню для авторизованных пользователей -->
-                    <li id="relativeNav" style="display: none;"><a href="./relative_profile">Профиль</a></li>
-                    <li id="volunteerNav" style="display: none;"><a href="./profile">Профиль</a></li>
                 </ul>
             </nav>
             <div class="button-cont" id="authButtonsContainer">
-                <!-- Кнопки будут вставлены через JavaScript -->
                 <div class="auth-container" id="authButtons">
-                    <!-- По умолчанию показываем кнопку входа -->
                     <button class="auth-btn login-btn" onclick="window.location.href='./login'">
                         Войти <img src="./img/input.png" style="height: 20px; width: 20px;">
                     </button>
@@ -99,7 +31,6 @@
         </div>
     </header>
 
-    <!-- Основной заголовок и изображение -->
     <section class="hero">
         <div class="container" style="display: flex; justify-content: space-between; padding: 0px;">
             <div class="hero-content">
@@ -139,7 +70,6 @@
         </div>
     </section>
 
-    <!-- Как проходит уход -->
     <section class="process">
         <div class="container" style="margin: 0 10%;">
             <h2>Как работает наша платформа?</h2>
@@ -172,18 +102,11 @@
                     <a href="register-volunteer" id="becomeVolunteerBtn">
                         <button class="cta-button">Стать волонтером</button>
                     </a>
-                    
-                    <!-- Дополнительные кнопки для авторизованных пользователей -->
-                    <div id="authUserButtons" style="display: none;">
-                        <button class="cta-button" onclick="goToProfile()">Мой профиль</button>
-                        <button class="cta-button" onclick="goToRequests()" id="requestsBtn" style="display: none;">Мои заявки</button>
-                    </div>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Футер -->
     <footer class="footer">
         <div class="container">
             <div class="logo"><img class="logo-img" src="./img/logo.png" alt="logo"></div>
@@ -191,156 +114,6 @@
     </footer>
 
     <script src="./js/auth.js"></script>
-    <script>
-        // Скрипт для главной страницы
-        document.addEventListener('DOMContentLoaded', function() {
-            console.log('Инициализация главной страницы');
-            updateNavigation();
-            updatePageContent();
-        });
-
-        function updateNavigation() {
-            const authButtons = document.getElementById('authButtons');
-            const relativeNav = document.getElementById('relativeNav');
-            const volunteerNav = document.getElementById('volunteerNav');
-            
-            if (!authButtons) return;
-            
-            if (isAuthenticated()) {
-                console.log('Пользователь авторизован, обновляем навигацию');
-                
-                // Обновляем кнопки в шапке
-                if (isRelative()) {
-                    authButtons.innerHTML = `
-                        <button class="auth-btn account-btn" onclick="goToProfile()">
-                            Мой профиль
-                        </button>
-                        <button class="auth-btn logout-btn" onclick="logout()">
-                            Выйти
-                        </button>
-                    `;
-                    if (relativeNav) relativeNav.style.display = 'block';
-                    if (volunteerNav) volunteerNav.style.display = 'none';
-                } else if (isVolunteer()) {
-                    authButtons.innerHTML = `
-                        <button class="auth-btn account-btn" onclick="goToProfile()">
-                            Профиль волонтера
-                        </button>
-                        <button class="auth-btn logout-btn" onclick="logout()">
-                            Выйти
-                        </button>
-                    `;
-                    if (relativeNav) relativeNav.style.display = 'none';
-                    if (volunteerNav) volunteerNav.style.display = 'block';
-                }
-            } else {
-                // Кнопки для неавторизованных пользователей
-                authButtons.innerHTML = `
-                    <button class="auth-btn login-btn" onclick="window.location.href='./login'">
-                        Войти <img src="./img/input.png" style="height: 20px; width: 20px;">
-                    </button>
-                `;
-                if (relativeNav) relativeNav.style.display = 'none';
-                if (volunteerNav) volunteerNav.style.display = 'none';
-            }
-        }
-
-        function updatePageContent() {
-            const welcomeMessage = document.getElementById('welcomeMessage');
-            const authUserButtons = document.getElementById('authUserButtons');
-            const findSupportBtn = document.getElementById('findSupportBtn');
-            const becomeVolunteerBtn = document.getElementById('becomeVolunteerBtn');
-            const requestsBtn = document.getElementById('requestsBtn');
-            
-            if (isAuthenticated()) {
-                // Показываем приветственное сообщение
-                if (welcomeMessage) {
-                    welcomeMessage.style.display = 'block';
-                    // Получаем информацию о пользователе
-                    getUserInfo().then(user => {
-                        if (user && document.getElementById('userName')) {
-                            const roleText = isRelative() ? 'родственник' : 'волонтер';
-                            document.getElementById('userName').textContent = `${user.name || 'Пользователь'} (${roleText})`;
-                        }
-                    });
-                }
-                
-                // Показываем кнопки для авторизованных пользователей
-                if (authUserButtons) {
-                    authUserButtons.style.display = 'flex';
-                    authUserButtons.style.gap = '20px';
-                    authUserButtons.style.justifyContent = 'center';
-                    authUserButtons.style.width = '100%';
-                }
-                
-                // Адаптируем ссылки в зависимости от роли
-                if (isRelative()) {
-                    // Для родственников
-                    if (findSupportBtn) {
-                        findSupportBtn.href = './zaivka.html';
-                    }
-                    if (requestsBtn) {
-                        requestsBtn.style.display = 'block';
-                        requestsBtn.onclick = function() {
-                            window.location.href = './relative_scroll';
-                        };
-                    }
-                } else if (isVolunteer()) {
-                    // Для волонтеров
-                    if (findSupportBtn) {
-                        findSupportBtn.href = './volunteer_scroll';
-                        findSupportBtn.querySelector('button').textContent = 'Просмотреть заявки';
-                    }
-                    if (requestsBtn) {
-                        requestsBtn.style.display = 'block';
-                        requestsBtn.textContent = 'Мои задания';
-                        requestsBtn.onclick = function() {
-                            window.location.href = './volunteer_assignments';
-                        };
-                    }
-                }
-                
-                // Скрываем кнопку "Стать волонтером" если пользователь уже волонтер
-                if (isVolunteer() && becomeVolunteerBtn) {
-                    becomeVolunteerBtn.style.display = 'none';
-                }
-                
-            } else {
-                // Скрываем элементы для неавторизованных
-                if (welcomeMessage) welcomeMessage.style.display = 'none';
-                if (authUserButtons) authUserButtons.style.display = 'none';
-                
-                // Восстанавливаем стандартные ссылки
-                if (findSupportBtn) {
-                    findSupportBtn.href = './zaivka.html';
-                    findSupportBtn.querySelector('button').textContent = 'Найти поддержку';
-                }
-                if (becomeVolunteerBtn) {
-                    becomeVolunteerBtn.style.display = 'block';
-                }
-            }
-        }
-
-        function goToProfile() {
-            if (isRelative()) {
-                window.location.href = './profile';
-            } else if (isVolunteer()) {
-                window.location.href = './profile';
-            }
-        }
-
-        function goToRequests() {
-            if (isRelative()) {
-                window.location.href = 'feed';
-            } else if (isVolunteer()) {
-                window.location.href = './volunteer_assignments';
-            }
-        }
-
-        // Экспортируем функции для использования в auth.js
-        window.updateNavigation = updateNavigation;
-        window.goToProfile = goToProfile;
-        window.goToRequests = goToRequests;
-    </script>
+    <script src="./js/index.js"></script>
 </body>
 </html>

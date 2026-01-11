@@ -1,4 +1,3 @@
-/* Общие стили */
 * {
     margin: 0;
     padding: 0;
@@ -6,20 +5,18 @@
 }
 
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: 'Arial', sans-serif, "Montserrat", sans-serif;
     line-height: 1.6;
     color: #333;
-    background-color: #FFF8DC; /* Бежевый фон */
+    background-color: #FFF8DC;
 }
 
 .container {
-    margin: 0 auto;
-    padding: 0 10%;
+    padding: 0 20%;
 }
 
-/* Шапка */
 .header {
-    background-color: #FFD3A4; /* Золотисто-оранжевый */
+    background-color: #FFD3A4;
     top: 0;
     z-index: 100;
 }
@@ -30,16 +27,12 @@ body {
     align-items: center;
 }
 
-.logo {
-    
-}
-
 .logo-img {
     height: 100px;
     width: 150px;
 }
 
-.nav{
+.nav {
     display: flex;
 }
 
@@ -54,27 +47,58 @@ body {
     color: #985D3C;
     text-decoration: none;
     font-weight: bold;
-    transition: color 0.3s;
+    transition: all 0.3s;
     font-size: 26px;
 }
 
 .nav a:hover {
-    font-size:28px ;
-    transition: 0.7s;
+    font-size: 28px;
 }
 
-.button-cont{
-    background: #AF6425 ;
+.button-cont {
+    background: #AF6425;
     padding: 1%;
     border-radius: 30px;
 }
 
-.buttom-input{
+.auth-container {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.auth-btn {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 5px;
+    font-size: 26px;
     cursor: pointer;
+    transition: all 0.3s ease;
+    font-weight: 700;
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    font-family: "Montserrat", sans-serif;
+}
+
+.account-btn {
+    background-color: #4CAF50;
+    color: white;
+}
+
+.account-btn:hover {
+    background-color: #45a049;
+}
+
+.buttom-input {
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 0;
     display: flex;
     align-items: center;
     gap: 10%;
-    border: none;
     border-radius: 30px;
     color: #FFF7E6;
     background-color: #AF6425;
@@ -82,14 +106,12 @@ body {
     font-weight: bold;
 }
 
-
-/* Hero секция */
 .hero {
     text-align: center;
     background-color: #FFF8DC;
 }
 
-.hero-content{
+.hero-content {
     margin: auto;
 }
 
@@ -108,7 +130,6 @@ body {
     height: 700px;
 }
 
-/* Услуги */
 .services {
     padding: 4rem 0;
     background-color: #985D3C;
@@ -146,7 +167,6 @@ body {
     font-size: 16px;
 }
 
-/* Процесс */
 .process {
     padding: 4rem 0;
     background-color: #FFF8DC;
@@ -181,19 +201,17 @@ body {
 }
 
 .process-steps p {
-    font-size: 20px; 
+    font-size: 20px;
 }
 
-/* CTA */
 .cta {
     text-align: center;
     padding: 4rem 0;
     background-color: #FFF8DC;
     color: #FFF;
-    margin: 0 10%;
 }
 
-.cta-content{
+.cta-content {
     background-color: #985D3C;
     border-radius: 50px;
     padding: 5%;
@@ -223,9 +241,9 @@ body {
 
 .cta-button:hover {
     background-color: #985D3C;
+    color: #FFF7E6;
 }
 
-/* Футер */
 .footer {
     background-color: #FFD3A4;
     color: #FFF;
@@ -237,7 +255,6 @@ body {
     margin-bottom: 1rem;
 }
 
-/* Адаптивность */
 @media (max-width: 768px) {
     .header .container {
         flex-direction: column;
@@ -259,4 +276,18 @@ body {
     .process h2 {
         font-size: 2rem;
     }
+
+    .auth-container {
+        flex-direction: column;
+        gap: 5px;
+    }
+
+    .auth-btn {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+.profile-icon a {
+    line-height: normal !important;
 }
