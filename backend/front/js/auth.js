@@ -205,7 +205,7 @@ function clearAuthData() {
 
 function updateNavigation() {
     const role = getUserRole();
-    document.querySelectorAll('.nav-item').forEach(item => {
+    document.querySelectorAll('.nav-var-item').forEach(item => {
         const span = item.querySelector('span');
         const img = item.querySelector('img');
         if (!span || !img) return;

@@ -25,6 +25,8 @@ body {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    padding-top: 20px;
+    padding-bottom: 20px;
 }
 
 .logo-img {
@@ -79,7 +81,9 @@ body {
     display: inline-flex;
     align-items: center;
     gap: 5px;
-    font-family: "Montserrat", sans-serif;
+    font-family: "Montserrat Alternates", sans-serif;
+    background-color: #AF6425;
+    color: white;
 }
 
 .account-btn {

@@ -1,153 +1,62 @@
-window.authHeader = null;
-
-function getAuthHeader() {
-    const token = localStorage.getItem('access_token');
-    return token ? { 'Authorization': `Bearer ${token}` } : {};
-}
-
 let isLoadingElders = false;
 let eldersList = null;
 
-document.addEventListener('DOMContentLoaded', function() {
-    console.log('elderProfile.js загружен');
-    
+document.addEventListener('DOMContentLoaded', () => {
+    if (!isAuthenticated()) return;
+
+    const isProfilePage = window.location.pathname.includes('profile');
+    if (!isProfilePage) return;
+
     initializePage();
     setupAvatarUpload();
 });
 
 function initializePage() {
     if (!isAuthenticated()) {
-        console.log('Пользователь не авторизован');
         return;
     }
 
     const isProfilePage = window.location.pathname.includes('profile');
     if (!isProfilePage) return;
     
-    console.log('Страница профиля обнаружена');
-    
     loadUserProfile();
-    loadElders();
-    setupElderForm();
-    setupEventListeners();
-}
-
-function isAuthenticated() {
-    return !!localStorage.getItem('access_token');
-}
-
-async function fetchWithAuth(url, options = {}) {
-    const accessToken = localStorage.getItem('access_token');
+    setupEditButton();
     
-    if (!options.headers) {
-        options.headers = {};
-    }
-    
-    if (accessToken) {
-        options.headers['Authorization'] = `Bearer ${accessToken}`;
-    }
-    
-    if (!options.headers['Content-Type'] && !(options.body instanceof FormData)) {
-        options.headers['Content-Type'] = 'application/json';
-    }
-    
-    let response = await fetch(url, options);
-    
-    if (response.status === 401) {
-        const refreshed = await refreshAccessToken();
-        if (refreshed) {
-            const newAccessToken = localStorage.getItem('access_token');
-            options.headers['Authorization'] = `Bearer ${newAccessToken}`;
-            response = await fetch(url, options);
-        } else {
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            window.location.href = '/input';
-            throw new Error('Требуется повторная авторизация');
-        }
-    }
-    
-    return response;
-}
-
-async function refreshAccessToken() {
-    const refreshToken = localStorage.getItem('refresh_token');
-    if (!refreshToken) return false;
-    
-    try {
-        const response = await fetch('/api/v1/users/refresh-token', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({ refresh_token: refreshToken })
-        });
-        
-        if (response.ok) {
-            const data = await response.json();
-            localStorage.setItem('access_token', data.access_token);
-            localStorage.setItem('refresh_token', data.refresh_token);
-            return true;
-        } else {
-            return false;
-        }
-    } catch (error) {
-        console.error('Ошибка обновления токена:', error);
-        return false;
+    const userRole = getUserRole();
+    if (userRole === 'relative') {
+        loadElders();
+        setupElderForm();
+        setupEventListeners();
     }
 }
 
-function setupVolunteerProfile() {
-    // Скрываем элементы, специфичные для родственников
-    const addButton = document.getElementById('showFormBtn');
-    const relativesList = document.getElementById('relativesList');
-    const formContainer = document.getElementById('relativeFormContainer');
-    
-    if (addButton) addButton.style.display = 'none';
-    if (relativesList) relativesList.style.display = 'none';
-    if (formContainer) formContainer.style.display = 'none';
-    
-    // Добавляем кнопку редактирования в секцию профиля
+function setupEditButton() {
     const profileSection = document.querySelector('.profile-section');
-    if (profileSection) {
-        const editButton = document.createElement('button');
-        editButton.className = 'edit-profile-btn';
-        editButton.innerHTML = '<img src="./img/edit.svg" alt="Редактировать" style="width:20px;height:20px;">';
-        editButton.style.cssText = `
-            position: absolute;
-            right: 20px;
-            bottom: 20px;
-            background: #FFF7E6;
-            border: 1px solid #AF6425;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-        `;
-        
-        editButton.addEventListener('click', showEditProfileForm);
-        profileSection.style.position = 'relative';
-        profileSection.appendChild(editButton);
-    }
+    if (!profileSection) return;
     
-    // Обновляем отображение дополнительных полей волонтера
-    updateVolunteerProfileUI();
-}
-
-function setupRelativeProfile() {
-    // Все как было для родственников
-    const addButton = document.getElementById('showFormBtn');
-    if (addButton) addButton.style.display = 'block';
+    if (profileSection.querySelector('.edit-profile-btn')) return;
     
-    loadElders();
-}
-
-function updateVolunteerProfileUI() {
-    // Поля для отображения города, адреса и информации о себе
-    // (это уже частично реализовано в updateProfileUI)
+    const editButton = document.createElement('button');
+    editButton.className = 'edit-profile-btn';
+    editButton.innerHTML = '<img src="./img/edit.svg" alt="Редактировать" style="width:20px;height:20px;">';
+    editButton.style.cssText = `
+        position: absolute;
+        background: #FFFFFF;
+        right: 30px;
+        border: none;
+        bottom: 20px;
+        width: 40px;
+        height: 40px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        z-index: 10;
+    `;
+    
+    editButton.addEventListener('click', showEditProfileForm);
+    profileSection.style.position = 'relative';
+    profileSection.appendChild(editButton);
 }
 
 function showEditProfileForm() {
@@ -167,48 +76,45 @@ function showEditProfileForm() {
     `;
     
     modal.innerHTML = `
-        <div class="modal-content" style="background: white; padding: 30px; border-radius: 10px; width: 400px; max-width: 90%;">
-            <h3 style="margin-top: 0;">Редактировать профиль</h3>
+        <div class="modal-content" style="background: white; padding: 30px; border-radius: 10px; width: 400px; max-width: 90%; max-height: 80vh; overflow-y: auto;">
+            <h3 style="margin-top: 0; margin-bottom: 20px; color: #985D3C;">Редактировать профиль</h3>
             <form id="editProfileForm">
-                <div class="form-group">
-                    <label>Фамилия:</label>
-                    <input type="text" id="edit-surname" required>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #5A3C1E; font-weight: 500;">Фамилия:</label>
+                    <input type="text" id="edit-surname" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
-                <div class="form-group">
-                    <label>Имя:</label>
-                    <input type="text" id="edit-name" required>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #5A3C1E; font-weight: 500;">Имя:</label>
+                    <input type="text" id="edit-name" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
-                <div class="form-group">
-                    <label>Отчество:</label>
-                    <input type="text" id="edit-patronymic">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #5A3C1E; font-weight: 500;">Отчество:</label>
+                    <input type="text" id="edit-patronymic" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
-                <div class="form-group">
-                    <label>Телефон:</label>
-                    <input type="tel" id="edit-phone" required>
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #5A3C1E; font-weight: 500;">Телефон:</label>
+                    <input type="tel" id="edit-phone" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
-                <div class="form-group">
-                    <label>Email:</label>
-                    <input type="email" id="edit-email" required>
+                <!-- Убрано поле email -->
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #5A3C1E; font-weight: 500;">Дата рождения:</label>
+                    <input type="date" id="edit-birthday" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
-                <div class="form-group">
-                    <label>Дата рождения:</label>
-                    <input type="date" id="edit-birthday">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #5A3C1E; font-weight: 500;">Город:</label>
+                    <input type="text" id="edit-city" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
-                <div class="form-group">
-                    <label>Город:</label>
-                    <input type="text" id="edit-city">
+                <div class="form-group" style="margin-bottom: 15px;">
+                    <label style="display: block; margin-bottom: 5px; color: #5A3C1E; font-weight: 500;">Адрес:</label>
+                    <input type="text" id="edit-address" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
-                <div class="form-group">
-                    <label>Адрес:</label>
-                    <input type="text" id="edit-address">
-                </div>
-                <div class="form-group">
-                    <label>О себе:</label>
-                    <textarea id="edit-about" rows="3"></textarea>
+                <div class="form-group" style="margin-bottom: 20px;">
+                    <label style="display: block; margin-bottom: 5px; color: #5A3C1E; font-weight: 500;">О себе:</label>
+                    <textarea id="edit-about" rows="3" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical;"></textarea>
                 </div>
                 <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
-                    <button type="button" class="cancel-btn" id="cancelEditBtn">Отмена</button>
-                    <button type="submit" class="save-btn">Сохранить</button>
+                    <button type="button" class="cancel-btn" id="cancelEditBtn" style="padding: 10px 20px; background: #FFF7E6; color: #985D3C; border: 1px solid #AF6425; border-radius: 5px; cursor: pointer; font-weight: 500;">Отмена</button>
+                    <button type="submit" class="save-btn" style="padding: 10px 20px; background: #985D3C; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 500;">Сохранить</button>
                 </div>
             </form>
         </div>
@@ -216,10 +122,8 @@ function showEditProfileForm() {
     
     document.body.appendChild(modal);
     
-    // Заполняем форму текущими данными
     fetchUserDataForEdit();
     
-    // Обработчики событий
     document.getElementById('cancelEditBtn').addEventListener('click', () => {
         modal.remove();
     });
@@ -230,7 +134,6 @@ function showEditProfileForm() {
         modal.remove();
     });
     
-    // Закрытие по клику вне модального окна
     modal.addEventListener('click', (e) => {
         if (e.target === modal) {
             modal.remove();
@@ -248,7 +151,6 @@ async function fetchUserDataForEdit() {
             document.getElementById('edit-name').value = user.name || '';
             document.getElementById('edit-patronymic').value = user.patronymic || '';
             document.getElementById('edit-phone').value = user.phone_number || '';
-            document.getElementById('edit-email').value = user.email || '';
             document.getElementById('edit-city').value = user.city || '';
             document.getElementById('edit-address').value = user.address || '';
             document.getElementById('edit-about').value = user.about || '';
@@ -260,7 +162,6 @@ async function fetchUserDataForEdit() {
             }
         }
     } catch (error) {
-        console.error('Ошибка загрузки данных для редактирования:', error);
         showNotification('Ошибка загрузки данных', 'error');
     }
 }
@@ -273,22 +174,20 @@ async function updateUserProfile() {
         name: document.getElementById('edit-name').value.trim(),
         patronymic: document.getElementById('edit-patronymic').value.trim(),
         phone_number: document.getElementById('edit-phone').value.trim(),
-        email: document.getElementById('edit-email').value.trim(),
         city: document.getElementById('edit-city').value.trim(),
         address: document.getElementById('edit-address').value.trim(),
-        about: document.getElementById('edit-about').value.trim()
+        about: document.getElementById('edit-about').value.trim(),
     };
     
-    const birthday = document.getElementById('edit-birthday').value;
-    if (birthday) {
-        data.birthday = birthday;
-    }
-    
-    // Добавляем данные в formData
     for (const [key, value] of Object.entries(data)) {
-        if (value) {
+        if (value && value.trim() !== '') {
             formData.append(key, value);
         }
+    }
+    
+    const birthday = document.getElementById('edit-birthday').value;
+    if (birthday && birthday.trim() !== '') {
+        formData.append('birthday', birthday);
     }
     
     try {
@@ -306,39 +205,28 @@ async function updateUserProfile() {
             showNotification(error.detail || 'Ошибка обновления профиля', 'error');
         }
     } catch (error) {
-        console.error('Ошибка обновления профиля:', error);
         showNotification('Ошибка соединения', 'error');
     }
 }
 
 async function loadUserProfile() {
-    try {
-        const response = await fetchWithAuth('/api/v1/users/me');
-        if (response.ok) {
-            const user = await response.json();
-            updateProfileUI(user);
-            
-            if (user.role === 'volunteer') {
-                setupVolunteerProfile();
-                await loadThanksCount(user.id);
-            } else {
-                setupRelativeProfile();
-            }
+    const response = await fetchWithAuth('/api/v1/users/me');
+    if (response.ok) {
+        const user = await response.json();
+        updateProfileUI(user);
+        
+        const userRole = getUserRole();
+        if (userRole === 'volunteer') {
+            await loadThanksCount(user.id);
         }
-    } catch (error) {
-        console.error('Ошибка загрузки профиля:', error);
     }
 }
 
 async function loadThanksCount(userId) {
-    try {
-        const response = await fetchWithAuth(`/api/v1/thanks/user/${userId}/count`);
-        if (response.ok) {
-            const thanksData = await response.json();
-            displayThanksCount(thanksData.thanks_count);
-        }
-    } catch (error) {
-        console.error('Ошибка загрузки счетчика благодарностей:', error);
+    const response = await fetchWithAuth(`/api/v1/thanks/user/${userId}/count`);
+    if (response.ok) {
+        const thanksData = await response.json();
+        displayThanksCount(thanksData.thanks_count);
     }
 }
 
@@ -346,11 +234,9 @@ function displayThanksCount(count) {
     const profileSection = document.querySelector('.profile-section');
     if (!profileSection) return;
     
-    // Ищем существующий элемент счетчика
     let thanksCounter = profileSection.querySelector('.thanks-counter');
     
     if (!thanksCounter) {
-        // Создаем элемент счетчика
         thanksCounter = document.createElement('div');
         thanksCounter.className = 'thanks-counter';
         thanksCounter.style.cssText = `
@@ -390,25 +276,20 @@ function getThanksWordForm(count) {
 function formatPhoneNumber(phone) {
     if (!phone) return 'Не указан';
     
-    // Убираем все нецифровые символы
     const cleaned = phone.replace(/\D/g, '');
     
-    // Форматируем российский номер
     if (cleaned.length === 11 && cleaned.startsWith('7') || cleaned.startsWith('8')) {
         const countryCode = cleaned.startsWith('7') ? '+7' : '8';
         const rest = cleaned.slice(1);
         
-        // Формат: +7 912 194 63 65
         if (rest.length === 10) {
             return `${countryCode} ${rest.slice(0, 3)} ${rest.slice(3, 6)} ${rest.slice(6, 8)} ${rest.slice(8)}`;
         }
     }
     
-    // Если номер не соответствует формату, возвращаем как есть
     return phone;
 }
 
-// Обновите функцию updateProfileUI:
 function updateProfileUI(user) {
     const nameElement = document.querySelector('.profile-section .name');
     if (nameElement) {
@@ -425,34 +306,81 @@ function updateProfileUI(user) {
             this.src = './img/profile.png';
         };
     }
-    
-    // Обновляем контактные данные
+
     const contactsElement = document.getElementById('userContacts');
     if (contactsElement) {
-        let contactsHTML = 'Контактные данные:';
+        let contactsHTML = '';
         
         if (user.phone_number) {
             const formattedPhone = formatPhoneNumber(user.phone_number);
-            contactsHTML += ` ${formattedPhone}`;
+            contactsHTML += `Контактные данные: ${formattedPhone}`;
+        }
+        
+        if (!contactsHTML) {
+            contactsHTML = 'Контактные данные не указаны';
         }
         
         contactsElement.innerHTML = contactsHTML;
     }
 
     const aboutElement = document.getElementById('userAbout');
-    if (aboutElement && (user.birthday || user.address || user.about)) {
-        let aboutHTML = 'О себе:';
+    if (aboutElement) {
+        let aboutHTML = '';
         
-        if (user.address) {
-            aboutHTML += `<br>Адрес: ${user.address}`;
+        if (user.city) {
+            if (aboutHTML) aboutHTML += '<br><br>';
+            aboutHTML += `Город: ${user.city}`;
         }
         
         if (user.about) {
-            aboutHTML += `<br>О себе: ${user.about}`;
+            if (aboutHTML) aboutHTML += '<br><br>';
+            aboutHTML += `О себе: ${user.about}`;
+        }
+        
+        if (!aboutHTML) {
+            aboutHTML += `О себе:`;
         }
         
         aboutElement.innerHTML = aboutHTML;
     }
+    
+    addLogoutButton();
+}
+
+function addLogoutButton() {
+    const infoElement = document.querySelector('.profile-section .info');
+    if (!infoElement) return;
+    
+    if (infoElement.querySelector('.logout-profile-btn')) return;
+    
+    const logoutButton = document.createElement('button');
+    logoutButton.className = 'logout-profile-btn';
+    logoutButton.innerHTML = `
+        <i class="fas fa-sign-out-alt"></i> Выйти
+    `;
+    logoutButton.style.cssText = `
+        margin-top: 20px;
+        padding: 10px 20px;
+        color: #000000ff;
+        border: none;
+        border-radius: 5px;
+        cursor: pointer;
+        font-family: "Montserrat", sans-serif;
+        font-weight: 600;
+        font-size: 14px;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: all 0.3s ease;
+    `;
+    
+    logoutButton.addEventListener('click', function() {
+        if (confirm('Вы действительно хотите выйти?')) {
+            logout();
+        }
+    });
+    
+    infoElement.appendChild(logoutButton);
 }
 
 function setupAvatarUpload() {
@@ -515,7 +443,6 @@ async function updateUserAvatar(file) {
             return false;
         }
     } catch (error) {
-        console.error('Ошибка загрузки аватара:', error);
         showNotification('Ошибка соединения', 'error');
         return false;
     }
@@ -529,7 +456,6 @@ function setupElderForm() {
     eldersList = document.getElementById('relativesList');
 
     if (!showFormBtn || !formContainer || !cancelFormBtn || !elderForm) {
-        console.error('Не найдены необходимые элементы');
         return;
     }
 
@@ -649,7 +575,6 @@ async function handleElderFormSubmit(event) {
             hideElderForm();
         }
     } catch (error) {
-        console.error('Ошибка при работе с пожилым:', error);
         showNotification('Ошибка: ' + error.message, 'error');
     } finally {
         saveBtn.textContent = originalText;
@@ -660,7 +585,6 @@ async function handleElderFormSubmit(event) {
 
 async function loadElders() {
     if (isLoadingElders) {
-        console.log('Загрузка уже выполняется, пропускаем');
         return;
     }
     
@@ -690,11 +614,9 @@ async function loadElders() {
             }
             
         } else if (response.status === 401) {
-            console.warn('Не авторизован');
             showNotification('Сессия истекла. Пожалуйста, войдите заново.', 'error');
         }
     } catch (error) {
-        console.error('Ошибка загрузки пожилых:', error);
         showNotification('Ошибка загрузки данных. Попробуйте обновить страницу.', 'error');
         updateEmptyListState();
     } finally {
@@ -704,13 +626,11 @@ async function loadElders() {
 
 function addElderToList(elderData) {
     if (!eldersList) {
-        console.warn('Элемент eldersList не найден');
         return;
     }
 
     const existingCard = eldersList.querySelector(`.elder-card[data-id="${elderData.id}"]`);
     if (existingCard) {
-        console.log('Карточка с ID', elderData.id, 'уже существует, пропускаем');
         return;
     }
 
@@ -973,7 +893,6 @@ async function editElder(elderId) {
         });
         
     } catch (error) {
-        console.error('Ошибка при редактировании:', error);
         showNotification('Ошибка при загрузке данных: ' + error.message, 'error');
     }
 }
@@ -1006,7 +925,6 @@ async function handleEditSubmit(elderId) {
             await loadElders();
         }
     } catch (error) {
-        console.error('Ошибка при обновлении:', error);
         showNotification('Ошибка при обновлении данных: ' + error.message, 'error');
         const elderCard = document.querySelector(`.elder-card[data-id="${elderId}"]`);
         if (elderCard) {
@@ -1047,7 +965,6 @@ async function createElder(formData, avatarFile) {
             throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
         }
     } catch (error) {
-        console.error('Ошибка при создании пожилого:', error);
         throw error;
     }
 }
@@ -1083,7 +1000,6 @@ async function updateElder(elderId, formData, avatarFile) {
             throw new Error(errorData.detail || `HTTP error! status: ${response.status}`);
         }
     } catch (error) {
-        console.error('Ошибка при обновлении пожилого:', error);
         throw error;
     }
 }
@@ -1115,7 +1031,6 @@ async function deleteElder(elderId) {
             throw new Error(`HTTP error! status: ${response.status}`);
         }
     } catch (error) {
-        console.error('Ошибка при удалении:', error);
         showNotification('Ошибка при удалении: ' + error.message, 'error');
     }
 }

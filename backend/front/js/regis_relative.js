@@ -16,27 +16,22 @@ document.addEventListener('DOMContentLoaded', function() {
             phone_number: document.getElementById('phone').value.trim(),
         };
         
-        // Валидация
         if (!formData.surname || !formData.name || !formData.phone_number) {
             alert('Пожалуйста, заполните все обязательные поля');
             return;
         }
-        
-        // Проверка телефона
+
         const phoneRegex = /^[\+]?[78]?\d{10}$/;
         if (!phoneRegex.test(formData.phone_number.replace(/[\s\-\(\)]/g, ''))) {
             alert('Введите корректный номер телефона');
             return;
         }
         
-        // Сохраняем данные первого шага
         localStorage.setItem('relativeRegistrationStep1', JSON.stringify(formData));
         
-        // Переходим на второй шаг (email, login, password)
         showStep2();
     });
     
-    // Если есть сохраненные данные, загружаем их
     const savedStep1 = localStorage.getItem('relativeRegistrationStep1');
     if (savedStep1) {
         const data = JSON.parse(savedStep1);
@@ -48,16 +43,13 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 function showStep2() {
-    // Создаем второй шаг формы
     const container = document.querySelector('.container');
     const form = document.querySelector('.registration-form');
     
     if (!form || !container) return;
     
-    // Скрываем первую форму
     form.style.display = 'none';
     
-    // Создаем вторую форму
     const step2Form = document.createElement('form');
     step2Form.className = 'registration-form';
     step2Form.id = 'step2Form';
@@ -97,7 +89,6 @@ function showStep2() {
     
     container.insertBefore(step2Form, form);
     
-    // Обработчик отправки второй формы
     step2Form.addEventListener('submit', async function(e) {
         e.preventDefault();
         
@@ -106,7 +97,6 @@ function showStep2() {
         const password = document.getElementById('password').value;
         const confirmPassword = document.getElementById('confirmPassword').value;
         
-        // Валидация
         const errors = [];
         
         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -131,10 +121,8 @@ function showStep2() {
             return;
         }
         
-        // Получаем данные первого шага
         const step1Data = JSON.parse(localStorage.getItem('relativeRegistrationStep1') || '{}');
         
-        // Объединяем данные
         const registrationData = {
             ...step1Data,
             email: email,
@@ -142,7 +130,6 @@ function showStep2() {
             password: password
         };
         
-        // Отправляем на сервер
         const submitBtn = step2Form.querySelector('button[type="submit"]');
         const originalText = submitBtn.textContent;
         submitBtn.textContent = 'Регистрация...';
@@ -160,17 +147,15 @@ function showStep2() {
             const data = await response.json();
             
             if (response.ok) {
-                // Сохраняем токены
                 localStorage.setItem('access_token', data.access_token);
                 localStorage.setItem('refresh_token', data.refresh_token);
                 
-                // Очищаем временные данные
                 localStorage.removeItem('relativeRegistrationStep1');
                 
                 alert('Регистрация успешна! Вы будете перенаправлены...');
                 
                 setTimeout(() => {
-                    window.location.href = '/relative_profile';
+                    window.location.href = 'profile';
                 }, 1000);
             } else {
                 alert('Ошибка: ' + (data.detail || 'Не удалось зарегистрироваться'));
@@ -183,8 +168,7 @@ function showStep2() {
             submitBtn.disabled = false;
         }
     });
-    
-    // Обработчик кнопки "Назад"
+
     document.getElementById('backBtn').addEventListener('click', function() {
         step2Form.remove();
         form.style.display = 'block';

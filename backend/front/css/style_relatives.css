@@ -20,6 +20,8 @@
     margin-bottom: 5px;
     justify-content: center;
     padding: 20px;
+    border: #FFD3A4 1px solid;
+    border-radius: 50px;
 }
 
 .avatar_photo {
