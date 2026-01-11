@@ -200,7 +200,7 @@ function logout() {
 function clearAuthData() {
     localStorage.removeItem('access_token');
     localStorage.removeItem('refresh_token');
-    window.location.href = 'login';
+    window.location.href = '/';
 }
 
 function updateNavigation() {

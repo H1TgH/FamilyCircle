@@ -182,7 +182,7 @@ async def get_reports_feed(
             author_name=report.author.name,
             author_surname=report.author.surname,
             author_avatar_url=author_avatar_url,
-            request_task_name=report.request.task_name if report.request else None,
+            request_task_name=report.request.checklist_name if report.request else None,
             request_status=report.request.status.value if report.request else None
         )
 
