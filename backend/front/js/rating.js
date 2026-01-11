@@ -1,9 +1,7 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('rating.js загружен');
     
-    // Проверяем авторизацию
     if (!isAuthenticated()) {
-        window.location.href = '/input';
+        window.location.href = 'login';
         return;
     }
     
@@ -12,14 +10,12 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadRatingTable() {
     try {
-        // Получаем информацию о текущем пользователе
         const userResponse = await fetchWithAuth('/api/v1/users/me');
         if (!userResponse.ok) {
             throw new Error('Не удалось загрузить данные пользователя');
         }
         const currentUser = await userResponse.json();
         
-        // Получаем рейтинг волонтеров
         const ratingResponse = await fetchWithAuth('/api/v1/rating/volunteers?limit=10');
         if (!ratingResponse.ok) {
             throw new Error('Не удалось загрузить рейтинг');
@@ -51,26 +47,22 @@ function createRatingRow(volunteer, rank, currentUserId) {
     const row = document.createElement('div');
     row.className = 'rating-row';
     
-    // Определяем стиль строки
     if (volunteer.id === currentUserId) {
         row.classList.add('current-user');
-        row.style.backgroundColor = '#FFAD5880'; // Прозрачный оранжевый для текущего пользователя
+        row.style.backgroundColor = '#FFAD5880';
     } else if (rank <= 3) {
-        row.style.backgroundColor = '#FFF7E6'; // Кремовый для первых трех
+        row.style.backgroundColor = '#FFF7E6';
     }
     
-    // Формируем полное имя
     const fullName = [volunteer.surname, volunteer.name, volunteer.patronymic]
         .filter(Boolean)
         .join(' ');
     
-    // Определяем аватар
     const avatarUrl = volunteer.avatar_presigned_url || './img/profile.png';
     const avatarHtml = `
         <img src="${avatarUrl}" alt="Аватар" class="avatar" onerror="this.src='./img/profile.png'">
     `;
-    
-    // Формируем текст благодарностей
+
     const thanksText = `Помог ${volunteer.thanks_count} ${getThanksWordForm(volunteer.thanks_count)}`;
     
     row.innerHTML = `

@@ -207,7 +207,140 @@ async function respondToRequest(requestId) {
 }
 
 async function showElderDetails(elderId) {
-    // ... остальной код showElderDetails без изменений
+    let elder = elders.find(e => e.id === elderId);
+    
+    if (!elder) {
+        try {
+            const response = await fetchWithAuth(`/api/v1/elders/${elderId}`);
+            if (response.ok) {
+                elder = await response.json();
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки данных пожилого:', error);
+            showNotification('Не удалось загрузить данные пожилого', 'error');
+            return;
+        }
+    }
+    
+    if (!elder) {
+        showNotification('Данные пожилого не найдены', 'error');
+        return;
+    }
+    
+    const avatarUrl = elder.avatar_presigned_url || './img/profile.png';
+    
+    let detailsHTML = '';
+    
+    if (elder.birthday) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Дата рождения:</div>
+                <div class="detail-value">${new Date(elder.birthday).toLocaleDateString('ru-RU')}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.address) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Адрес:</div>
+                <div class="detail-value">${escapeHtml(elder.address)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.health_status) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Состояние здоровья:</div>
+                <div class="detail-value">${escapeHtml(elder.health_status)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.physical_limitations) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Физические ограничения:</div>
+                <div class="detail-value">${escapeHtml(elder.physical_limitations)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.disease) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Заболевания:</div>
+                <div class="detail-value">${escapeHtml(elder.disease)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.features) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Особенности:</div>
+                <div class="detail-value">${escapeHtml(elder.features)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.hobbies) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Хобби:</div>
+                <div class="detail-value">${escapeHtml(elder.hobbies)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.comments) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Комментарии:</div>
+                <div class="detail-value">${escapeHtml(elder.comments)}</div>
+            </div>
+        `;
+    }
+    
+    if (!detailsHTML) {
+        detailsHTML = '<p>Дополнительная информация отсутствует</p>';
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay active';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+            <div class="elder-modal-header">
+                <img src="${avatarUrl}" alt="Аватар" class="elder-modal-avatar" onerror="this.src='./img/profile.png'">
+                <div class="elder-modal-info">
+                    <h3>${escapeHtml(elder.full_name)}</h3>
+                    <p>Пожилой человек</p>
+                </div>
+            </div>
+            <div class="elder-details-list">
+                ${detailsHTML}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+    
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
 }
 
 function showForm() {

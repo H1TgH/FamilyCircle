@@ -21,9 +21,11 @@
         </div>
         <div class="header-icons">
             <i class="fas fa-bell"></i>
-            <div class="profile-icon">
-                <a href="profile"><img src="./img/profile.png" alt="Профиль" /></a>
-            </div>
+            <a href="profile">
+                <div class="profile-icon">
+                    <img src="./img/profile.png" alt="Профиль" />
+                </div>
+            </a>
         </div>
     </header>
 
@@ -68,7 +70,7 @@
                 <div class="relative-card-content">
                     <div class="avatar_photo small">
                         <label for="elder-avatar-upload">
-                            <img class="avatar" src="./img/profile.png" alt="Фото родственника" id="elderAvatarPreview" />
+                            <img class="elder-avatar" src="./img/profile.png" alt="Фото родственника" id="elderAvatarPreview" />
                         </label>
                         <input id="elder-avatar-upload" type="file" accept="image/*" class="avatar-input" />
                     </div>
@@ -82,12 +84,6 @@
                             <div class="form-group">
                                 <label for="birthYear">Дата рождения:*</label>
                                 <input type="text" id="birthYear" name="birthYear" required placeholder="16.11.1960">
-                            </div>
-
-                            <div class="form-group">
-                                <label for="healthStatus">Состояние здоровья:*</label>
-                                <input type="text" id="healthStatus" name="healthStatus" required
-                                    placeholder="Например: хорошее">
                             </div>
                         </div>
 
