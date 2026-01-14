@@ -41,10 +41,7 @@
     border: 1px solid #AF6425;
     transition: transform 0.3s ease;
     background-color: #FFF7E6;
-}
-
-.avatar:hover {
-    transform: scale(1.05);
+    cursor: pointer;
 }
 
 .avatar-input {

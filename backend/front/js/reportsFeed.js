@@ -71,10 +71,9 @@ async function createReportCard(report) {
     console.log('Имя автора:', report.author_name, report.author_surname);
     
     let isOwner = false;
-    let avatarUrl = './img/avatar.png'; // По умолчанию
+    let avatarUrl = './img/avatar.png';
     let reportAuthorId = report.author_id;
     
-    // Если в отчете нет author_id, пытаемся получить данные пользователя для сравнения
     if (!reportAuthorId) {
         try {
             console.log('author_id не найден, пытаемся получить данные текущего пользователя');
@@ -83,7 +82,6 @@ async function createReportCard(report) {
                 const userData = await userResponse.json();
                 console.log('Данные текущего пользователя:', userData);
                 
-                // Сравниваем имя и фамилию
                 const sameName = userData.name === report.author_name;
                 const sameSurname = userData.surname === report.author_surname;
                 isOwner = sameName && sameSurname;
@@ -92,24 +90,20 @@ async function createReportCard(report) {
                 console.log('Сравнение по фамилии:', sameSurname);
                 console.log('Это владелец?', isOwner);
                 
-                // Если владелец, добавляем author_id для будущего использования
                 if (isOwner && !reportAuthorId) {
                     reportAuthorId = userData.id;
                 }
                 
-                // Получаем аватар текущего пользователя
                 avatarUrl = await getAuthorAvatarUrl(userData.id);
             }
         } catch (error) {
             console.error('Ошибка получения данных пользователя:', error);
         }
     } else {
-        // Если author_id есть, сравниваем напрямую
         isOwner = currentUserId && reportAuthorId && 
                   String(currentUserId) === String(reportAuthorId);
         console.log('Сравнение по author_id:', isOwner);
         
-        // Получаем аватар автора
         avatarUrl = await getAuthorAvatarUrl(reportAuthorId);
     }
     
@@ -166,7 +160,6 @@ async function createReportCard(report) {
         <p class="post-time">${timeAgo}</p>
     `;
     
-    // Добавляем обработчики для лайков и комментариев
     const likeIcon = card.querySelector('.like-icon');
     const commentIcon = card.querySelector('.comment-icon');
     
@@ -199,13 +192,11 @@ async function createReportCard(report) {
             <button class="post-action-item delete" data-action="delete">Удалить</button>
         `;
         card.appendChild(actionMenu);
-        
-        // Обработчик для шестеренки
+
         gearButton.addEventListener('click', function(e) {
             e.stopPropagation();
             console.log('Клик по шестеренке для поста', report.id);
             
-            // Закрываем все открытые меню
             const allMenus = document.querySelectorAll('.post-action-menu');
             allMenus.forEach(menu => {
                 if (menu !== actionMenu) {
@@ -213,10 +204,8 @@ async function createReportCard(report) {
                 }
             });
             
-            // Открываем/закрываем текущее меню
             actionMenu.classList.toggle('active');
             
-            // Обработчик для закрытия меню при клике вне его
             function closeMenuHandler(e) {
                 if (!actionMenu.contains(e.target) && !gearButton.contains(e.target)) {
                     actionMenu.classList.remove('active');
@@ -408,8 +397,7 @@ function initEditPostModal(report) {
     const saveBtn = modal.querySelector('#savePostBtn');
     const newImagesInput = modal.querySelector('#newImages');
     const imagePreview = modal.querySelector('#imagePreviewEdit');
-    
-    // Функция закрытия модального окна
+
     function closeModal() {
         console.log('Закрытие модального окна');
         modal.classList.remove('active');
@@ -425,12 +413,10 @@ function initEditPostModal(report) {
         }, 300);
     }
     
-    // Обработчик для крестика
     if (closeBtn) {
         closeBtn.addEventListener('click', closeModal);
     }
     
-    // Обработчик для оверлея (клик вне модального окна)
     if (overlay) {
         overlay.addEventListener('click', function(e) {
             if (e.target === overlay) {
@@ -439,19 +425,16 @@ function initEditPostModal(report) {
         });
     }
     
-    // Обработчик для кнопки "Отмена"
     if (cancelBtn) {
         cancelBtn.addEventListener('click', closeModal);
     }
     
-    // Обработчик для кнопки "Сохранить"
     if (saveBtn) {
         saveBtn.addEventListener('click', async function() {
             await updatePost();
         });
     }
     
-    // Обработчик для удаления существующих изображений
     modal.querySelectorAll('.remove-image[data-id]').forEach(btn => {
         btn.addEventListener('click', function() {
             const imageId = this.dataset.id;
@@ -464,8 +447,7 @@ function initEditPostModal(report) {
             }
         });
     });
-    
-    // Обработчик для новых изображений
+
     if (newImagesInput && imagePreview) {
         newImagesInput.addEventListener('change', function() {
             imagePreview.innerHTML = '';
@@ -493,8 +475,7 @@ function initEditPostModal(report) {
             });
         });
     }
-    
-    // Обработчик для клавиши ESC
+
     function handleEscKey(e) {
         if (e.key === 'Escape') {
             console.log('Нажата клавиша ESC');
@@ -504,13 +485,11 @@ function initEditPostModal(report) {
     }
     
     document.addEventListener('keydown', handleEscKey);
-    
-    // Удаляем обработчик ESC при закрытии
+
     function cleanup() {
         document.removeEventListener('keydown', handleEscKey);
     }
-    
-    // Добавляем очистку при закрытии
+
     const originalCloseModal = closeModal;
     closeModal = function() {
         cleanup();
@@ -520,7 +499,6 @@ function initEditPostModal(report) {
     cancelBtn.addEventListener('click', cleanup);
     closeBtn.addEventListener('click', cleanup);
     
-    // Вспомогательная функция для удаления изображений из предпросмотра
     function removeImageFromPreview(index, inputElement) {
         if (!inputElement) return;
         

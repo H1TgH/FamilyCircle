@@ -90,11 +90,6 @@ async def create_requests(
     response_model=list[RequestResponseSchema],
     tags=['requests']
 )
-@request_router.get(
-    '/api/v1/requests/me',
-    response_model=list[RequestResponseSchema],
-    tags=['requests']
-)
 async def get_requests_list(
     session: SessionDep,
     user: UserModel = Depends(get_current_user),
@@ -138,7 +133,30 @@ async def get_requests_list(
             request_dict['relative'] = relative_data
 
         if request.volunteer:
-            volunteer_data = await get_user_short_schema(request.volunteer)
+            volunteer = request.volunteer
+            avatar_url = await get_avatar_presigned_url(volunteer)
+
+            full_name_parts = []
+            if volunteer.surname:
+                full_name_parts.append(volunteer.surname)
+            if volunteer.name:
+                full_name_parts.append(volunteer.name)
+            if volunteer.patronymic:
+                full_name_parts.append(volunteer.patronymic)
+
+            volunteer_data = {
+                'id': volunteer.id,
+                'full_name': ' '.join(full_name_parts) if full_name_parts else 'Неизвестно',
+                'surname': volunteer.surname,
+                'name': volunteer.name,
+                'patronymic': volunteer.patronymic,
+                'avatar_presigned_url': avatar_url,
+                'city': volunteer.city,
+                'address': volunteer.address,
+                'phone': volunteer.phone_number,
+                'about': volunteer.about,
+                'birthday': volunteer.birthday
+            }
             request_dict['volunteer'] = volunteer_data
 
         if request.elder:
@@ -171,6 +189,7 @@ async def get_available_requests(
         RequestModel.status == RequestStatusEnum.OPEN
     ).options(
         selectinload(RequestModel.relative),
+        selectinload(RequestModel.volunteer),
         selectinload(RequestModel.elder)
     )
 
@@ -201,6 +220,33 @@ async def get_available_requests(
         if request.relative:
             relative_data = await get_user_short_schema(request.relative)
             request_dict['relative'] = relative_data
+
+        if request.volunteer:
+            volunteer = request.volunteer
+            avatar_url = await get_avatar_presigned_url(volunteer)
+
+            full_name_parts = []
+            if volunteer.surname:
+                full_name_parts.append(volunteer.surname)
+            if volunteer.name:
+                full_name_parts.append(volunteer.name)
+            if volunteer.patronymic:
+                full_name_parts.append(volunteer.patronymic)
+
+            volunteer_data = {
+                'id': volunteer.id,
+                'full_name': ' '.join(full_name_parts) if full_name_parts else 'Неизвестно',
+                'surname': volunteer.surname,
+                'name': volunteer.name,
+                'patronymic': volunteer.patronymic,
+                'avatar_presigned_url': avatar_url,
+                'city': volunteer.city,
+                'address': volunteer.address,
+                'phone': volunteer.phone_number,
+                'about': volunteer.about,
+                'birthday': volunteer.birthday
+            }
+            request_dict['volunteer'] = volunteer_data
 
         if request.elder:
             elder_data = await get_elder_short_schema(request.elder)
@@ -263,7 +309,30 @@ async def get_request_by_id(
         request_dict['relative'] = relative_data
 
     if request.volunteer:
-        volunteer_data = await get_user_short_schema(request.volunteer)
+        volunteer = request.volunteer
+        avatar_url = await get_avatar_presigned_url(volunteer)
+
+        full_name_parts = []
+        if volunteer.surname:
+            full_name_parts.append(volunteer.surname)
+        if volunteer.name:
+            full_name_parts.append(volunteer.name)
+        if volunteer.patronymic:
+            full_name_parts.append(volunteer.patronymic)
+
+        volunteer_data = {
+            'id': volunteer.id,
+            'full_name': ' '.join(full_name_parts) if full_name_parts else 'Неизвестно',
+            'surname': volunteer.surname,
+            'name': volunteer.name,
+            'patronymic': volunteer.patronymic,
+            'avatar_presigned_url': avatar_url,
+            'city': volunteer.city,
+            'address': volunteer.address,
+            'phone': volunteer.phone_number,
+            'about': volunteer.about,
+            'birthday': volunteer.birthday
+        }
         request_dict['volunteer'] = volunteer_data
 
     if request.elder:

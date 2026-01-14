@@ -51,22 +51,35 @@ class RequestCreationResponseSchema(BaseModel):
     request_id: UUID
 
 
+class UserFullSchema(BaseModel):
+    id: UUID
+    full_name: str | None = None
+    surname: str | None = None
+    name: str | None = None
+    patronymic: str | None = None
+    avatar_presigned_url: str | None = None
+    city: str | None = None
+    address: str | None = None
+    phone: str | None = None
+    about: str | None = None
+    birthday: date | None = None
+
+
 class RequestResponseSchema(BaseModel):
     id: UUID
     relative_id: UUID
     elder_id: UUID
     volunteer_id: UUID | None = None
     checklist_name: str
-    tasks: list[RequestTaskSchema]
+    tasks: list[dict]
     duration_value: int | None = None
-    duration_unit: DurationUnitEnum | None = None
-    is_shopping_checklist: bool
+    duration_unit: str | None = None
+    is_shopping_checklist: bool = False
     status: RequestStatusEnum
     created_at: datetime
     relative: UserShortSchema | None = None
-    volunteer: UserShortSchema | None = None
     elder: ElderShortSchema | None = None
-    model_config = ConfigDict(from_attributes=True)
+    volunteer: UserFullSchema | None = None
 
 
 class RequestUpdateSchema(BaseModel):

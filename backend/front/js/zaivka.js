@@ -137,8 +137,6 @@ async function loadElders() {
             elders = loadedElders.filter((elder, index, self) =>
                 index === self.findIndex(e => e.id === elder.id)
             );
-            
-            console.log('Загружены пожилые:', elders);
         }
     } catch (error) {
         console.error('Ошибка загрузки пожилых:', error);
@@ -162,7 +160,6 @@ async function loadRequests() {
         
         if (response.ok) {
             const requests = await response.json();
-            console.log('Загружено заявок:', requests.length, 'для роли:', currentUserRole);
             renderCards(requests);
         } else {
             const error = await response.json().catch(() => ({ detail: 'Не удалось загрузить заявки' }));
@@ -418,6 +415,8 @@ function createCard(request, container, isDoneSection) {
     let avatarUrl = './img/profile.png';
     let relativeName = 'Неизвестно';
     let relativeAvatarUrl = './img/profile.png';
+    let volunteerName = '';
+    let volunteerAvatarUrl = './img/profile.png';
     
     if (request.elder) {
         elderName = request.elder.full_name || 'Неизвестно';
@@ -427,6 +426,11 @@ function createCard(request, container, isDoneSection) {
     if (request.relative && currentUserRole === 'volunteer') {
         relativeName = request.relative.full_name || 'Неизвестно';
         relativeAvatarUrl = request.relative.avatar_presigned_url || './img/profile.png';
+    }
+    
+    if (request.volunteer && (currentUserRole === 'relative' || currentUserRole === 'volunteer')) {
+        volunteerName = request.volunteer.full_name || '';
+        volunteerAvatarUrl = request.volunteer.avatar_presigned_url || './img/profile.png';
     }
     
     const menuContent = currentUserRole === 'relative' 
@@ -454,8 +458,10 @@ function createCard(request, container, isDoneSection) {
                 scheduleText += new Date(task.scheduled_date + 'T00:00:00').toLocaleDateString('ru-RU');
             }
             if (task.scheduled_time) {
+                const timeParts = task.scheduled_time.split(':');
+                const formattedTime = timeParts.slice(0, 2).join(':');
                 if (scheduleText) scheduleText += ' ';
-                scheduleText += task.scheduled_time;
+                scheduleText += formattedTime;
             }
         } else {
             scheduleText = '-';
@@ -463,7 +469,10 @@ function createCard(request, container, isDoneSection) {
         
         return `
             <div class="task-table-row">
-                <div class="task-number">${index + 1}.</div>
+                <div class="task-number-cell">
+                    <div class="task-number">${index + 1}) ${escapeHtml(task.task_name)}</div>
+                    ${task.description ? `<div class="task-description">${escapeHtml(task.description)}</div>` : ''}
+                </div>
                 <div class="task-frequency-cell">${frequencyText}</div>
                 <div class="task-schedule-cell">${scheduleText}</div>
             </div>
@@ -497,7 +506,7 @@ function createCard(request, container, isDoneSection) {
                     
                     <div class="tasks-table-section">
                         <div class="task-table-header">
-                            <div class="task-number-header">№</div>
+                            <div class="task-number-header"> </div>
                             <div class="task-frequency-header">Частота выполнения</div>
                             <div class="task-schedule-header">Расписание</div>
                         </div>
@@ -522,6 +531,17 @@ function createCard(request, container, isDoneSection) {
                         <div class="status-text">
                             ${statusText}
                         </div>
+                        ${request.status === 'in_progress' && volunteerName ? `
+                            <div class="volunteer-info" style="margin-top: 15px; border-top: 1px solid #F1CBA8; padding-top: 15px;">
+                                <div class="volunteer-avatar-container" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                    <img src="${volunteerAvatarUrl}" alt="Аватар волонтера" style="width: 40px; color: black; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #F1CBA8;" onerror="this.src='./img/profile.png'">
+                                    <div style="font-weight: bold; font-size: 14px;">${escapeHtml(volunteerName)}</div>
+                                </div>
+                                <button class="view-volunteer-details" onclick="showVolunteerDetails('${request.volunteer_id}')" style="background: none; border: none; color: #985D3C; font-size: 12px; cursor: pointer; text-decoration: underline; padding: 0;">
+                                    Подробнее
+                                </button>
+                            </div>
+                        ` : ''}
                     </div>
                     ${request.status !== 'done' ? `
                         <button class="responses-btn" onclick="showResponses('${request.id}')">
@@ -552,7 +572,6 @@ function createCard(request, container, isDoneSection) {
                 </div>
                 
                 <div class="card-content-row volunteer-card-content">
-                    <!-- Левая колонка: родственник -->
                     <div class="relative-info-section">
                         <div class="relative-avatar-container">
                             <img src="${relativeAvatarUrl}" alt="Аватар родственника" class="relative-avatar" onerror="this.src='./img/profile.png'">
@@ -563,7 +582,6 @@ function createCard(request, container, isDoneSection) {
                         </div>
                     </div>
                     
-                    <!-- Центральная колонка: пожилой -->
                     <div class="elder-info-section volunteer-elder-section">
                         <div class="elder-avatar-container">
                             <img src="${avatarUrl}" alt="Аватар пожилого" class="elder-avatar" onerror="this.src='./img/profile.png'">
@@ -574,10 +592,8 @@ function createCard(request, container, isDoneSection) {
                         </div>
                     </div>
                     
-                    <!-- Правая колонка: таблица задач -->
                     <div class="tasks-table-section volunteer-tasks-section">
                         <div class="task-table-header">
-                            <div class="task-number-header">№</div>
                             <div class="task-frequency-header">Частота</div>
                             <div class="task-schedule-header">Расписание</div>
                         </div>
@@ -601,6 +617,15 @@ function createCard(request, container, isDoneSection) {
                     <div class="status-text">
                         ${statusText}
                     </div>
+                    ${request.status === 'in_progress' && volunteerName && currentUserRole === 'volunteer' ? `
+                        <div class="volunteer-info" style="margin-top: 15px; border-top: 1px solid #F1CBA8; padding-top: 15px;">
+                            <div class="volunteer-avatar-container" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <img src="${volunteerAvatarUrl}" alt="Аватар волонтера" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #F1CBA8;" onerror="this.src='./img/profile.png'">
+                                <div style="font-weight: bold; font-size: 14px;">${escapeHtml(volunteerName)}</div>
+                            </div>
+                            <div style="font-size: 12px; color: #666;">Назначенный волонтер</div>
+                        </div>
+                    ` : ''}
                 </div>
                 ${request.status === 'open' ? `
                     <button class="respond-btn" onclick="respondToRequest('${request.id}')">
@@ -627,16 +652,13 @@ function populateElderSelect() {
 
 function updateElderSelectOptions(selectElement) {
     if (!selectElement) return;
-    
-    // Сохраняем текущее значение
+
     const currentValue = selectElement.value;
     
-    // Очищаем все опции кроме первой (пустой)
     while (selectElement.options.length > 1) {
         selectElement.remove(1);
     }
-    
-    // Добавляем пожилых, убирая дубликаты
+
     const uniqueElders = elders.filter((elder, index, self) =>
         index === self.findIndex(e => e.id === elder.id)
     );
@@ -648,10 +670,114 @@ function updateElderSelectOptions(selectElement) {
         selectElement.appendChild(option);
     });
     
-    // Восстанавливаем выбранное значение, если оно все еще существует
     if (currentValue && Array.from(selectElement.options).some(opt => opt.value === currentValue)) {
         selectElement.value = currentValue;
     }
+}
+
+async function showVolunteerDetails(volunteerId) {
+    try {
+        const response = await fetchWithAuth(`/api/v1/users/${volunteerId}`);
+        if (response.ok) {
+            const volunteer = await response.json();
+            showVolunteerModal(volunteer);
+        } else {
+            showNotification('Не удалось загрузить данные волонтера', 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка загрузки данных волонтера:', error);
+        showNotification('Ошибка загрузки данных волонтера', 'error');
+    }
+}
+
+function showVolunteerModal(volunteer) {
+    const avatarUrl = volunteer.avatar_presigned_url || './img/profile.png';
+    
+    let detailsHTML = '';
+    
+    if (volunteer.phone_number) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Номер телефона:</div>
+                <div class="detail-value">${escapeHtml(volunteer.phone_number)}</div>
+            </div>
+        `;
+    }
+    
+    if (volunteer.city) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Город:</div>
+                <div class="detail-value">${escapeHtml(volunteer.city)}</div>
+            </div>
+        `;
+    }
+    
+    if (volunteer.address) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Адрес:</div>
+                <div class="detail-value">${escapeHtml(volunteer.address)}</div>
+            </div>
+        `;
+    }
+    
+    if (volunteer.birthday) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Дата рождения:</div>
+                <div class="detail-value">${new Date(volunteer.birthday).toLocaleDateString('ru-RU')}</div>
+            </div>
+        `;
+    }
+    
+    if (volunteer.about) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">О себе:</div>
+                <div class="detail-value">${escapeHtml(volunteer.about)}</div>
+            </div>
+        `;
+    }
+    
+    if (!detailsHTML) {
+        detailsHTML = '<p>Дополнительная информация отсутствует</p>';
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay active';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+            <div class="elder-modal-header">
+                <img src="${avatarUrl}" alt="Аватар" class="elder-modal-avatar" onerror="this.src='./img/profile.png'">
+                <div class="elder-modal-info">
+                    <h3>${escapeHtml(volunteer.full_name)}</h3>
+                    <p>Волонтер</p>
+                </div>
+            </div>
+            <div class="elder-details-list">
+                ${detailsHTML}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+    
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
 }
 
 function addTaskInput(taskData = null) {
@@ -662,7 +788,6 @@ function addTaskInput(taskData = null) {
     taskItem.className = 'task-item';
     taskItem.id = taskId;
     
-    // Определяем значения для радио-кнопок
     let everyFewHoursChecked = taskData && taskData.frequency === 'every_few_hours' ? 'checked' : '';
     let dailyChecked = taskData && taskData.frequency === 'daily' ? 'checked' : '';
     let weeklyChecked = taskData && taskData.frequency === 'weekly' ? 'checked' : '';
@@ -672,57 +797,74 @@ function addTaskInput(taskData = null) {
         <div class="task-header">
             <button type="button" class="remove-task-btn" onclick="removeTask('${taskId}')">×</button>
         </div>
-        <div class="task-content">
-            <div class="form-group">
-                <input type="text" class="task-input" placeholder="Задача" 
-                    value="${taskData ? escapeHtml(taskData.description) : ''}">
+    `;
+    
+    tasksContainer.appendChild(taskItem);
+    
+    const taskContent = document.createElement('div');
+    taskContent.className = 'task-content';
+    
+    const formGroup = document.createElement('div');
+    formGroup.className = 'form-group';
+    formGroup.innerHTML = `
+        <input type="text" class="task-input" placeholder="Задача" 
+            value="${taskData ? escapeHtml(taskData.description) : ''}">
+    `;
+    
+    const taskComment = document.createElement('div');
+    taskComment.className = 'task-comment';
+    taskComment.innerHTML = `
+        <label>Комментарий</label>
+        <textarea class="task-comment-input" placeholder="Введите комментарий...">${taskData ? escapeHtml(taskData.taskComment || '') : ''}</textarea>
+    `;
+    
+    const taskFrequency = document.createElement('div');
+    taskFrequency.className = 'task-frequency';
+    taskFrequency.innerHTML = `
+        <h4>Как часто повторять эту помощь?</h4>
+        <p>(если единоразово, то не нужно выбирать)</p>
+        <div class="task-frequency-options">
+            <div class="task-frequency-option">
+                <input type="radio" id="${taskId}_every_few_hours" name="${taskId}_frequency" value="every_few_hours" ${everyFewHoursChecked}>
+                <label for="${taskId}_every_few_hours">Раз в несколько часов</label>
             </div>
-            
-            <div class="task-comment">
-                <label>Комментарий</label>
-                <textarea class="task-comment-input" placeholder="Введите комментарий...">${taskData ? escapeHtml(taskData.taskComment || '') : ''}</textarea>
+            <div class="task-frequency-option">
+                <input type="radio" id="${taskId}_daily" name="${taskId}_frequency" value="daily" ${dailyChecked}>
+                <label for="${taskId}_daily">Ежедневно</label>
             </div>
-            
-            <div class="task-frequency">
-                <h4>Как часто повторять эту помощь?</h4>
-                <p>(если единоразово, то не нужно выбирать)</p>
-                <div class="task-frequency-options">
-                    <div class="task-frequency-option">
-                        <input type="radio" id="${taskId}_every_few_hours" name="${taskId}_frequency" value="every_few_hours" ${everyFewHoursChecked}>
-                        <label for="${taskId}_every_few_hours">Раз в несколько часов</label>
-                    </div>
-                    <div class="task-frequency-option">
-                        <input type="radio" id="${taskId}_daily" name="${taskId}_frequency" value="daily" ${dailyChecked}>
-                        <label for="${taskId}_daily">Ежедневно</label>
-                    </div>
-                    <div class="task-frequency-option">
-                        <input type="radio" id="${taskId}_weekly" name="${taskId}_frequency" value="weekly" ${weeklyChecked}>
-                        <label for="${taskId}_weekly">Еженедельно</label>
-                    </div>
-                    <div class="task-frequency-option">
-                        <input type="radio" id="${taskId}_monthly" name="${taskId}_frequency" value="monthly" ${monthlyChecked}>
-                        <label for="${taskId}_monthly">Ежемесячно</label>
-                    </div>
-                </div>
+            <div class="task-frequency-option">
+                <input type="radio" id="${taskId}_weekly" name="${taskId}_frequency" value="weekly" ${weeklyChecked}>
+                <label for="${taskId}_weekly">Еженедельно</label>
             </div>
-
-            <div class="form-row">
-                <h4>Расписание помощи</h4>
-                <div class="form-group">
-                    <label>Выбор даты: </label>
-                    <input type="date" class="task-date" 
-                        value="${taskData && taskData.date ? taskData.date : ''}">
-                </div>
-                <div class="form-group">
-                    <label>Выбор времени: :</label>
-                    <input type="time" class="task-start-time" 
-                        value="${taskData && taskData.startTime ? taskData.startTime : ''}">
-                </div>
+            <div class="task-frequency-option">
+                <input type="radio" id="${taskId}_monthly" name="${taskId}_frequency" value="monthly" ${monthlyChecked}>
+                <label for="${taskId}_monthly">Ежемесячно</label>
             </div>
         </div>
     `;
     
-    tasksContainer.appendChild(taskItem);
+    const formRow = document.createElement('div');
+    formRow.className = 'form-row';
+    formRow.innerHTML = `
+        <h4>Расписание помощи</h4>
+        <div class="form-group">
+            <label>Выбор даты: </label>
+            <input type="date" class="task-date" 
+                value="${taskData && taskData.date ? taskData.date : ''}">
+        </div>
+        <div class="form-group">
+            <label>Выбор времени: :</label>
+            <input type="time" class="task-start-time" 
+                value="${taskData && taskData.startTime ? taskData.startTime : ''}">
+        </div>
+    `;
+    
+    taskContent.appendChild(formGroup);
+    taskContent.appendChild(taskComment);
+    taskContent.appendChild(taskFrequency);
+    taskContent.appendChild(formRow);
+    
+    taskItem.appendChild(taskContent);
     
     if (!taskData) {
         setTimeout(() => {
@@ -763,12 +905,10 @@ async function saveCard() {
     const taskItems = document.querySelectorAll('.task-item');
     const tasks = [];
     
-    // Собираем данные для каждой задачи
     taskItems.forEach((item, index) => {
         const taskName = item.querySelector('.task-input').value.trim();
         const comment = item.querySelector('.task-comment-input')?.value.trim() || null;
         
-        // Получаем выбранную частоту для задачи
         const frequencyRadio = item.querySelector('input[name^="task_"]:checked');
         const frequency = frequencyRadio ? frequencyRadio.value : null;
         
@@ -1030,7 +1170,6 @@ function showResponsesModal(requestId, responses) {
     
     document.body.appendChild(modal);
     
-    // Обработчики для кнопок выбора волонтера
     modal.querySelectorAll('.select-volunteer-btn').forEach(button => {
         button.addEventListener('click', async function() {
             const responseId = this.getAttribute('data-response-id');
@@ -1152,7 +1291,6 @@ async function editCard(requestId) {
             const tasksContainer = document.getElementById('tasksContainer');
             tasksContainer.innerHTML = '';
             
-            // Загружаем задачи из нового формата
             if (request.tasks && Array.isArray(request.tasks)) {
                 request.tasks.forEach(task => {
                     addTaskInput({
@@ -1208,8 +1346,7 @@ async function viewDetails(requestId) {
                 'Длительность': request.duration_value ? `${request.duration_value} ${getDurationUnitText(request.duration_unit)}` : 'Не указана',
                 'Чеклист с покупкой': request.is_shopping_checklist ? 'Да' : 'Нет'
             };
-            
-            // Добавляем детали по задачам
+
             const tasksDetails = request.tasks.map((task, index) => {
                 let taskInfo = `${index + 1}. ${task.task_name}`;
                 if (task.description) taskInfo += `\n   Комментарий: ${task.description}`;
@@ -1240,7 +1377,6 @@ async function viewDetails(requestId) {
     }
 }
 
-// Функция для показа уведомлений
 function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
     notification.className = `notification ${type}`;
@@ -1260,7 +1396,6 @@ function showNotification(message, type = 'success') {
         animation: slideIn 0.3s ease-out;
     `;
     
-    // Добавляем стили для анимации, если их еще нет
     if (!document.getElementById('notification-styles')) {
         const style = document.createElement('style');
         style.id = 'notification-styles';
@@ -1299,9 +1434,7 @@ function showNotification(message, type = 'success') {
     }, 4000);
 }
 
-// Функция для показа модального окна с деталями
 function showDetailsModal(title, details) {
-    // Удаляем существующее модальное окно, если есть
     const existingModal = document.getElementById('detailsModal');
     if (existingModal) {
         existingModal.remove();
@@ -1366,7 +1499,6 @@ function showDetailsModal(title, details) {
     modal.appendChild(modalContent);
     document.body.appendChild(modal);
     
-    // Добавляем стили для анимации
     if (!document.getElementById('modal-styles')) {
         const style = document.createElement('style');
         style.id = 'modal-styles';
@@ -1379,7 +1511,6 @@ function showDetailsModal(title, details) {
         document.head.appendChild(style);
     }
     
-    // Обработчик закрытия
     const closeBtn = modalContent.querySelector('#closeDetailsModal');
     closeBtn.addEventListener('click', () => {
         modal.remove();
@@ -1391,7 +1522,6 @@ function showDetailsModal(title, details) {
         }
     });
     
-    // Закрытие по Escape
     const escapeHandler = (e) => {
         if (e.key === 'Escape') {
             modal.remove();
@@ -1401,7 +1531,6 @@ function showDetailsModal(title, details) {
     document.addEventListener('keydown', escapeHandler);
 }
 
-// Экспортируем функции в глобальную область видимости
 window.removeTask = removeTask;
 window.editCard = editCard;
 window.deleteCard = deleteCard;

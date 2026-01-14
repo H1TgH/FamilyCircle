@@ -125,7 +125,6 @@
 
 .task-header, .task-row-item {
     display: grid;
-    grid-template-columns: 2.5fr 1.5fr 1fr; 
     column-gap: 27px; 
     text-align: left; 
 }
@@ -488,7 +487,7 @@
     border-radius: 10px;
     padding: 12px 20px;
     text-align: center;
-    min-width: 180px;
+    width: 180px;
     background: #FFF9F0;
 }
 
@@ -591,14 +590,10 @@
     border-bottom: 1px solid #f0f0f0;
 }
 
-.task-number {
-    font-weight: bold;
-    color: #666;
-    min-width: 25px;
-}
-
 .task-description {
-    color: #333;
+    color: #00000080;
+    padding: 10px;
+    font-size: 16px;
 }
 
 .card-comment {
@@ -921,6 +916,9 @@
     align-items: center;
     width: 120px;
     flex-shrink: 0;
+    border: #AF6425 1px solid;
+    border-radius: 20px;
+    padding: 10px;
 }
 
 .elder-avatar-container {
@@ -964,25 +962,18 @@
 
 .tasks-table-section {
     flex: 1;
-    border: 1px solid #F1CBA8;
     border-radius: 10px;
     overflow: hidden;
-    background: #FFF9F0;
 }
 
 .task-table-header {
     display: grid;
-    grid-template-columns: 50px 1fr 1fr;
-    background: #F1CBA8;
+    grid-template-columns: 450px 1fr 1fr;
     color: #985D3C;
     font-weight: 600;
     font-size: 14px;
-    padding: 12px 15px;
+    padding: 8px 15px;
     border-bottom: 1px solid #E6B894;
-}
-
-.task-number-header {
-    text-align: center;
 }
 
 .task-frequency-header, .task-schedule-header {
@@ -995,7 +986,7 @@
 
 .task-table-row {
     display: grid;
-    grid-template-columns: 50px 1fr 1fr;
+    grid-template-columns: 450px 1fr 1fr;
     padding: 10px 15px;
     border-bottom: 1px solid #f0e6d6;
     align-items: center;
@@ -1007,10 +998,9 @@
 }
 
 .task-number {
-    text-align: center;
-    font-weight: bold;
-    color: #985D3C;
-    font-size: 14px;
+    font-weight: 500;
+    color: #000000;
+    font-size: 16px;
 }
 
 .task-frequency-cell, .task-schedule-cell {
@@ -1020,10 +1010,12 @@
 
 .task-frequency-cell {
     font-weight: 500;
+    font-size: 16px;
 }
 
 .task-schedule-cell {
-    color: #666;
+    font-size: 14px;
+    font-weight: 500;   
 }
 
 .card-bottom-info {

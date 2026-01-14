@@ -17,7 +17,6 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadVolunteersList() {
     try {
-        // Получаем список волонтеров с которыми работал родственник
         const response = await fetchWithAuth('/api/v1/thanks/volunteers');
         if (!response.ok) {
             throw new Error('Не удалось загрузить список волонтеров');
@@ -43,11 +42,9 @@ function createVolunteerCards(volunteers) {
     const container = document.querySelector('.container');
     if (!container) return;
     
-    // Удаляем существующий контент
     const existingCard = container.querySelector('.volunteer-card');
     if (existingCard) existingCard.remove();
     
-    // Добавляем карточки для каждого волонтера
     volunteers.forEach((volunteer, index) => {
         const card = createVolunteerCard(volunteer, index);
         container.appendChild(card);
@@ -59,7 +56,6 @@ function createVolunteerCard(volunteer, index) {
     card.className = 'volunteer-card';
     card.dataset.volunteerId = volunteer.id;
     
-    // Форматируем телефон
     const phoneFormatted = formatPhoneNumber(volunteer.phone_number);
     
     card.innerHTML = `
@@ -95,8 +91,7 @@ function createVolunteerCard(volunteer, index) {
             </button>`
         }
     `;
-    
-    // Добавляем обработчик для кнопки, если не поблагодарен
+
     if (!volunteer.is_thanked) {
         const thanksBtn = card.querySelector('.btn-thanks');
         if (thanksBtn) {
@@ -115,12 +110,10 @@ function createVolunteerCard(volunteer, index) {
 
 async function thankVolunteer(volunteerId, requestId, buttonElement, volunteerData) {
     try {
-        // Блокируем кнопку
         buttonElement.disabled = true;
         buttonElement.textContent = 'Отправка...';
         buttonElement.classList.add('disabled');
         
-        // Отправляем благодарность
         const response = await fetchWithAuth('/api/v1/thanks', {
             method: 'POST',
             headers: {
@@ -133,12 +126,10 @@ async function thankVolunteer(volunteerId, requestId, buttonElement, volunteerDa
         });
         
         if (response.ok) {
-            // Обновляем кнопку
             buttonElement.textContent = 'Поблагодарен ✓';
             buttonElement.classList.add('disabled');
             buttonElement.style.backgroundColor = '#4CAF50';
             
-            // Обновляем счетчик у всех карточек этого волонтера
             updateVolunteerCount(volunteerId, volunteerData.request_count + 1);
             
             showSuccess('Волонтер успешно поблагодарен!');
@@ -146,7 +137,6 @@ async function thankVolunteer(volunteerId, requestId, buttonElement, volunteerDa
             const error = await response.json().catch(() => ({ detail: 'Не удалось поблагодарить' }));
             showError('Ошибка: ' + (error.detail || 'Не удалось поблагодарить'));
             
-            // Разблокируем кнопку
             buttonElement.disabled = false;
             buttonElement.textContent = 'Поблагодарить';
             buttonElement.classList.remove('disabled');
@@ -155,7 +145,6 @@ async function thankVolunteer(volunteerId, requestId, buttonElement, volunteerDa
         console.error('Ошибка при отправке благодарности:', error);
         showError('Ошибка соединения с сервером');
         
-        // Разблокируем кнопку
         if (buttonElement) {
             buttonElement.disabled = false;
             buttonElement.textContent = 'Поблагодарить';
@@ -165,7 +154,6 @@ async function thankVolunteer(volunteerId, requestId, buttonElement, volunteerDa
 }
 
 function updateVolunteerCount(volunteerId, newCount) {
-    // Находим все карточки этого волонтера
     const volunteerCards = document.querySelectorAll(`[data-volunteer-id="${volunteerId}"]`);
     
     volunteerCards.forEach(card => {
@@ -173,7 +161,6 @@ function updateVolunteerCount(volunteerId, newCount) {
         if (countElement) {
             countElement.textContent = newCount;
             
-            // Обновляем форму слова
             const helpStatsElement = card.querySelector('.help-stats');
             if (helpStatsElement) {
                 helpStatsElement.innerHTML = `Помог <span class="count">${newCount}</span> ${getTimesWordForm(newCount)}`;
@@ -182,7 +169,6 @@ function updateVolunteerCount(volunteerId, newCount) {
     });
 }
 
-// Остальные функции оставляем как были:
 function getTimesWordForm(count) {
     if (count % 10 === 1 && count % 100 !== 11) {
         return 'раз';
