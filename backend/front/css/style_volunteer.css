@@ -1,10 +1,9 @@
-/* MAIN */
 .volunteer-main {
 
     max-width: 150vh;
     margin: 30px auto;
 }
-/* ===== ЗАГОЛОВОК СТРАНИЦЫ ===== */
+
 .volunteer-main .title {
     text-align: center;
     margin-bottom: 40px;
@@ -12,24 +11,20 @@
     font-weight: 700;
 }
 
-/* ===== КАРТОЧКА ПРОФИЛЯ (РАМКА И СТРУКТУРА) ===== */
 .profile-card {
     border: 1px solid #F3CBA8; 
     border-radius: 30px;       
     padding: 30px 40px;
     margin-bottom: 60px;
     background: #fff;
-    
-    /* Чтобы фото и текст встали в ряд */
+
     display: flex;
     align-items: flex-start;
     gap: 30px;
-    
-    /* Для позиционирования "Помог 1 раз" и карандаша */
+
     position: relative; 
 }
 
-/* ФОТО */
 .profile-photo-wrap {
     width: 120px;      
     height: 120px;
@@ -44,10 +39,9 @@
     object-fit: cover;
 }
 
-/* ЦЕНТРАЛЬНАЯ ЧАСТЬ */
 .profile-info {
-    flex: 1; /* Занимает все свободное место */
-    max-width: 600px; /* Ограничим ширину полей, чтобы не упирались в край */
+    flex: 1;
+    max-width: 600px;
 }
 
 .profile-name {
@@ -56,7 +50,6 @@
     margin: 0 0 20px 0;
 }
 
-/* ПОЛЯ ВВОДА */
 .profile-edit-fields {
     display: flex;
     flex-direction: column;
@@ -77,13 +70,13 @@
 }
 
 .style-input {
-    border: 1px solid #F3CBA8; /* Оранжевая обводка */
+    border: 1px solid #F3CBA8;
     border-radius: 10px;
     padding: 10px 15px;
     font-family: inherit;
     font-size: 14px;
     width: 100%;
-    box-sizing: border-box; /* Чтобы padding не ломал ширину */
+    box-sizing: border-box;
     outline: none;
 }
 
@@ -92,9 +85,6 @@
     color: #333;
 }
 
-/* ===== ЭЛЕМЕНТЫ ПО УГЛАМ ===== */
-
-/* "Помог 1 раз" - Справа Сверху */
 .profile-help {
     position: absolute;
     top: 30px;
@@ -109,7 +99,6 @@
     font-weight: 700;
 }
 
-/* Карандаш - Справа Снизу */
 .edit-profile {
     position: absolute;
     bottom: 30px;
@@ -125,7 +114,6 @@
     margin: 40px 0;
 }
 
-/* ===== ROW ===== */
 .report-row {
     display: flex;
     align-items: flex-start;
@@ -133,13 +121,11 @@
     margin-bottom: 50px;
 }
 
-/* NUMBER */
 .report-number {
     font-size: 18px;
     margin-top: 20px;
 }
 
-/* RELATIVE */
 .relative-card {
     width: 120px;
     border: 1px solid #f1c29b;
@@ -153,7 +139,6 @@
     border-radius: 50%;
 }
 
-/* MAIN CARD */
 .report-card {
     flex: 1;
     border: 1px solid #f1c29b;
@@ -167,7 +152,7 @@
     font-size: 12px;
     margin-top: 8px;
     display: inline-block;
-    border-bottom: 1px solid transparent; /* Чтобы не прыгало при наведении */
+    border-bottom: 1px solid transparent;
     transition: color 0.3s;
 }
 
@@ -183,13 +168,11 @@
     margin-bottom: 20px;
 }
 
-/* BODY */
 .report-body {
     display: flex;
     gap: 20px;
 }
 
-/* ===== КАРТОЧКА ПОДОПЕЧНОГО (БАБУШКИ) ===== */
 .elder-card {
     width: 140px;
     border: 1px solid #f1c29b;
@@ -209,7 +192,6 @@
     margin-bottom: 10px;
 }
 
-/* Таблица заданий */
 .task-table {
     display: flex;
     flex-direction: column;
@@ -226,7 +208,6 @@
     color: #333;        
 }
 
-/* Одна строка */
 .task-row {
     display: grid;
     grid-template-columns: 1.5fr 1fr 0.8fr;
@@ -234,7 +215,6 @@
     column-gap: 25px;
 }
 
-/* Название фрукта */
 .task-item {
     font-size: 15px;
     line-height: 1;
@@ -247,25 +227,21 @@
     margin-top: 3px;
 }
 
-/* Частота */
 .task-frequency {
     font-size: 14px;
 }
 
-/* Время */
 .task-time {
     font-size: 14px;
 }
 
 
-/* Статус "Оплачен" */
 .status {
     margin-top: 25px !important;
     padding-top: 10px;
     border-top: 1px dashed #eee; 
 }
 
-/* ACTION */
 .report-action {
     margin-top: 30px;
 }
@@ -279,7 +255,6 @@
     cursor: pointer;
 }
 
-/* ===== COMPLETED ===== */
 .report-row.completed {
     opacity: 0.4;
 }
@@ -294,7 +269,7 @@
     margin-top: 10px;
     color: #777;
 }
-/* МОДАЛЬНОЕ ОКНО*/
+
 .modal {
     display: none;
     position: fixed;
@@ -320,7 +295,6 @@
     padding: 20px 10px;
 }
 
-/* Хедер - белый фон, без градиента */
 .modal-header {
     background: transparent;
     color: #333;
@@ -335,9 +309,8 @@
     margin: 0;
     font-size: 1.6rem;
     font-weight: 700;
-    color: #333; /* Основной цвет текста черный */
+    color: #333;
 }
-
 
 .modal-header h2 .highlight {
     color: #C87943; 
@@ -373,7 +346,6 @@
     color: #333;
 }
 
-/* Текстовое поле - только подчеркивание */
 #reportText {
     width: 100%;
     padding: 10px 0;
@@ -396,7 +368,6 @@
     font-style: italic;
 }
 
-/* Область загрузки - большая белая рамка */
 .upload-area {
     border: 1px solid #e0e0e0; 
     border-radius: 20px;
@@ -406,7 +377,7 @@
     cursor: pointer;
     transition: all 0.3s;
     position: relative;
-    height: 180px; /* Фиксированная высота для объема */
+    height: 180px;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -439,7 +410,6 @@
     cursor: pointer;
 }
 
-/* Список файлов */
 .file-list {
     margin-top: 15px;
 }
@@ -452,11 +422,10 @@
 }
 .file-item i { color: #ff9f43; }
 
-/* Футер */
 .modal-footer {
     display: flex;
-    flex-direction: row; /* В ряд */
-    justify-content: flex-end; /* Кнопку вправо */
+    flex-direction: row;
+    justify-content: flex-end;
     align-items: center;
     margin-top: 20px;
     padding-top: 0;
@@ -464,7 +433,6 @@
     gap: 15px;
 }
 
-/* Кнопка "Опубликовать"*/
 .submit-btn {
     background: #a05e3f; 
     color: white;
@@ -483,7 +451,6 @@
     transform: translateY(-1px);
 }
 
-/* Кнопка отмены - делаем невидимой или просто текстом, как на макете её нет */
 .cancel-btn {
     background: transparent;
     color: #999;
@@ -506,7 +473,6 @@
     padding-left: 30px;
 }
 
-/* Адаптивность */
 @media (max-width: 768px) {
     .modal-content {
         margin: 10% auto;
@@ -520,7 +486,6 @@
     } 
 }
 
-/* затемнение фона */
 .modal-overlay {
     position: fixed;
     inset: 0;
@@ -531,7 +496,6 @@
     z-index: 9999;
 }
 
-/* карточка */
 .modal-card {
     background: #fff;
     border-radius: 22px;
@@ -539,10 +503,9 @@
     width: 560px;
     position: relative;
 
-    border: 2px solid #f1c29b; /* оранжевая рамка */
+    border: 2px solid #f1c29b;
 }
 
-/* кнопка закрытия */
 .modal-close {
     position: absolute;
     top: 18px;
@@ -563,7 +526,6 @@
     font-size: 15px;
 }
 
-/* аватар */
 .modal-card img {
     width: 90px;
     height: 90px;
@@ -571,7 +533,6 @@
     object-fit: cover;
 }
 
-/* выравнивание */
 .modal-card > div {
     display: flex;
     gap: 24px;

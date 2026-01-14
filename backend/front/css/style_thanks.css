@@ -110,7 +110,7 @@
     color: #FFFFFF;
     cursor: default;
     box-shadow: none;
-    pointer-events: none; /
+    pointer-events: none;
 }
 
 @media (max-width: 768px) {

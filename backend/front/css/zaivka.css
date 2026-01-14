@@ -67,7 +67,6 @@ body {
     background-color: #cd853f;
 }
 
-/* Контейнер для карточек */
 .cards-container {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
@@ -309,7 +308,6 @@ body {
     box-shadow: 0 4px 8px rgba(222, 184, 135, 0.3);
 }
 
-/* Стили для формы */
 .form-page {
     display: none;
     min-width: 1200px;
@@ -339,7 +337,6 @@ body {
     font-weight: 400;
 }
 
-/* Стили для задач в форме */
 #tasksContainer {
     margin: 20px 0;
 }
@@ -459,7 +456,6 @@ textarea {
 .frequency-checkboxes {
     display: grid;
     justify-content: flex-start;
-    /* grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); */
     gap: 12px;
     margin-top: 10px;
 }
@@ -485,7 +481,6 @@ textarea {
     min-height: 60px;
 }
 
-/* Общее время */
 .total-time-inputs {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
@@ -569,7 +564,6 @@ textarea {
     height: 100px;
 }
 
-/* Адаптивность */
 @media (max-width: 768px) {
     .cards-container {
         grid-template-columns: 1fr;
@@ -617,7 +611,6 @@ textarea {
     }
 }
 
-/* Стили для расписания в задаче */
 .task-schedule {
     margin-top: 15px;
     padding: 15px;
@@ -670,7 +663,6 @@ textarea {
     box-shadow: 0 0 0 3px rgba(222, 184, 135, 0.2);
 }
 
-/* Улучшение для формы в целом */
 .form-group {
     margin-bottom: 25px;
 }
@@ -702,7 +694,6 @@ textarea {
     resize: vertical;
 }
 
-/* Адаптивность для расписания */
 @media (max-width: 768px) {
     .task-schedule .form-row {
         flex-direction: column;
