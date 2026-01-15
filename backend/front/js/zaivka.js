@@ -532,7 +532,7 @@ function createCard(request, container, isDoneSection) {
                             ${statusText}
                         </div>
                         ${request.status === 'in_progress' && volunteerName ? `
-                            <div class="volunteer-info" style="margin-top: 15px; border-top: 1px solid #F1CBA8; padding-top: 15px;">
+                            <div class="volunteer-info" style="margin-top: 12px; border-top: 1px solid #F1CBA8; padding-top: 12px;">
                                 <div class="volunteer-avatar-container" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                                     <img src="${volunteerAvatarUrl}" alt="Аватар волонтера" style="width: 40px; color: black; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #F1CBA8;" onerror="this.src='./img/profile.png'">
                                     <div style="font-weight: bold; font-size: 14px;">${escapeHtml(volunteerName)}</div>
@@ -581,7 +581,7 @@ function createCard(request, container, isDoneSection) {
                             <div class="relative-role">Родственник</div>
                         </div>
                     </div>
-                    
+
                     <div class="elder-info-section volunteer-elder-section">
                         <div class="elder-avatar-container">
                             <img src="${avatarUrl}" alt="Аватар пожилого" class="elder-avatar" onerror="this.src='./img/profile.png'">
@@ -594,7 +594,8 @@ function createCard(request, container, isDoneSection) {
                     
                     <div class="tasks-table-section volunteer-tasks-section">
                         <div class="task-table-header">
-                            <div class="task-frequency-header">Частота</div>
+                            <div class="task-number-header"> </div>
+                            <div class="task-frequency-header">Частота выполнения</div>
                             <div class="task-schedule-header">Расписание</div>
                         </div>
                         
@@ -610,6 +611,11 @@ function createCard(request, container, isDoneSection) {
                             <strong>Чеклист с покупкой</strong>
                         </div>
                     ` : ''}
+                    ${request.comment ? `
+                        <div class="card-comment">
+                            <strong>Комментарий:</strong> ${escapeHtml(request.comment)}
+                        </div>
+                    ` : ''}
                 </div>
             </div>
             <div class="card-right-section volunteer-right-section">
@@ -618,7 +624,7 @@ function createCard(request, container, isDoneSection) {
                         ${statusText}
                     </div>
                     ${request.status === 'in_progress' && volunteerName && currentUserRole === 'volunteer' ? `
-                        <div class="volunteer-info" style="margin-top: 15px; border-top: 1px solid #F1CBA8; padding-top: 15px;">
+                        <div class="volunteer-info" style="margin-top: 12px; border-top: 1px solid #F1CBA8; padding-top: 12px;">
                             <div class="volunteer-avatar-container" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
                                 <img src="${volunteerAvatarUrl}" alt="Аватар волонтера" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #F1CBA8;" onerror="this.src='./img/profile.png'">
                                 <div style="font-weight: bold; font-size: 14px;">${escapeHtml(volunteerName)}</div>
@@ -627,7 +633,7 @@ function createCard(request, container, isDoneSection) {
                         </div>
                     ` : ''}
                 </div>
-                ${request.status === 'open' ? `
+                ${request.status === 'open' && currentUserRole === 'volunteer' ? `
                     <button class="respond-btn" onclick="respondToRequest('${request.id}')">
                         Откликнуться
                     </button>

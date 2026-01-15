@@ -41,6 +41,7 @@
     border-radius: 50%;
     object-fit: cover;
     flex-shrink: 0;
+    background-color: #F1CBA8;
 }
 
 .info-block {
@@ -83,7 +84,7 @@
 
 .btn-thanks {
     position: absolute;
-    bottom: -20px;
+    bottom: -50px;
     right: 40px;
     background-color: #985D3C;
     color: white;
@@ -96,13 +97,6 @@
     margin-top: -25px; 
     margin-right: 20px;
     z-index: 10;
-    transition: transform 0.2s, background 0.3s;
-    
-}
-
-.btn-thanks:hover {
-    background-color: #8a5830;
-    transform: translateY(-2px);
 }
 
 .btn-thanks.disabled {

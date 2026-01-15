@@ -379,7 +379,7 @@ async function getAuthorAvatarUrl(userId) {
         console.error('Ошибка получения аватара пользователя:', error);
     }
     
-    return './img/avatar.png';
+    return './img/profile.png';
 }
 
 

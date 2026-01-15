@@ -292,6 +292,7 @@
     gap: 20px;
     padding: 20px;
     margin-bottom: 30px;
+    text-align: left !important;
 }
 
 .create-btn-container {
@@ -315,27 +316,6 @@
 .create-btn:hover {
     background-color: #8e5627;
     transform: translateY(-2px);
-}
-
-.request-card {
-    border: 1px solid #F1CBA8;
-    border-radius: 25px;
-    padding: 25px;
-    background-color: #fff;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-    width: 90%;
-    max-width: 1200px;
-}
-
-.request-card {
-    border: 1px solid #F1CBA8;
-    border-radius: 25px;
-    padding: 25px;
-    background-color: #fff;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-    width: 90%;
-    max-width: 1200px;
-    position: relative;
 }
 
 .card-header {
@@ -485,7 +465,7 @@
 .status-container {
     border: 1px solid #F1CBA8;
     border-radius: 10px;
-    padding: 12px 20px;
+    padding: 12px 10px;
     text-align: center;
     width: 180px;
     background: #FFF9F0;
@@ -534,19 +514,6 @@
 
 .responses-btn:hover {
     background-color: #e6b894;
-}
-
-.request-card {
-    border: 1px solid #F1CBA8;
-    border-radius: 25px;
-    padding: 25px;
-    background-color: #fff;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-    width: 90%;
-    max-width: 1200px;
-    display: flex;
-    align-items: flex-start;
-    gap: 30px;
 }
 
 .card-header-section {
@@ -725,8 +692,7 @@
     padding: 25px;
     background-color: #fff;
     box-shadow: 0 4px 10px rgba(0,0,0,0.02);
-    width: 90%;
-    max-width: 1200px;
+    max-width: 1500px;
     display: flex;
     align-items: flex-start;
     gap: 30px;

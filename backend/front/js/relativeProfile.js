@@ -1,5 +1,7 @@
 let isLoadingElders = false;
 let eldersList = null;
+let elders = [];
+let currentUserRole = null;
 
 document.addEventListener('DOMContentLoaded', () => {
     if (!isAuthenticated()) return;
@@ -12,21 +14,222 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initializePage() {
-    if (!isAuthenticated()) {
+    if (!isAuthenticated()) return;
+    if (!window.location.pathname.includes('profile')) return;
+
+    loadUserProfile();
+    setupEditButton();
+
+    const role = getUserRole();
+    currentUserRole = role;
+
+    if (role === 'relative') {
+        initRelativeProfile();
+        document.getElementById('relativesSection').style.display = 'block';
+        document.getElementById('volunteerRequestsSection').style.display = 'none';
+    }
+
+    if (role === 'volunteer') {
+        loadProfileCssForVolunteer();
+
+        initVolunteerProfile();
+        document.getElementById('relativesSection').style.display = 'none';
+        document.getElementById('volunteerRequestsSection').style.display = 'block';
+
+        loadVolunteerRequests();
+    }
+}
+
+function loadProfileCssForVolunteer() {
+    const cssFiles = [
+        '/css/zaivka.css',
+        '/css/style_zaivka.css'
+    ];
+
+    cssFiles.forEach(href => {
+        if (document.querySelector(`link[href="${href}"]`)) return;
+
+        const link = document.createElement('link');
+        link.rel = 'stylesheet';
+        link.href = href;
+        document.head.appendChild(link);
+    });
+}
+
+function initRelativeProfile() {
+    loadElders();
+    setupElderForm();
+    setupEventListeners();
+}
+
+function initVolunteerProfile() {
+    hideRelativeUI();
+    loadVolunteerRequests();
+}
+
+function hideRelativeUI() {
+    const showFormBtn = document.getElementById('showFormBtn');
+    const formContainer = document.getElementById('relativeFormContainer');
+    const eldersList = document.getElementById('relativesList');
+    const emptyState = document.getElementById('emptyState');
+
+    if (showFormBtn) showFormBtn.remove();
+    if (formContainer) formContainer.remove();
+    if (eldersList) eldersList.remove();
+    if (emptyState) emptyState.remove();
+}
+
+async function loadVolunteerRequests() {
+    const container = document.getElementById('cardsContainer');
+    if (!container) return;
+    
+    try {
+        let response;
+        if (currentUserRole === 'relative') {
+            response = await fetchWithAuth('/api/v1/requests/me?limit=30');
+        } else {
+            response = await fetchWithAuth('/api/v1/requests/volunteer/me');
+        }
+        
+        if (!response.ok) {
+            showNotification('Ошибка загрузки заявок', 'error');
+            return;
+        }
+
+        const requests = await response.json();
+        
+        renderVolunteerRequestsForProfile(requests);
+        
+    } catch (error) {
+        console.error('Ошибка загрузки заявок:', error);
+        showNotification('Ошибка соединения', 'error');
+        if (container) {
+            container.innerHTML = '<p style="text-align: center; padding: 40px; color: #f44336;">Ошибка загрузки заявок</p>';
+        }
+    }
+}
+
+function renderCards(requests) {
+    const container = document.getElementById('cardsContainer');
+    if (!container) {
+        console.error('Контейнер карточек не найден');
+        return;
+    }
+    
+    container.innerHTML = '';
+    
+    if (requests.length === 0) {
+        if (currentUserRole === 'relative') {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 60px;">
+                    <p style="color: #666; font-size: 18px;">У вас пока нет заявок</p>
+                    <p style="color: #999; margin-top: 10px;">Нажмите "Создать чек-лист", чтобы создать первую заявку</p>
+                </div>
+            `;
+        } else {
+            container.innerHTML = `
+                <div style="text-align: center; padding: 60px;">
+                    <p style="color: #666; font-size: 18px;">Нет доступных заявок</p>
+                    <p style="color: #999; margin-top: 10px;">На данный момент нет заявок, на которые вы откликнулись</p>
+                </div>
+            `;
+        }
+        return;
+    }
+    
+    const uniqueRequests = requests.filter((request, index, self) =>
+        index === self.findIndex(r => r.id === request.id)
+    );
+    
+    const openRequests = uniqueRequests.filter(r => r.status !== 'done');
+    const doneRequests = uniqueRequests.filter(r => r.status === 'done');
+    
+    if (openRequests.length > 0) {
+        openRequests.forEach(request => {
+            createCard(request, container, false);
+        });
+    }
+    
+    if (doneRequests.length > 0) {
+        const doneContainer = document.createElement('div');
+        doneContainer.className = 'done-requests-container';
+        doneContainer.style.cssText = `
+            width: 100%;
+            max-width: 1200px;
+            margin-top: 40px;
+            border-top: 2px solid #eee;
+            padding-top: 30px;
+        `;
+        
+        const doneTitle = document.createElement('h3');
+        doneTitle.textContent = 'Завершенные заявки';
+        doneTitle.style.cssText = 'color: #666; margin-bottom: 20px;';
+        doneContainer.appendChild(doneTitle);
+        
+        doneRequests.forEach(request => {
+            createCard(request, doneContainer, true);
+        });
+        
+        container.appendChild(doneContainer);
+    }
+}
+
+function renderVolunteerRequestsForProfile(requests) {
+    renderCards(requests);
+}
+
+function renderVolunteerRequests(requests) {
+    const container = document.getElementById('volunteerRequests');
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (!requests.length) {
+        container.innerHTML = `
+            <div style="text-align: center; padding: 60px; color: #666;">
+                <p style="font-size: 18px;">У вас пока нет активных заявок</p>
+                <p style="color: #999; margin-top: 10px;">Здесь будут отображаться заявки, на которые вы откликнулись</p>
+            </div>
+        `;
         return;
     }
 
-    const isProfilePage = window.location.pathname.includes('profile');
-    if (!isProfilePage) return;
-    
-    loadUserProfile();
-    setupEditButton();
-    
-    const userRole = getUserRole();
-    if (userRole === 'relative') {
-        loadElders();
-        setupElderForm();
-        setupEventListeners();
+    const openRequests = requests.filter(r => r.status !== 'done');
+    const doneRequests = requests.filter(r => r.status === 'done');
+
+    const activeContainer = document.createElement('div');
+    activeContainer.className = 'requests-container';
+    activeContainer.style.cssText = 'width: 100%;';
+
+    if (openRequests.length > 0) {
+        openRequests.forEach(request => {
+            createCard(request, activeContainer, false);
+        });
+    }
+
+    if (doneRequests.length > 0) {
+        const doneContainer = document.createElement('div');
+        doneContainer.className = 'done-requests-container';
+        doneContainer.style.cssText = `
+            width: 100%;
+            margin-top: 40px;
+            border-top: 2px solid #eee;
+            padding-top: 30px;
+        `;
+        
+        const doneTitle = document.createElement('h3');
+        doneTitle.textContent = 'Завершенные заявки';
+        doneTitle.style.cssText = 'color: #666; margin-bottom: 20px;';
+        doneContainer.appendChild(doneTitle);
+        
+        doneRequests.forEach(request => {
+            createCard(request, doneContainer, true);
+        });
+        
+        container.appendChild(activeContainer);
+        container.appendChild(doneContainer);
+    } else {
+        container.appendChild(activeContainer);
     }
 }
 
@@ -57,6 +260,434 @@ function setupEditButton() {
     editButton.addEventListener('click', showEditProfileForm);
     profileSection.style.position = 'relative';
     profileSection.appendChild(editButton);
+}
+
+function getStatusText(status) {
+    const statusMap = {
+        'open': 'Не в работе',
+        'in_progress': 'В работе',
+        'done': 'Выполнена'
+    };
+    return statusMap[status] || status;
+}
+
+function getFrequencyText(frequency) {
+    if (!frequency) return 'Единоразово';
+    
+    const frequencyMap = {
+        'once': 'Единоразово',
+        'every_few_hours': 'Раз в несколько часов',
+        'daily': 'Ежедневно',
+        'weekly': 'Еженедельно',
+        'monthly': 'Ежемесячно'
+    };
+    return frequencyMap[frequency] || frequency;
+}
+
+function getDurationUnitText(unit) {
+    const unitMap = {
+        'hours': 'часов',
+        'days': 'дней',
+        'months': 'месяцев'
+    };
+    return unitMap[unit] || unit;
+}
+
+async function showElderDetails(elderId) {
+    let elder = elders.find(e => e.id === elderId);
+    
+    if (!elder) {
+        try {
+            const response = await fetchWithAuth(`/api/v1/elders/${elderId}`);
+            if (response.ok) {
+                elder = await response.json();
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки данных пожилого:', error);
+            showNotification('Не удалось загрузить данные пожилого', 'error');
+            return;
+        }
+    }
+    
+    if (!elder) {
+        showNotification('Данные пожилого не найдены', 'error');
+        return;
+    }
+    
+    const avatarUrl = elder.avatar_presigned_url || './img/profile.png';
+    
+    let detailsHTML = '';
+    
+    if (elder.birthday) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Дата рождения:</div>
+                <div class="detail-value">${new Date(elder.birthday).toLocaleDateString('ru-RU')}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.address) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Адрес:</div>
+                <div class="detail-value">${escapeHtml(elder.address)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.physical_limitations) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Физические ограничения:</div>
+                <div class="detail-value">${escapeHtml(elder.physical_limitations)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.disease) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Заболевания:</div>
+                <div class="detail-value">${escapeHtml(elder.disease)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.features) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Особенности:</div>
+                <div class="detail-value">${escapeHtml(elder.features)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.hobbies) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Хобби:</div>
+                <div class="detail-value">${escapeHtml(elder.hobbies)}</div>
+            </div>
+        `;
+    }
+    
+    if (elder.comments) {
+        detailsHTML += `
+            <div class="detail-item">
+                <div class="detail-label">Комментарии:</div>
+                <div class="detail-value">${escapeHtml(elder.comments)}</div>
+            </div>
+        `;
+    }
+    
+    if (!detailsHTML) {
+        detailsHTML = '<p>Дополнительная информация отсутствует</p>';
+    }
+    
+    const modal = document.createElement('div');
+    modal.className = 'modal-overlay active';
+    
+    modal.innerHTML = `
+        <div class="modal-content">
+            <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">×</button>
+            <div class="elder-modal-header">
+                <img src="${avatarUrl}" alt="Аватар" class="elder-modal-avatar" onerror="this.src='./img/profile.png'">
+                <div class="elder-modal-info">
+                    <h3>${escapeHtml(elder.full_name)}</h3>
+                    <p>Пожилой человек</p>
+                </div>
+            </div>
+            <div class="elder-details-list">
+                ${detailsHTML}
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(modal);
+    
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.remove();
+        }
+    });
+    
+    const escapeHandler = (e) => {
+        if (e.key === 'Escape') {
+            modal.remove();
+            document.removeEventListener('keydown', escapeHandler);
+        }
+    };
+    document.addEventListener('keydown', escapeHandler);
+}
+
+function createCard(request, container, isDoneSection) {
+    const card = document.createElement('div');
+    card.className = 'request-card';
+    if (request.status === 'done' || isDoneSection) {
+        card.classList.add('done');
+    }
+    card.dataset.id = request.id;
+    card.dataset.status = request.status;
+    
+    let elderName = 'Неизвестно';
+    let avatarUrl = './img/profile.png';
+    let relativeName = 'Неизвестно';
+    let relativeAvatarUrl = './img/profile.png';
+    let volunteerName = '';
+    let volunteerAvatarUrl = './img/profile.png';
+    
+    if (request.elder) {
+        elderName = request.elder.full_name || 'Неизвестно';
+        avatarUrl = request.elder.avatar_presigned_url || './img/profile.png';
+    }
+    
+    if (request.relative && currentUserRole === 'volunteer') {
+        relativeName = request.relative.full_name || 'Неизвестно';
+        relativeAvatarUrl = request.relative.avatar_presigned_url || './img/profile.png';
+    }
+    
+    if (request.volunteer && (currentUserRole === 'relative' || currentUserRole === 'volunteer')) {
+        volunteerName = request.volunteer.full_name || '';
+        volunteerAvatarUrl = request.volunteer.avatar_presigned_url || './img/profile.png';
+    }
+    
+    const menuContent = currentUserRole === 'relative' 
+        ? (request.status === 'done' 
+            ? `<button class="action-item" onclick="reopenCard('${request.id}')">Открыть снова</button>`
+            : `<button class="action-item" onclick="editCard('${request.id}')">Изменить</button>
+               <button class="action-item" onclick="deleteCard('${request.id}')">Удалить</button>
+               <button class="action-item" onclick="closeCard('${request.id}')">Закрыть</button>`)
+        : '';
+    
+    const statusText = getStatusText(request.status);
+    
+    const showRightSection = true;
+    
+    const durationText = request.duration_value ? 
+        `~ ${request.duration_value} ${getDurationUnitText(request.duration_unit)}` : 
+        '';
+    
+    const tasksTableRows = request.tasks.map((task, index) => {
+        const frequencyText = task.frequency ? getFrequencyText(task.frequency) : 'Единоразово';
+        
+        let scheduleText = '';
+        if (task.scheduled_date || task.scheduled_time) {
+            if (task.scheduled_date) {
+                scheduleText += new Date(task.scheduled_date + 'T00:00:00').toLocaleDateString('ru-RU');
+            }
+            if (task.scheduled_time) {
+                const timeParts = task.scheduled_time.split(':');
+                const formattedTime = timeParts.slice(0, 2).join(':');
+                if (scheduleText) scheduleText += ' ';
+                scheduleText += formattedTime;
+            }
+        } else {
+            scheduleText = '-';
+        }
+        
+        return `
+            <div class="task-table-row">
+                <div class="task-number-cell">
+                    <div class="task-number">${index + 1}) ${escapeHtml(task.task_name)}</div>
+                    ${task.description ? `<div class="task-description">${escapeHtml(task.description)}</div>` : ''}
+                </div>
+                <div class="task-frequency-cell">${frequencyText}</div>
+                <div class="task-schedule-cell">${scheduleText}</div>
+            </div>
+        `;
+    }).join('');
+    
+    let cardContent = '';
+    
+    if (currentUserRole === 'relative') {
+        cardContent = `
+            <div class="card-header-section">
+                <div class="card-top-row">
+                    <h3 class="card-checklist-name">${escapeHtml(request.checklist_name)}</h3>
+                    ${durationText ? `
+                        <div class="card-duration-badge">
+                            ${durationText}
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="card-content-row">
+                    <div class="elder-info-section">
+                        <div class="elder-avatar-container">
+                            <img src="${avatarUrl}" alt="Аватар пожилого" class="elder-avatar" onerror="this.src='./img/profile.png'">
+                        </div>
+                        <div class="elder-text-info">
+                            <div class="elder-name">${escapeHtml(elderName)}</div>
+                            <a href="#" class="view-details-link" onclick="showElderDetails('${request.elder_id}'); return false;">Подробнее</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tasks-table-section">
+                        <div class="task-table-header">
+                            <div class="task-number-header"> </div>
+                            <div class="task-frequency-header">Частота выполнения</div>
+                            <div class="task-schedule-header">Расписание</div>
+                        </div>
+                        
+                        <div class="task-table-body">
+                            ${tasksTableRows}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-bottom-info">
+                    ${request.is_shopping_checklist ? `
+                        <div class="card-comment shopping-badge">
+                            <strong>Чеклист с покупкой</strong>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+            <div class="card-right-section">
+                ${showRightSection ? `
+                    <div class="status-container">
+                        <div class="status-text">
+                            ${statusText}
+                        </div>
+                        ${request.status === 'in_progress' && volunteerName ? `
+                            <div class="volunteer-info" style="margin-top: 12px; border-top: 1px solid #F1CBA8; padding-top: 12px;">
+                                <div class="volunteer-avatar-container" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                    <img src="${volunteerAvatarUrl}" alt="Аватар волонтера" style="width: 40px; color: black; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #F1CBA8;" onerror="this.src='./img/profile.png'">
+                                    <div style="font-weight: bold; font-size: 14px;">${escapeHtml(volunteerName)}</div>
+                                </div>
+                                <button class="view-volunteer-details" onclick="showVolunteerDetails('${request.volunteer_id}')" style="background: none; border: none; color: #985D3C; font-size: 12px; cursor: pointer; text-decoration: underline; padding: 0;">
+                                    Подробнее
+                                </button>
+                            </div>
+                        ` : ''}
+                    </div>
+                    ${request.status !== 'done' ? `
+                        <button class="responses-btn" onclick="showResponses('${request.id}')">
+                            Отклики
+                        </button>
+                    ` : ''}
+                ` : ''}
+            </div>
+            ${currentUserRole === 'relative' ? `
+                <button class="card-actions-gear" onclick="toggleActionMenu(this, '${request.id}', '${request.status}')">
+                    <i class="fas fa-cog"></i>
+                </button>
+                <div class="action-menu">
+                    ${menuContent}
+                </div>
+            ` : ''}
+        `;
+    } else {
+        cardContent = `
+            <div class="card-header-section">
+                <div class="card-top-row">
+                    <h3 class="card-checklist-name">${escapeHtml(request.checklist_name)}</h3>
+                    ${durationText ? `
+                        <div class="card-duration-badge">
+                            ${durationText}
+                        </div>
+                    ` : ''}
+                </div>
+                
+                <div class="card-content-row volunteer-card-content">
+                    <div class="relative-info-section">
+                        <div class="relative-avatar-container">
+                            <img src="${relativeAvatarUrl}" alt="Аватар родственника" class="relative-avatar" onerror="this.src='./img/profile.png'">
+                        </div>
+                        <div class="relative-text-info">
+                            <div class="relative-name">${escapeHtml(relativeName)}</div>
+                            <div class="relative-role">Родственник</div>
+                        </div>
+                    </div>
+                    
+                    <div class="elder-info-section volunteer-elder-section">
+                        <div class="elder-avatar-container">
+                            <img src="${avatarUrl}" alt="Аватар пожилого" class="elder-avatar" onerror="this.src='./img/profile.png'">
+                        </div>
+                        <div class="elder-text-info">
+                            <div class="elder-name">${escapeHtml(elderName)}</div>
+                            <a href="#" class="view-details-link" onclick="showElderDetails('${request.elder_id}'); return false;">Подробнее</a>
+                        </div>
+                    </div>
+                    
+                    <div class="tasks-table-section volunteer-tasks-section">
+                        <div class="task-table-header">
+                            <div class="task-frequency-header">Частота</div>
+                            <div class="task-schedule-header">Расписание</div>
+                        </div>
+                        
+                        <div class="task-table-body">
+                            ${tasksTableRows}
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-bottom-info">
+                    ${request.is_shopping_checklist ? `
+                        <div class="card-comment shopping-badge">
+                            <strong>Чеклист с покупкой</strong>
+                        </div>
+                    ` : ''}
+                </div>
+            </div>
+            <div class="card-right-section volunteer-right-section">
+                <div class="status-container">
+                    <div class="status-text">
+                        ${statusText}
+                    </div>
+                    ${request.status === 'in_progress' && volunteerName && currentUserRole === 'volunteer' ? `
+                        <div class="volunteer-info" style="margin-top: 12px; border-top: 1px solid #F1CBA8; padding-top: 12px;">
+                            <div class="volunteer-avatar-container" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+                                <img src="${volunteerAvatarUrl}" alt="Аватар волонтера" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 2px solid #F1CBA8;" onerror="this.src='./img/profile.png'">
+                                <div style="font-weight: bold; font-size: 14px;">${escapeHtml(volunteerName)}</div>
+                            </div>
+                            <div style="font-size: 12px; color: #666;">Назначенный волонтер</div>
+                        </div>
+                    ` : ''}
+                </div>
+                ${request.status === 'open' ? `
+                    <button class="respond-btn" onclick="respondToRequest('${request.id}')">
+                        Откликнуться
+                    </button>
+                ` : ''}
+            </div>
+        `;
+    }
+    
+    card.innerHTML = cardContent;
+    container.appendChild(card);
+}
+
+function getStatusText(status) {
+    const statusMap = {
+        'open': 'Не в работе',
+        'in_progress': 'В работе',
+        'done': 'Выполнена'
+    };
+    return statusMap[status] || status;
+}
+
+function getFrequencyText(frequency) {
+    if (!frequency) return 'Единоразово';
+    
+    const frequencyMap = {
+        'once': 'Единоразово',
+        'every_few_hours': 'Раз в несколько часов',
+        'daily': 'Ежедневно',
+        'weekly': 'Еженедельно',
+        'monthly': 'Ежемесячно'
+    };
+    return frequencyMap[frequency] || frequency;
+}
+
+function getDurationUnitText(unit) {
+    const unitMap = {
+        'hours': 'часов',
+        'days': 'дней',
+        'months': 'месяцев'
+    };
+    return unitMap[unit] || unit;
 }
 
 function showEditProfileForm() {
@@ -95,7 +726,6 @@ function showEditProfileForm() {
                     <label style="display: block; margin-bottom: 5px; color: #5A3C1E; font-weight: 500;">Телефон:</label>
                     <input type="tel" id="edit-phone" required style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
                 </div>
-                <!-- Убрано поле email -->
                 <div class="form-group" style="margin-bottom: 15px;">
                     <label style="display: block; margin-bottom: 5px; color: #5A3C1E; font-weight: 500;">Дата рождения:</label>
                     <input type="date" id="edit-birthday" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
@@ -873,6 +1503,31 @@ async function editElder(elderId) {
     }
 }
 
+async function respondToRequest(requestId) {
+    try {
+        const response = await fetchWithAuth('/api/v1/responses', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ 
+                request_id: requestId
+            })
+        });
+        
+        if (response.ok) {
+            showNotification('Вы успешно откликнулись на заявку!', 'success');
+            loadVolunteerRequests();
+        } else {
+            const error = await response.json().catch(() => ({ detail: 'Не удалось откликнуться' }));
+            showNotification('Ошибка: ' + (error.detail || 'Не удалось откликнуться'), 'error');
+        }
+    } catch (error) {
+        console.error('Ошибка:', error);
+        showNotification('Ошибка соединения с сервером', 'error');
+    }
+}
+
 async function handleEditSubmit(elderId) {
     const elderCard = document.querySelector(`.elder-card[data-id="${elderId}"]`);
     if (!elderCard) return;
@@ -1066,3 +1721,6 @@ function showNotification(message, type = 'success') {
         notification.remove();
     }, 3000);
 }
+
+window.respondToRequest = respondToRequest;
+window.showElderDetails = showElderDetails;

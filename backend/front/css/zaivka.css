@@ -67,15 +67,6 @@ body {
     background-color: #cd853f;
 }
 
-.cards-container {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(420px, 1fr));
-    gap: 25px;
-    width: 100%;
-    max-width: 1400px;
-    padding: 25px;
-}
-
 .card {
     background-color: #fffaf0;
     border: 2px solid #ffdab9;
@@ -557,12 +548,6 @@ textarea {
 }
 
 @media (max-width: 768px) {
-    .cards-container {
-        grid-template-columns: 1fr;
-        padding: 15px;
-        gap: 15px;
-    }
-    
     .card {
         padding: 20px;
     }

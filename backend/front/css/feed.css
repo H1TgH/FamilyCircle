@@ -2,7 +2,6 @@
     width: 80%;
     max-width: 130vh;
     margin: 40px auto;
-    text-align: center;
     flex-grow: 1;
     padding: 20px;
     border-left: 1px solid #FFD3A4;
@@ -40,6 +39,7 @@
     height: 48px;
     border-radius: 50%;
     object-fit: cover;
+    background-color: #FFD3A4;
 }
 
 .post-user-info {

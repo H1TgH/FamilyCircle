@@ -10,12 +10,15 @@ function updateNavigation() {
     if (!authButtons) return;
     
     if (isAuthenticated()) {
-        const userName = getUserNameFromToken();
-        const userRole = getUserRole();
-
-        
         const newHeader = `
             <div class="logo"><img class="logo-img" src="img/logo.png" alt="logo"></div>
+
+            <nav class="nav">
+                <ul>
+                    <li><a href="./index">Главная</a></li>
+                    <li><a href="#">Вопросы</a></li>
+                </ul>
+            </nav>
             
             <div class="header-icons">
                 <i class="fas fa-bell"></i>

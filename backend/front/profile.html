@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Личный кабинет - Родственник</title>
+    <title>Личный кабинет</title>
     <link rel="stylesheet" href="./css/style_relatives.css">
     <link rel="stylesheet" href="./css/style_main.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
@@ -64,6 +64,18 @@
         </section>
 
         <div class="divider"></div>
+
+        <section id="volunteerRequestsSection">
+            <div id="cardsContainer" class="cards-container" style="width: 100%;"></div>
+        </section>
+
+        <section id="relativesSection" class="relatives-section" style="display: none;">
+            <div id="relativesList" class="relatives-grid">
+            </div>
+            <div class="button-wrapper">
+                <button class="add-btn" id="showFormBtn">+ Добавить родственника</button>
+            </div>
+        </section>
 
         <div id="relativeFormContainer" class="form-container" style="display: none;">
             <form id="relativeForm" class="relative-form">
@@ -132,13 +144,7 @@
             </form>
         </div>
 
-        <div id="relativesList" class="relatives-grid">
-        </div>
     </main>
-
-    <div class="button-wrapper">
-        <button class="add-btn" id="showFormBtn">+ Добавить родственника</button>
-    </div>
 
     <div id="confirmModal" class="modal" style="display: none;">
         <div class="modal-content small">

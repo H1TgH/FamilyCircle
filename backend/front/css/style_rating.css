@@ -13,8 +13,7 @@
     overflow: hidden; 
     display: flex;
     flex-direction: column;
-    border-top: 3px solid #8B5E3C;
-    border-bottom: 3px solid #8B5E3C;
+    border: 2px solid #8B5E3C;
 }
 
 .rating-header {
@@ -22,11 +21,7 @@
     grid-template-columns: 120px 1fr 200px;
     align-items: center;
     padding: 30px 20px 20px 20px;
-    
-    border-left: 1px solid #8B5E3C;
-    border-right: 1px solid #8B5E3C;
     border-radius: 40px 40px 0 0;
-    
     font-weight: 700;
     color: #000;
     font-size: 18px;
@@ -135,8 +130,7 @@
 
 .rating-row.current-user {
     border: 2px solid #FF8C00;
-    border-radius: 10px;
-    margin: 2px 0;
+    margin: 0px;
 }
 
 .avatar {

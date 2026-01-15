@@ -1,8 +1,6 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('thanks_relative.js загружен');
-    
     if (!isAuthenticated()) {
-        window.location.href = '/input';
+        window.location.href = '/login';
         return;
     }
     
@@ -70,7 +68,7 @@ function createVolunteerCard(volunteer, index) {
             <div class="info-block">
                 <div class="info-header">
                     <h2 class="volunteer-name">${escapeHtml(volunteer.full_name)}</h2>
-                    <span class="help-stats">Помог <span class="count">${volunteer.request_count}</span> ${getTimesWordForm(volunteer.request_count)}</span>
+                    <span class="help-stats">Помог <span class="count">${volunteer.thanks_count}</span> ${getTimesWordForm(volunteer.thanks_count)}</span>
                 </div>
 
                 <div class="details">
@@ -163,7 +161,7 @@ function updateVolunteerCount(volunteerId, newCount) {
             
             const helpStatsElement = card.querySelector('.help-stats');
             if (helpStatsElement) {
-                helpStatsElement.innerHTML = `Помог <span class="count">${newCount}</span> ${getTimesWordForm(newCount)}`;
+                helpStatsElement.innerHTML = `Помог <span class="count">${newCount-1}</span> ${getTimesWordForm(newCount-1)}`;
             }
         }
     });
@@ -223,7 +221,7 @@ function showEmptyState() {
             <p style="font-size: 18px; color: #5A3C1E; margin-bottom: 10px;">У вас еще нет завершенных заявок</p>
             <p style="color: #8B7355;">Как только волонтеры завершат ваши заявки, они появятся здесь</p>
             <a href="requests" class="back-link" style="display: inline-block; margin-top: 20px; color: #A66B3B; text-decoration: none; font-weight: bold;">
-                ← Вернуться к заявкам
+                Вернуться к заявкам
             </a>
         </div>
     `;
@@ -237,7 +235,7 @@ function emptyStyle(element) {
         padding: 60px 20px;
         background: #FFF9F0;
         border-radius: 20px;
-        border: 2px dashed #E8A75D;
+        border: 1px solid #E8A75D;
         margin-top: 40px;
     `;
 }

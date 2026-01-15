@@ -1133,19 +1133,15 @@ async def get_user_thanks(
             detail='You can only view your own thanks'
         )
 
-    query = select(ThanksModel).where(
-        ThanksModel.to_user_id == user_id
-    )
+    query = select(ThanksModel).where(ThanksModel.to_user_id == user_id)
 
     if cursor:
         query = query.where(ThanksModel.created_at < cursor)
 
     query = query.order_by(ThanksModel.created_at.desc()).limit(limit)
-
     result = await session.execute(query)
-    thanks = result.scalars().all()
 
-    return thanks
+    return result.scalars().all()
 
 
 @request_router.get(
@@ -1165,19 +1161,15 @@ async def get_my_thanks(
             detail='Only volunteers have thanks'
         )
 
-    query = select(ThanksModel).where(
-        ThanksModel.to_user_id == user.id
-    )
+    query = select(ThanksModel).where(ThanksModel.to_user_id == user.id)
 
     if cursor:
         query = query.where(ThanksModel.created_at < cursor)
 
     query = query.order_by(ThanksModel.created_at.desc()).limit(limit)
-
     result = await session.execute(query)
-    thanks = result.scalars().all()
 
-    return thanks
+    return result.scalars().all()
 
 
 @request_router.get(
@@ -1196,10 +1188,7 @@ async def get_thanks_for_request(
     request = request_result.scalar_one_or_none()
 
     if not request:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail='Request not found'
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Request not found')
 
     if user.id != request.relative_id and user.id != request.volunteer_id and user.role != RoleEnum.ADMIN:
         raise HTTPException(
@@ -1207,14 +1196,11 @@ async def get_thanks_for_request(
             detail='You do not have permission to view thanks for this request'
         )
 
-    thanks_result = await session.execute(
-        select(ThanksModel)
-        .where(ThanksModel.request_id == request_id)
+    result = await session.execute(
+        select(ThanksModel).where(ThanksModel.request_id == request_id)
     )
-    thanks = thanks_result.scalar_one_or_none()
 
-    return thanks
-
+    return result.scalars().all()
 
 @request_router.get(
     '/api/v1/thanks/volunteers',
@@ -1242,7 +1228,6 @@ async def get_volunteers_for_thanks(
         .order_by(RequestModel.created_at.desc())
     )
     requests = requests_result.scalars().all()
-
     if not requests:
         return []
 
@@ -1253,64 +1238,40 @@ async def get_volunteers_for_thanks(
 
         thanks_check_result = await session.execute(
             select(ThanksModel)
-            .where(
-                ThanksModel.request_id == request.id,
-                ThanksModel.from_user_id == user.id
-            )
+            .where(ThanksModel.request_id == request.id, ThanksModel.from_user_id == user.id)
         )
         is_thanked_for_this_request = thanks_check_result.scalar_one_or_none() is not None
 
         if volunteer_id not in volunteers_map:
-            last_non_thanked_request = None
-            for req in requests:
-                if req.volunteer_id == volunteer_id:
-                    thanks_for_req_result = await session.execute(
-                        select(ThanksModel)
-                        .where(
-                            ThanksModel.request_id == req.id,
-                            ThanksModel.from_user_id == user.id
-                        )
-                    )
-                    is_thanked = thanks_for_req_result.scalar_one_or_none() is not None
-                    if not is_thanked:
-                        last_non_thanked_request = req
-                        break
-
+            last_non_thanked_request = request if not is_thanked_for_this_request else None
             volunteers_map[volunteer_id] = {
                 'volunteer': request.volunteer,
                 'request_count': 1,
-                'requests': [request],
-                'last_non_thanked_request': last_non_thanked_request,
-                'last_request_id': request.id
+                'last_non_thanked_request': last_non_thanked_request
             }
         else:
             volunteer_data = volunteers_map[volunteer_id]
             volunteer_data['request_count'] += 1
-            volunteer_data['requests'].append(request)
-
             if not volunteer_data['last_non_thanked_request'] and not is_thanked_for_this_request:
                 volunteer_data['last_non_thanked_request'] = request
 
     volunteers_list = []
-    for volunteer_data in volunteers_map.values():
-        volunteer = volunteer_data['volunteer']
+    for data in volunteers_map.values():
+        volunteer = data['volunteer']
+        last_non_thanked_request = data['last_non_thanked_request']
+        is_thanked = last_non_thanked_request is None
+
+        thanks_count_result = await session.execute(
+            select(func.count(ThanksModel.id)).where(ThanksModel.to_user_id == volunteer.id)
+        )
+        thanks_count = thanks_count_result.scalar() or 0
 
         avatar_url = await get_avatar_presigned_url(volunteer)
-
-        full_name_parts = []
-        if volunteer.surname:
-            full_name_parts.append(volunteer.surname)
-        if volunteer.name:
-            full_name_parts.append(volunteer.name)
-        if volunteer.patronymic:
-            full_name_parts.append(volunteer.patronymic)
-
-        last_non_thanked_request = volunteer_data['last_non_thanked_request']
-        is_thanked = last_non_thanked_request is None
+        full_name = ' '.join(filter(None, [volunteer.surname, volunteer.name, volunteer.patronymic]))
 
         volunteers_list.append({
             'id': volunteer.id,
-            'full_name': ' '.join(full_name_parts) if full_name_parts else 'Неизвестно',
+            'full_name': full_name or 'Неизвестно',
             'surname': volunteer.surname,
             'name': volunteer.name,
             'patronymic': volunteer.patronymic,
@@ -1318,11 +1279,74 @@ async def get_volunteers_for_thanks(
             'city': volunteer.city,
             'about': volunteer.about,
             'phone_number': volunteer.phone_number,
-            'request_count': volunteer_data['request_count'],
+            'request_count': data['request_count'],
+            'thanks_count': thanks_count,
             'is_thanked': is_thanked,
-            'last_request_id': last_non_thanked_request.id if last_non_thanked_request else volunteer_data['last_request_id']
+            'last_request_id': last_non_thanked_request.id if last_non_thanked_request else None
         })
 
     volunteers_list.sort(key=lambda x: x['request_count'], reverse=True)
 
     return volunteers_list
+
+
+@request_router.get(
+    '/api/v1/requests/volunteer/me',
+    response_model=list[RequestResponseSchema],
+    tags=['requests']
+)
+async def get_volunteer_requests(
+    session: SessionDep,
+    user: UserModel = Depends(get_current_user),
+    limit: int = Query(15, ge=1, le=40),
+    cursor: datetime | None = Query(None)
+):
+    if user.role != RoleEnum.VOLUNTEER:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail='Only volunteers can view their assigned requests'
+        )
+
+    query = select(RequestModel).where(
+        RequestModel.volunteer_id == user.id,
+        RequestModel.status.in_([RequestStatusEnum.IN_PROGRESS, RequestStatusEnum.OPEN])
+    ).options(
+        selectinload(RequestModel.relative),
+        selectinload(RequestModel.elder)
+    )
+
+    if cursor:
+        query = query.where(RequestModel.created_at < cursor)
+
+    query = query.order_by(RequestModel.created_at.desc()).limit(limit)
+
+    result = await session.execute(query)
+    requests = result.scalars().all()
+
+    response_requests = []
+    for request in requests:
+        request_dict = {
+            'id': request.id,
+            'relative_id': request.relative_id,
+            'elder_id': request.elder_id,
+            'volunteer_id': request.volunteer_id,
+            'checklist_name': request.checklist_name,
+            'tasks': request.tasks,
+            'duration_value': request.duration_value,
+            'duration_unit': request.duration_unit,
+            'is_shopping_checklist': request.is_shopping_checklist,
+            'status': request.status,
+            'created_at': request.created_at
+        }
+
+        if request.relative:
+            relative_data = await get_user_short_schema(request.relative)
+            request_dict['relative'] = relative_data
+
+        if request.elder:
+            elder_data = await get_elder_short_schema(request.elder)
+            request_dict['elder'] = elder_data
+
+        response_requests.append(RequestResponseSchema.model_validate(request_dict))
+
+    return response_requests
